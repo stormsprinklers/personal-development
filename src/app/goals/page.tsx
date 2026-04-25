@@ -5,14 +5,15 @@ import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
 import { useAppData } from "@/lib/storage";
 
+const GOAL_TASKS_LIST_NAME = "Goal Tasks";
+
 export default function GoalsPage() {
   const { data, ready, setData } = useAppData();
-  const [goalYear, setGoalYear] = useState(() => new Date().getFullYear());
+  const goalYear = new Date().getFullYear();
   const [sectionName, setSectionName] = useState("");
   const [selectedSectionId, setSelectedSectionId] = useState("");
   const [goalTitle, setGoalTitle] = useState("");
-  const [noteText, setNoteText] = useState("");
-  const [noteGoalId, setNoteGoalId] = useState("");
+  const [goalTaskDrafts, setGoalTaskDrafts] = useState<Record<string, string>>({});
 
   const goalsForYear = useMemo(
     () => data.goals.filter((goal) => goal.year === goalYear),
@@ -24,6 +25,14 @@ export default function GoalsPage() {
   const goalNotesForYear = useMemo(
     () => data.goalNotes.filter((note) => goalIdsForYear.has(note.goalId)),
     [data.goalNotes, goalIdsForYear],
+  );
+  const goalsBySection = useMemo(
+    () =>
+      data.goalSections.map((section) => ({
+        section,
+        goals: goalsForYear.filter((goal) => goal.sectionId === section.id),
+      })),
+    [data.goalSections, goalsForYear],
   );
 
   function addSection() {
@@ -56,6 +65,43 @@ export default function GoalsPage() {
     setGoalTitle("");
   }
 
+  function addGoalTask(goalId: string) {
+    const title = goalTaskDrafts[goalId]?.trim();
+    if (!title) return;
+
+    setData((prev) => {
+      let listId = prev.todoLists.find((list) => list.name === GOAL_TASKS_LIST_NAME)?.id;
+      const nextLists = [...prev.todoLists];
+      if (!listId) {
+        listId = crypto.randomUUID();
+        nextLists.unshift({
+          id: listId,
+          name: GOAL_TASKS_LIST_NAME,
+          area: "",
+          createdAt: new Date().toISOString(),
+        });
+      }
+
+      return {
+        ...prev,
+        todoLists: nextLists,
+        todoItems: [
+          {
+            id: crypto.randomUUID(),
+            listId,
+            goalId,
+            title,
+            active: true,
+            createdAt: new Date().toISOString(),
+          },
+          ...prev.todoItems,
+        ],
+      };
+    });
+
+    setGoalTaskDrafts((prev) => ({ ...prev, [goalId]: "" }));
+  }
+
   function toggleGoal(goalId: string) {
     setData((prev) => ({
       ...prev,
@@ -63,40 +109,18 @@ export default function GoalsPage() {
     }));
   }
 
-  function addNote() {
-    if (!noteGoalId || !noteText.trim()) return;
-    setData((prev) => ({
-      ...prev,
-      goalNotes: [
-        { id: crypto.randomUUID(), goalId: noteGoalId, content: noteText.trim(), createdAt: new Date().toISOString() },
-        ...prev.goalNotes,
-      ],
-    }));
-    setNoteText("");
-  }
-
   if (!ready) return <div className="p-6">Loading goals...</div>;
 
   return (
     <AppShell
       title="Goals"
-      description="Create annual goals by section and year, then attach notes."
+      description="Simple goals with section headings and task breakdowns."
     >
-      <SectionCard title="Year focus" subtitle="View and add goals for a specific calendar year.">
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="text-sm text-zinc-600">
-            Year{" "}
-            <input
-              type="number"
-              value={goalYear}
-              onChange={(e) => setGoalYear(Number(e.target.value))}
-              className="ml-2 w-24 rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
-            />
-          </label>
-        </div>
+      <SectionCard title={`Goals ${goalYear}`}>
+        <p className="text-sm text-zinc-600">Current year goals only.</p>
       </SectionCard>
 
-      <SectionCard title="Create Goal Section" subtitle="Organize goals by life area.">
+      <SectionCard title="New Section">
         <div className="grid gap-3 md:grid-cols-4">
           <input
             value={sectionName}
@@ -110,7 +134,7 @@ export default function GoalsPage() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Create Goal" subtitle="Attach each goal to a section and track status.">
+      <SectionCard title="New Goal">
         <div className="grid gap-3 md:grid-cols-4">
           <select
             value={selectedSectionId}
@@ -136,60 +160,87 @@ export default function GoalsPage() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Goal Checklist" subtitle="Check completed goals to track annual progress.">
-        <div className="grid gap-2">
-          {goalsForYear.map((goal) => {
-            const section = data.goalSections.find((item) => item.id === goal.sectionId);
-            return (
-              <label key={goal.id} className="flex items-center gap-3 rounded-lg border border-sky-200/80 bg-sky-50/40 px-3 py-2">
-                <input type="checkbox" checked={goal.completed} onChange={() => toggleGoal(goal.id)} />
-                <span className="text-sm">
-                  {goal.title} <span className="text-sky-800/60">({section?.name ?? "Unsectioned"})</span>
-                </span>
-              </label>
-            );
-          })}
-          {!goalsForYear.length && <p className="text-sm text-zinc-600">No goals for this year yet.</p>}
-        </div>
-      </SectionCard>
+      <SectionCard title="Goal List">
+        <div className="grid gap-5">
+          {goalsBySection.map(({ section, goals }) => (
+            <div key={section.id}>
+              <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-sky-800/70">{section.name}</h3>
+              {goals.length ? (
+                <div className="grid gap-2">
+                  {goals.map((goal) => {
+                    const goalTasks = data.todoItems.filter((item) => item.goalId === goal.id);
+                    const doneGoalTasks = goalTasks.filter((item) => !item.active).length;
+                    const progressPercent = goalTasks.length
+                      ? Math.round((doneGoalTasks / goalTasks.length) * 100)
+                      : 0;
+                    const linkedNotes = goalNotesForYear.filter((note) => note.goalId === goal.id);
 
-      <SectionCard title="Goal Notes" subtitle="Add notes linked to specific goals.">
-        <div className="grid gap-3 md:grid-cols-4">
-          <select
-            value={noteGoalId}
-            onChange={(event) => setNoteGoalId(event.target.value)}
-            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
-          >
-            <option value="">Select goal</option>
-            {goalsForYear.map((goal) => (
-              <option key={goal.id} value={goal.id}>
-                {goal.title}
-              </option>
-            ))}
-          </select>
-          <input
-            value={noteText}
-            onChange={(event) => setNoteText(event.target.value)}
-            placeholder="Goal note"
-            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
-          />
-          <button onClick={addNote} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700">
-            Add Note
-          </button>
-        </div>
-        <div className="mt-4 grid gap-2">
-          {goalNotesForYear.length ? (
-            goalNotesForYear.map((note) => {
-              const goal = data.goals.find((g) => g.id === note.goalId);
-              return (
-                <div key={note.id} className="rounded-lg border border-sky-200/80 bg-sky-50/40 px-3 py-2 text-sm">
-                  {goal?.title ?? "Goal"}: {note.content}
+                    return (
+                      <div key={goal.id} className="rounded-lg border border-sky-200/80 bg-sky-50/40 px-3 py-3">
+                        <label className="flex items-start gap-3">
+                          <input
+                            type="checkbox"
+                            checked={goal.completed}
+                            onChange={() => toggleGoal(goal.id)}
+                            className="mt-1"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-zinc-900">{goal.title}</p>
+                            <p className="text-xs text-zinc-600">
+                              Task progress: {progressPercent}% ({doneGoalTasks}/{goalTasks.length || 0})
+                            </p>
+                          </div>
+                        </label>
+
+                        <div className="mt-2 flex gap-2">
+                          <input
+                            value={goalTaskDrafts[goal.id] ?? ""}
+                            onChange={(event) =>
+                              setGoalTaskDrafts((prev) => ({ ...prev, [goal.id]: event.target.value }))
+                            }
+                            placeholder="Add task for this goal"
+                            className="w-full rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+                          />
+                          <button
+                            onClick={() => addGoalTask(goal.id)}
+                            className="rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
+                          >
+                            +
+                          </button>
+                        </div>
+
+                        {goalTasks.length ? (
+                          <div className="mt-2 grid gap-1">
+                            {goalTasks.map((task) => (
+                              <div key={task.id} className="text-xs text-zinc-600">
+                                {task.active ? "☐" : "☑"} {task.title}
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+
+                        {linkedNotes.length ? (
+                          <div className="mt-2 grid gap-1">
+                            {linkedNotes.map((note) => (
+                              <p key={note.id} className="text-xs text-zinc-600">
+                                {note.content}
+                              </p>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })
-          ) : (
-            <p className="text-sm text-zinc-600">No notes for goals in this year yet.</p>
-          )}
+              ) : (
+                <p className="text-sm text-zinc-600">No goals in this section.</p>
+              )}
+            </div>
+          ))}
+
+          {!goalsForYear.length ? (
+            <p className="text-sm text-zinc-600">No goals for this year yet.</p>
+          ) : null}
         </div>
       </SectionCard>
     </AppShell>

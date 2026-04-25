@@ -9,6 +9,7 @@ import { todayKey, useAppData } from "@/lib/storage";
 export default function WorkoutsPage() {
   const { data, ready, setData, upsertWorkoutForDate } = useAppData();
   const today = todayKey();
+  const [activeSubTab, setActiveSubTab] = useState<"log" | "library">("log");
   const [workoutDate, setWorkoutDate] = useState(today);
 
   const [exerciseName, setExerciseName] = useState("");
@@ -117,19 +118,38 @@ export default function WorkoutsPage() {
   return (
     <AppShell
       title="Workouts"
-      description="Track strength and cardio by day, including body weight and session notes."
+      description="Track daily workouts and manage your exercise list."
     >
-      <SectionCard title="Workout day" subtitle="Pick any date to log or review that day&apos;s session.">
+      <SectionCard title="Workout Views">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setActiveSubTab("log")}
+            className={`rounded-lg px-4 py-2 text-sm font-medium ${
+              activeSubTab === "log"
+                ? "bg-sky-600 text-white shadow-sm shadow-sky-200/50"
+                : "border border-sky-200 bg-white text-zinc-700 hover:bg-sky-50"
+            }`}
+          >
+            Log
+          </button>
+          <button
+            onClick={() => setActiveSubTab("library")}
+            className={`rounded-lg px-4 py-2 text-sm font-medium ${
+              activeSubTab === "library"
+                ? "bg-sky-600 text-white shadow-sm shadow-sky-200/50"
+                : "border border-sky-200 bg-white text-zinc-700 hover:bg-sky-50"
+            }`}
+          >
+            Exercise Library
+          </button>
+        </div>
+      </SectionCard>
+
+      {activeSubTab === "log" ? (
+        <>
+      <SectionCard title="Workout Day">
         <div className="flex flex-wrap items-center gap-3">
-          <label className="text-sm text-zinc-600">
-            Date{" "}
-            <input
-              type="date"
-              value={workoutDate}
-              onChange={(e) => setWorkoutDate(e.target.value)}
-              className="ml-2 rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
-            />
-          </label>
+          <p className="text-sm text-zinc-700">Selected day: {workoutDate}</p>
           <button
             type="button"
             onClick={() => setWorkoutDate(today)}
@@ -137,64 +157,19 @@ export default function WorkoutsPage() {
           >
             Today
           </button>
+          <label className="relative inline-flex cursor-pointer items-center rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:bg-sky-50">
+            Calendar
+            <input
+              type="date"
+              value={workoutDate}
+              onChange={(e) => setWorkoutDate(e.target.value)}
+              max={today}
+              className="absolute inset-0 cursor-pointer opacity-0"
+            />
+          </label>
         </div>
       </SectionCard>
-
-      <SectionCard title="Exercise library" subtitle="Add exercises for your strength dropdown; archive to hide from the list.">
-        <div className="mb-4 grid gap-3 md:grid-cols-4">
-          <input
-            value={exerciseName}
-            onChange={(event) => setExerciseName(event.target.value)}
-            placeholder="Exercise name"
-            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
-          />
-          <select
-            value={exerciseCategory}
-            onChange={(event) => setExerciseCategory(event.target.value as "strength" | "run" | "bike" | "swim")}
-            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
-          >
-            <option value="strength">Strength</option>
-            <option value="run">Run</option>
-            <option value="bike">Bike</option>
-            <option value="swim">Swim</option>
-          </select>
-          <button onClick={addExercise} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700">
-            Add exercise
-          </button>
-        </div>
-        <div className="max-h-48 overflow-y-auto rounded-lg border border-sky-200/80">
-          <table className="w-full text-left text-sm">
-            <thead className="sticky top-0 bg-sky-50 text-xs uppercase text-sky-800/70">
-              <tr>
-                <th className="px-3 py-2">Name</th>
-                <th className="px-3 py-2">Type</th>
-                <th className="px-3 py-2">Status</th>
-                <th className="px-3 py-2" />
-              </tr>
-            </thead>
-            <tbody>
-              {data.exercises.map((exercise) => (
-                <tr key={exercise.id} className="border-t border-sky-100">
-                  <td className="px-3 py-2">{exercise.name}</td>
-                  <td className="px-3 py-2 text-zinc-600">{exercise.category}</td>
-                  <td className="px-3 py-2 text-zinc-600">{exercise.archived ? "Archived" : "Active"}</td>
-                  <td className="px-3 py-2 text-right">
-                    <button
-                      type="button"
-                      onClick={() => toggleArchiveExercise(exercise.id)}
-                      className="text-xs font-medium text-sky-800/80 underline hover:text-sky-950"
-                    >
-                      {exercise.archived ? "Unarchive" : "Archive"}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </SectionCard>
-
-      <SectionCard title="Session notes" subtitle="Optional notes for this workout day (saved as you type).">
+      <SectionCard title="Session Notes">
         <textarea
           value={sessionForDate?.notes ?? ""}
           onChange={(e) => {
@@ -210,7 +185,7 @@ export default function WorkoutsPage() {
         />
       </SectionCard>
 
-      <SectionCard title="Strength log" subtitle="Sets, reps, and weight for the selected day.">
+      <SectionCard title="Strength Log">
         <div className="grid gap-3 md:grid-cols-5">
           <select
             value={strengthExerciseId}
@@ -244,7 +219,7 @@ export default function WorkoutsPage() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Cardio log" subtitle="Run (time, distance, incline), bike (time, distance), swim (laps, time).">
+      <SectionCard title="Cardio Log">
         <div className="grid gap-3 md:grid-cols-6">
           <select
             value={cardioType}
@@ -297,7 +272,7 @@ export default function WorkoutsPage() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Body weight" subtitle="Log your weight for the selected day (trends on the dashboard).">
+      <SectionCard title="Bodyweight">
         <input
           type="number"
           value={sessionForDate?.bodyWeight != null ? sessionForDate.bodyWeight : ""}
@@ -315,7 +290,7 @@ export default function WorkoutsPage() {
         />
       </SectionCard>
 
-      <SectionCard title="Entries for this day" subtitle="Strength sets and cardio blocks logged on the selected date.">
+      <SectionCard title="Today's Workout">
         <div className="grid gap-2 text-sm text-zinc-700">
           {sessionForDate?.strengthSets.map((set) => {
             const name = data.exercises.find((exercise) => exercise.id === set.exerciseId)?.name ?? "Exercise";
@@ -357,6 +332,64 @@ export default function WorkoutsPage() {
           ) : null}
         </div>
       </SectionCard>
+      </>
+      ) : (
+        <>
+          <SectionCard title="Exercise Library">
+            <div className="mb-4 grid gap-3 md:grid-cols-4">
+              <input
+                value={exerciseName}
+                onChange={(event) => setExerciseName(event.target.value)}
+                placeholder="Exercise name"
+                className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+              />
+              <select
+                value={exerciseCategory}
+                onChange={(event) => setExerciseCategory(event.target.value as "strength" | "run" | "bike" | "swim")}
+                className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+              >
+                <option value="strength">Strength</option>
+                <option value="run">Run</option>
+                <option value="bike">Bike</option>
+                <option value="swim">Swim</option>
+              </select>
+              <button onClick={addExercise} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700">
+                Add exercise
+              </button>
+            </div>
+            <div className="max-h-72 overflow-y-auto rounded-lg border border-sky-200/80">
+              <table className="w-full text-left text-sm">
+                <thead className="sticky top-0 bg-sky-50 text-xs uppercase text-sky-800/70">
+                  <tr>
+                    <th className="px-3 py-2">Name</th>
+                    <th className="px-3 py-2">Type</th>
+                    <th className="px-3 py-2">Status</th>
+                    <th className="px-3 py-2" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.exercises.map((exercise) => (
+                    <tr key={exercise.id} className="border-t border-sky-100">
+                      <td className="px-3 py-2">{exercise.name}</td>
+                      <td className="px-3 py-2 text-zinc-600">{exercise.category}</td>
+                      <td className="px-3 py-2 text-zinc-600">{exercise.archived ? "Archived" : "Active"}</td>
+                      <td className="px-3 py-2 text-right">
+                        <button
+                          type="button"
+                          onClick={() => toggleArchiveExercise(exercise.id)}
+                          className="text-xs font-medium text-sky-800/80 underline hover:text-sky-950"
+                        >
+                          {exercise.archived ? "Unarchive" : "Archive"}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </SectionCard>
+        </>
+      )}
     </AppShell>
   );
 }

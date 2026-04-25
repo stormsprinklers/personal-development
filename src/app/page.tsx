@@ -1,55 +1,93 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
-import { MiniBars } from "@/components/charts/mini-bars";
 import { Sparkline } from "@/components/charts/sparkline";
 import { buildAiContext } from "@/lib/ai/contextBuilder";
 import { dailySummaryPrompt } from "@/lib/ai/prompts";
-import {
-  bodyWeightTrend,
-  cardioMinutesLastDays,
-  goalsProgressForYear,
-  habitAdherenceByDay,
-  todoCompletionsByDay,
-} from "@/lib/metrics/dashboardMetrics";
-import { strengthBest1rmDailySeries, strengthSummaryByExercise } from "@/lib/metrics/workoutMetrics";
+import { bodyWeightTrend, goalsProgressForYear } from "@/lib/metrics/dashboardMetrics";
+import { strengthSummaryByExercise } from "@/lib/metrics/workoutMetrics";
 import { todayKey, useAppData } from "@/lib/storage";
 
-const CHART_DAYS = 14;
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+function startOfWeek(date: Date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function toDateKey(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
 
 export default function Home() {
   const { data, setData } = useAppData();
   const today = todayKey();
+  const [weekOffset, setWeekOffset] = useState(0);
   const year = new Date().getFullYear();
+  const weekStart = useMemo(() => new Date(startOfWeek(new Date()).getTime() + weekOffset * WEEK_MS), [weekOffset]);
+  const weekEnd = useMemo(() => new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000), [weekStart]);
+  const weekStartKey = toDateKey(weekStart);
+  const weekEndKey = toDateKey(weekEnd);
+  const weekLabel = `${weekStart.toLocaleDateString()} - ${weekEnd.toLocaleDateString()}`;
 
-  const totals = useMemo(
-    () => ({
-      workouts: data.workoutSessions.length,
-      habitsLogged: data.habitLogs.length,
-      completedTodos: data.todoCompletions.length,
-      goalsDone: data.goals.filter((goal) => goal.completed && goal.year === year).length,
-    }),
-    [data.goals, data.habitLogs, data.todoCompletions, data.workoutSessions, year],
+  const weeklyWorkouts = useMemo(
+    () => data.workoutSessions.filter((session) => session.date >= weekStartKey && session.date <= weekEndKey),
+    [data.workoutSessions, weekStartKey, weekEndKey],
   );
 
-  const strengthTop = useMemo(
-    () => strengthSummaryByExercise(data.workoutSessions, data.exercises).slice(0, 3),
-    [data.exercises, data.workoutSessions],
+  const weeklyStrength = useMemo(
+    () => strengthSummaryByExercise(weeklyWorkouts, data.exercises).slice(0, 3),
+    [weeklyWorkouts, data.exercises],
   );
 
-  const topExerciseSeries = useMemo(() => {
-    const first = strengthTop[0];
-    if (!first) return [];
-    return strengthBest1rmDailySeries(data.workoutSessions, first.exerciseId, CHART_DAYS).map((p) => p.best1rm);
-  }, [data.workoutSessions, strengthTop]);
+  const estimatedOneRm = weeklyStrength[0]?.bestOneRepMax ?? 0;
+  const cardioTotals = useMemo(() => {
+    const totals = { run: 0, bike: 0, swim: 0 };
+    for (const session of weeklyWorkouts) {
+      for (const entry of session.cardioEntries) {
+        if (entry.type === "run") totals.run += entry.timeMinutes;
+        if (entry.type === "bike") totals.bike += entry.timeMinutes;
+        if (entry.type === "swim") totals.swim += entry.timeMinutes;
+      }
+    }
+    return totals;
+  }, [weeklyWorkouts]);
+  const cardioMinutes = cardioTotals.run + cardioTotals.bike + cardioTotals.swim;
+  const cardioModalities = (cardioTotals.run > 0 ? 1 : 0) + (cardioTotals.bike > 0 ? 1 : 0) + (cardioTotals.swim > 0 ? 1 : 0);
+  const cardioHealthScore = Math.min(100, Math.round((cardioMinutes / 150) * 80 + cardioModalities * 10));
 
-  const todoBars = useMemo(() => todoCompletionsByDay(data, CHART_DAYS), [data]);
-  const habitBars = useMemo(() => habitAdherenceByDay(data, CHART_DAYS), [data]);
-  const weightSeries = useMemo(() => bodyWeightTrend(data), [data]);
+  const weightSeries = useMemo(
+    () => bodyWeightTrend(data).filter((point) => point.date >= weekStartKey && point.date <= weekEndKey),
+    [data, weekStartKey, weekEndKey],
+  );
   const weightValues = useMemo(() => weightSeries.map((w) => w.weight), [weightSeries]);
-  const cardioTotals = useMemo(() => cardioMinutesLastDays(data, CHART_DAYS), [data]);
+
+  const weeklyTodoCompletions = useMemo(
+    () => data.todoCompletions.filter((completion) => completion.completedAt.slice(0, 10) >= weekStartKey && completion.completedAt.slice(0, 10) <= weekEndKey).length,
+    [data.todoCompletions, weekStartKey, weekEndKey],
+  );
+  const activeHabits = useMemo(() => data.habits.filter((habit) => habit.active), [data.habits]);
+  const habitChecksInWeek = useMemo(() => {
+    if (!activeHabits.length) return 0;
+    let checks = 0;
+    for (const habit of activeHabits) {
+      for (const log of data.habitLogs) {
+        if (log.habitId === habit.id && log.completed && log.date >= weekStartKey && log.date <= weekEndKey) {
+          checks += 1;
+        }
+      }
+    }
+    return checks;
+  }, [activeHabits, data.habitLogs, weekStartKey, weekEndKey]);
+  const habitTarget = activeHabits.length * 7;
+  const weeklyHabitAdherence = habitTarget ? Math.round((habitChecksInWeek / habitTarget) * 100) : 0;
+
   const goalProgress = useMemo(() => goalsProgressForYear(data, year), [data, year]);
 
   const latestSummary = data.aiInsights.find((insight) => insight.type === "daily_summary" && insight.date === today);
@@ -81,13 +119,30 @@ export default function Home() {
     }));
   }
 
-  const dayLabels = todoBars.map((b) => b.date.slice(5));
-
   return (
     <AppShell
       title="Dashboard"
-      description="Track trends across workouts, habits, tasks, goals, and journals."
+      description="Weekly view of your health and progress toward goals."
     >
+      <SectionCard title="Week" subtitle="Dashboard metrics are grouped by week.">
+        <div className="flex items-center justify-between gap-3">
+          <button
+            onClick={() => setWeekOffset((prev) => prev - 1)}
+            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:bg-sky-50"
+          >
+            Previous Week
+          </button>
+          <p className="text-sm font-medium text-sky-800/80">{weekLabel}</p>
+          <button
+            onClick={() => setWeekOffset((prev) => Math.min(prev + 1, 0))}
+            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:bg-sky-50 disabled:opacity-40"
+            disabled={weekOffset === 0}
+          >
+            Next Week
+          </button>
+        </div>
+      </SectionCard>
+
       <SectionCard
         title="Daily AI Summary"
         subtitle="One paragraph recap based on your full tracked context."
@@ -108,119 +163,71 @@ export default function Home() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Totals" subtitle="Snapshot of your progress data across modules.">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
-            <p className="text-xs uppercase tracking-wide text-sky-800/70">Workouts Logged</p>
-            <p className="mt-1 text-2xl font-semibold">{totals.workouts}</p>
-          </div>
-          <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
-            <p className="text-xs uppercase tracking-wide text-sky-800/70">Habit Check-ins</p>
-            <p className="mt-1 text-2xl font-semibold">{totals.habitsLogged}</p>
-          </div>
-          <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
-            <p className="text-xs uppercase tracking-wide text-sky-800/70">To-dos Completed</p>
-            <p className="mt-1 text-2xl font-semibold">{totals.completedTodos}</p>
-          </div>
-          <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
-            <p className="text-xs uppercase tracking-wide text-sky-800/70">Goals Done ({year})</p>
-            <p className="mt-1 text-2xl font-semibold">{totals.goalsDone}</p>
-          </div>
-        </div>
-      </SectionCard>
-
-      <SectionCard title="To-do completions" subtitle={`Tasks checked off per day (last ${CHART_DAYS} days).`}>
-        <MiniBars values={todoBars.map((b) => b.count)} labels={dayLabels} />
-      </SectionCard>
-
-      <SectionCard title="Habit adherence" subtitle="Share of active habits completed each day.">
-        <MiniBars values={habitBars.map((b) => b.percent)} labels={dayLabels} barClassName="bg-sky-600" />
-      </SectionCard>
-
-      <SectionCard title="Body weight" subtitle="From workout-day body weight entries.">
-        {weightValues.length ? (
-          <div className="flex flex-wrap items-end gap-4">
-            <Sparkline values={weightValues} width={220} height={48} />
-            <p className="text-sm text-zinc-600">
-              Latest: <span className="font-semibold text-sky-900">{weightValues[weightValues.length - 1]}</span>
-            </p>
-          </div>
-        ) : (
-          <p className="text-sm text-zinc-600">Log body weight on the Workouts page to see a trend.</p>
-        )}
-      </SectionCard>
-
-      <SectionCard title="Cardio volume" subtitle={`Run / bike / swim minutes logged in the last ${CHART_DAYS} days.`}>
+      <SectionCard title="Health" subtitle={`Health metrics for ${weekLabel}.`}>
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
-            <p className="text-xs uppercase text-sky-800/70">Run</p>
-            <p className="text-2xl font-semibold">{cardioTotals.run} min</p>
+            <p className="text-xs uppercase tracking-wide text-sky-800/70">Estimated 1RM</p>
+            <p className="mt-1 text-2xl font-semibold">{estimatedOneRm || "-"}</p>
           </div>
           <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
-            <p className="text-xs uppercase text-sky-800/70">Bike</p>
-            <p className="text-2xl font-semibold">{cardioTotals.bike} min</p>
+            <p className="text-xs uppercase tracking-wide text-sky-800/70">Cardio Health Score</p>
+            <p className="mt-1 text-2xl font-semibold">{cardioHealthScore}</p>
+            <p className="text-xs text-zinc-600">{cardioMinutes} min total cardio</p>
           </div>
           <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
-            <p className="text-xs uppercase text-sky-800/70">Swim</p>
-            <p className="text-2xl font-semibold">{cardioTotals.swim} min</p>
+            <p className="text-xs uppercase tracking-wide text-sky-800/70">Workout Sessions</p>
+            <p className="mt-1 text-2xl font-semibold">{weeklyWorkouts.length}</p>
           </div>
         </div>
-      </SectionCard>
-
-      <SectionCard title={`Goals (${year})`} subtitle="Completion rate for goals tagged to this year.">
-        <div className="flex flex-wrap items-center gap-4">
-          <p className="text-3xl font-semibold text-sky-800">{goalProgress.percent}%</p>
-          <p className="text-sm text-zinc-600">
-            {goalProgress.done} of {goalProgress.total} goals completed
-          </p>
-        </div>
-      </SectionCard>
-
-      <SectionCard title="Profile" subtitle="Name shown in the welcome line across the app.">
-        <div className="flex max-w-md flex-wrap items-center gap-3">
-          <label className="flex flex-1 flex-col gap-1 text-sm text-zinc-600">
-            Display name
-            <input
-              value={data.userProfile.name}
-              onChange={(e) =>
-                setData((prev) => ({
-                  ...prev,
-                  userProfile: { ...prev.userProfile, name: e.target.value },
-                }))
-              }
-              className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
-            />
-          </label>
-        </div>
-      </SectionCard>
-
-      <SectionCard title="Strength highlights" subtitle="Best estimated 1RM, tonnage, and reps by lift.">
-        <div className="grid gap-4 md:grid-cols-2">
-          {strengthTop.length ? (
-            strengthTop.map((exercise) => (
-              <div key={exercise.exerciseId} className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
-                <p className="font-semibold">{exercise.exerciseName}</p>
-                <p className="mt-1 text-sm text-zinc-600">Best 1RM: {exercise.bestOneRepMax}</p>
-                <p className="text-sm text-zinc-600">Total reps: {exercise.totalReps}</p>
-                <p className="text-sm text-zinc-600">Total tonnage: {exercise.totalTonnage}</p>
-              </div>
-            ))
+        <div className="mt-3 rounded-xl border border-sky-200/80 bg-sky-50/50 p-4">
+          <p className="mb-2 text-xs uppercase tracking-wide text-sky-800/70">Weight Trend (This Week)</p>
+          {weightValues.length ? (
+            <div className="flex flex-wrap items-end gap-4">
+              <Sparkline values={weightValues} width={220} height={48} />
+              <p className="text-sm text-zinc-600">
+                Latest: <span className="font-semibold text-sky-900">{weightValues[weightValues.length - 1]}</span>
+              </p>
+            </div>
           ) : (
-            <p className="text-sm text-zinc-600">Log strength sets to populate trend cards.</p>
+            <p className="text-sm text-zinc-600">No body-weight entries for this week.</p>
           )}
         </div>
-        {strengthTop[0] ? (
-          <div className="mt-4">
-            <p className="mb-2 text-xs uppercase tracking-wide text-sky-800/70">
-              {strengthTop[0].exerciseName} — estimated 1RM trend
+      </SectionCard>
+
+      <SectionCard title="Progress Towards Goals" subtitle={`Weekly execution + annual goal status (${year}).`}>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
+            <p className="text-xs uppercase tracking-wide text-sky-800/70">Annual Goals</p>
+            <p className="mt-1 text-2xl font-semibold text-sky-800">{goalProgress.percent}%</p>
+            <p className="text-xs text-zinc-600">
+              {goalProgress.done} of {goalProgress.total} completed
             </p>
-            {topExerciseSeries.length ? (
-              <Sparkline values={topExerciseSeries} width={260} height={44} />
-            ) : (
-              <p className="text-sm text-zinc-600">Add more logged days to see a line.</p>
-            )}
           </div>
-        ) : null}
+          <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
+            <p className="text-xs uppercase text-sky-800/70">Completed To-dos (Week)</p>
+            <p className="text-2xl font-semibold">{weeklyTodoCompletions}</p>
+          </div>
+          <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
+            <p className="text-xs uppercase text-sky-800/70">Habit Adherence (Week)</p>
+            <p className="text-2xl font-semibold">{weeklyHabitAdherence}%</p>
+          </div>
+        </div>
+
+        <div className="mt-3 rounded-xl border border-sky-200/80 bg-sky-50/50 p-4">
+          <p className="mb-2 text-xs uppercase tracking-wide text-sky-800/70">Top Strength Lifts (Week)</p>
+          {weeklyStrength.length ? (
+            <div className="grid gap-2">
+              {weeklyStrength.map((exercise) => (
+                <div key={exercise.exerciseId} className="flex items-center justify-between text-sm">
+                  <span className="font-medium text-zinc-800">{exercise.exerciseName}</span>
+                  <span className="text-zinc-600">1RM {exercise.bestOneRepMax}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-600">No strength data in this week.</p>
+          )}
+        </div>
       </SectionCard>
     </AppShell>
   );

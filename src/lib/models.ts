@@ -64,6 +64,7 @@ export type TodoItem = {
   id: string;
   listId: string;
   title: string;
+  goalId?: string;
   active: boolean;
   createdAt: string;
 };
