@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model UserProfile {
+  id        String   @id @default(cuid())
+  name      String
+  timezone  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Exercise {
+  id        String   @id @default(cuid())
+  name      String
+  category  String
+  archived  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model WorkoutSession {
+  id           String        @id @default(cuid())
+  date         DateTime
+  bodyWeight   Float?
+  notes        String?
+  strengthSets StrengthSet[]
+  cardioEntries CardioEntry[]
+}
+
+model StrengthSet {
+  id              String         @id @default(cuid())
+  workoutSessionId String
+  exerciseId      String
+  reps            Int
+  weight          Float
+  workoutSession  WorkoutSession @relation(fields: [workoutSessionId], references: [id], onDelete: Cascade)
+}
+
+model CardioEntry {
+  id              String         @id @default(cuid())
+  workoutSessionId String
+  type            String
+  timeMinutes     Int
+  distance        Float?
+  incline         Float?
+  laps            Int?
+  workoutSession  WorkoutSession @relation(fields: [workoutSessionId], references: [id], onDelete: Cascade)
+}
