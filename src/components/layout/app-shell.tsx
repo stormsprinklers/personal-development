@@ -11,7 +11,8 @@ type AppShellProps = {
   children: React.ReactNode;
 };
 
-export function AppShell({ title, description, children }: AppShellProps) {
+export function AppShell({ title, description: _description, children }: AppShellProps) {
+  void _description;
   const pathname = usePathname();
   const { data } = useAppData();
   const firstName = data.userProfile.name.split(/\s+/)[0] ?? data.userProfile.name;
@@ -25,7 +26,6 @@ export function AppShell({ title, description, children }: AppShellProps) {
           </p>
           <p className="mt-2 text-sm font-medium text-sky-800">Welcome, {firstName}.</p>
           <h1 className="mt-2 text-2xl font-semibold text-zinc-900">{title}</h1>
-          <p className="mt-1 text-sm text-zinc-600">{description}</p>
         </header>
 
         <nav className="flex flex-wrap gap-2">

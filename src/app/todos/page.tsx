@@ -3,10 +3,11 @@
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
-import { useAppData } from "@/lib/storage";
+import { todayKey, useAppData } from "@/lib/storage";
 
 export default function TodosPage() {
   const { data, ready, setData } = useAppData();
+  const today = todayKey();
   const [newListName, setNewListName] = useState("");
   const [todoTitle, setTodoTitle] = useState("");
   const [selectedListId, setSelectedListId] = useState("");
@@ -38,6 +39,19 @@ export default function TodosPage() {
       });
     return completed;
   }, [data.todoCompletions, data.todoItems, activeListId]);
+  const incompleteHabitsToday = useMemo(
+    () =>
+      data.habits
+        .filter((habit) => habit.active)
+        .map((habit) => ({
+          habit,
+          completed: data.habitLogs.some(
+            (log) => log.habitId === habit.id && log.date === today && log.completed,
+          ),
+        }))
+        .filter((entry) => !entry.completed),
+    [data.habits, data.habitLogs, today],
+  );
 
   function addList() {
     if (!newListName.trim()) return;
@@ -90,6 +104,16 @@ export default function TodosPage() {
     }));
     setRenameListId(null);
     setRenameValue("");
+  }
+
+  function completeHabit(habitId: string) {
+    setData((prev) => {
+      const existing = prev.habitLogs.find((log) => log.habitId === habitId && log.date === today);
+      const nextLogs = existing
+        ? prev.habitLogs.map((log) => (log.id === existing.id ? { ...log, completed: true } : log))
+        : [{ id: crypto.randomUUID(), habitId, date: today, completed: true }, ...prev.habitLogs];
+      return { ...prev, habitLogs: nextLogs };
+    });
   }
 
   if (!ready) return <div className="p-6">Loading to-do lists...</div>;
@@ -196,6 +220,15 @@ export default function TodosPage() {
         </div>
 
         <div className="grid gap-2">
+          {incompleteHabitsToday.map(({ habit }) => (
+            <label
+              key={`habit-${habit.id}`}
+              className="flex items-center gap-3 rounded-lg border border-sky-200/80 bg-sky-50/40 px-3 py-2"
+            >
+              <input type="checkbox" onChange={() => completeHabit(habit.id)} />
+              <span className="text-sm">{habit.name} (habit)</span>
+            </label>
+          ))}
           {activeItems.map((item) => {
             return (
               <label
@@ -209,7 +242,9 @@ export default function TodosPage() {
               </label>
             );
           })}
-          {!activeItems.length ? <p className="text-sm text-zinc-600">No active tasks.</p> : null}
+          {!activeItems.length && !incompleteHabitsToday.length ? (
+            <p className="text-sm text-zinc-600">No active tasks.</p>
+          ) : null}
         </div>
 
         <div className="mt-3">

@@ -29,6 +29,7 @@ export default function Home() {
   const { data, setData } = useAppData();
   const today = todayKey();
   const [weekOffset, setWeekOffset] = useState(0);
+  const [showAllDailyItems, setShowAllDailyItems] = useState(false);
   const year = new Date().getFullYear();
   const weekStart = useMemo(() => new Date(startOfWeek(new Date()).getTime() + weekOffset * WEEK_MS), [weekOffset]);
   const weekEnd = useMemo(() => new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000), [weekStart]);
@@ -89,6 +90,34 @@ export default function Home() {
   const weeklyHabitAdherence = habitTarget ? Math.round((habitChecksInWeek / habitTarget) * 100) : 0;
 
   const goalProgress = useMemo(() => goalsProgressForYear(data, year), [data, year]);
+  const mainListId = data.todoLists[0]?.id ?? "";
+  const todaysTodos = useMemo(
+    () => data.todoItems.filter((item) => item.listId === mainListId && item.active),
+    [data.todoItems, mainListId],
+  );
+  const todaysHabits = useMemo(
+    () =>
+      data.habits
+        .filter((habit) => habit.active)
+        .map((habit) => ({
+          id: habit.id,
+          label: `${habit.name} (habit)`,
+          completed: data.habitLogs.some(
+            (log) => log.habitId === habit.id && log.date === today && log.completed,
+          ),
+        }))
+        .filter((habit) => !habit.completed),
+    [data.habits, data.habitLogs, today],
+  );
+  const dailyItems = useMemo(
+    () => [
+      ...todaysTodos.map((todo) => ({ kind: "todo" as const, id: todo.id, label: todo.title })),
+      ...todaysHabits.map((habit) => ({ kind: "habit" as const, id: habit.id, label: habit.label })),
+    ],
+    [todaysTodos, todaysHabits],
+  );
+  const dailyVisible = showAllDailyItems ? dailyItems : dailyItems.slice(0, 5);
+  const hiddenDailyCount = Math.max(0, dailyItems.length - 5);
 
   const latestSummary = data.aiInsights.find((insight) => insight.type === "daily_summary" && insight.date === today);
 
@@ -119,12 +148,59 @@ export default function Home() {
     }));
   }
 
+  function completeTodo(todoId: string) {
+    setData((prev) => ({
+      ...prev,
+      todoItems: prev.todoItems.map((item) => (item.id === todoId ? { ...item, active: false } : item)),
+      todoCompletions: [
+        { id: crypto.randomUUID(), todoItemId: todoId, completedAt: new Date().toISOString() },
+        ...prev.todoCompletions,
+      ],
+    }));
+  }
+
+  function completeHabit(habitId: string) {
+    setData((prev) => {
+      const existing = prev.habitLogs.find((log) => log.habitId === habitId && log.date === today);
+      const nextLogs = existing
+        ? prev.habitLogs.map((log) => (log.id === existing.id ? { ...log, completed: true } : log))
+        : [{ id: crypto.randomUUID(), habitId, date: today, completed: true }, ...prev.habitLogs];
+      return { ...prev, habitLogs: nextLogs };
+    });
+  }
+
   return (
     <AppShell
       title="Dashboard"
       description="Weekly view of your health and progress toward goals."
     >
-      <SectionCard title="Week" subtitle="Dashboard metrics are grouped by week.">
+      <SectionCard title="Today">
+        <div className="grid gap-2">
+          {dailyVisible.map((item) => (
+            <label
+              key={`${item.kind}-${item.id}`}
+              className="flex items-center gap-3 rounded-lg border border-sky-200/80 bg-sky-50/40 px-3 py-2"
+            >
+              <input
+                type="checkbox"
+                onChange={() => (item.kind === "todo" ? completeTodo(item.id) : completeHabit(item.id))}
+              />
+              <span className="text-sm">{item.label}</span>
+            </label>
+          ))}
+          {!dailyItems.length ? <p className="text-sm text-zinc-600">No items for today.</p> : null}
+          {hiddenDailyCount > 0 ? (
+            <button
+              onClick={() => setShowAllDailyItems((prev) => !prev)}
+              className="w-fit text-sm font-medium text-sky-800/80 underline"
+            >
+              {showAllDailyItems ? "Show less" : `Show ${hiddenDailyCount} more`}
+            </button>
+          ) : null}
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Week">
         <div className="flex items-center justify-between gap-3">
           <button
             onClick={() => setWeekOffset((prev) => prev - 1)}
@@ -143,10 +219,7 @@ export default function Home() {
         </div>
       </SectionCard>
 
-      <SectionCard
-        title="Daily AI Summary"
-        subtitle="One paragraph recap based on your full tracked context."
-      >
+      <SectionCard title="Daily AI Summary">
         <div className="grid gap-3">
           <p className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4 text-sm text-zinc-700">
             {latestSummary?.output ??
@@ -163,7 +236,7 @@ export default function Home() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Health" subtitle={`Health metrics for ${weekLabel}.`}>
+      <SectionCard title={`Health (${weekLabel})`}>
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
             <p className="text-xs uppercase tracking-wide text-sky-800/70">Estimated 1RM</p>
@@ -194,7 +267,7 @@ export default function Home() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Progress Towards Goals" subtitle={`Weekly execution + annual goal status (${year}).`}>
+      <SectionCard title={`Progress Towards Goals (${year})`}>
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
             <p className="text-xs uppercase tracking-wide text-sky-800/70">Annual Goals</p>
