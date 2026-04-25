@@ -56,17 +56,17 @@ export default function HabitsPage() {
             value={habitName}
             onChange={(event) => setHabitName(event.target.value)}
             placeholder="Habit name"
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
           />
           <select
             value={habitType}
             onChange={(event) => setHabitType(event.target.value as "build" | "break")}
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
           >
             <option value="build">Build</option>
             <option value="break">Break</option>
           </select>
-          <button onClick={addHabit} className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white">
+          <button onClick={addHabit} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700">
             Add Habit
           </button>
         </div>
@@ -80,7 +80,7 @@ export default function HabitsPage() {
             return (
               <label
                 key={habit.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-zinc-200 px-3 py-2"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-sky-200/80 bg-sky-50/40 px-3 py-2"
               >
                 <div className="flex items-center gap-3">
                   <input
@@ -89,10 +89,10 @@ export default function HabitsPage() {
                     onChange={(event) => toggleHabit(habit.id, event.target.checked)}
                   />
                   <span className="text-sm">
-                    {habit.name} <span className="text-zinc-500">({habit.type})</span>
+                    {habit.name} <span className="text-sky-800/60">({habit.type})</span>
                   </span>
                 </div>
-                <span className="text-xs font-medium text-zinc-500">Streak: {streak}d</span>
+                <span className="text-xs font-medium text-sky-800/60">Streak: {streak}d</span>
               </label>
             );
           })}
@@ -105,7 +105,7 @@ export default function HabitsPage() {
           {data.habitLogs.slice(0, 30).map((log) => {
             const habit = data.habits.find((h) => h.id === log.habitId);
             return (
-              <div key={log.id} className="rounded-lg border border-zinc-200 px-3 py-2 text-sm">
+              <div key={log.id} className="rounded-lg border border-sky-200/80 bg-sky-50/40 px-3 py-2 text-sm">
                 {log.date}: {habit?.name ?? "Habit"} - {log.completed ? "Complete" : "Incomplete"}
               </div>
             );

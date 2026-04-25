@@ -58,15 +58,15 @@ export default function TodosPage() {
             value={listName}
             onChange={(event) => setListName(event.target.value)}
             placeholder="List name"
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
           />
           <input
             value={listArea}
             onChange={(event) => setListArea(event.target.value)}
             placeholder="Area"
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
           />
-          <button onClick={addList} className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white">
+          <button onClick={addList} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700">
             Add List
           </button>
         </div>
@@ -77,7 +77,7 @@ export default function TodosPage() {
           <select
             value={selectedListId}
             onChange={(event) => setSelectedListId(event.target.value)}
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
           >
             <option value="">Select list</option>
             {data.todoLists.map((list) => (
@@ -90,9 +90,9 @@ export default function TodosPage() {
             value={todoTitle}
             onChange={(event) => setTodoTitle(event.target.value)}
             placeholder="Task title"
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
           />
-          <button onClick={addTodo} className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white">
+          <button onClick={addTodo} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700">
             Add Task
           </button>
         </div>
@@ -103,10 +103,10 @@ export default function TodosPage() {
           {activeItems.map((item) => {
             const list = data.todoLists.find((todoList) => todoList.id === item.listId);
             return (
-              <label key={item.id} className="flex items-center gap-3 rounded-lg border border-zinc-200 px-3 py-2">
+              <label key={item.id} className="flex items-center gap-3 rounded-lg border border-sky-200/80 bg-sky-50/40 px-3 py-2">
                 <input type="checkbox" onChange={() => completeTodo(item.id)} />
                 <span className="text-sm">
-                  {item.title} <span className="text-zinc-500">({list?.area ?? "Unknown"})</span>
+                  {item.title} <span className="text-sky-800/60">({list?.area ?? "Unknown"})</span>
                 </span>
               </label>
             );
@@ -120,7 +120,7 @@ export default function TodosPage() {
           {data.todoCompletions.map((completion) => {
             const item = data.todoItems.find((todo) => todo.id === completion.todoItemId);
             return (
-              <div key={completion.id} className="rounded-lg border border-zinc-200 px-3 py-2 text-sm">
+              <div key={completion.id} className="rounded-lg border border-sky-200/80 bg-sky-50/40 px-3 py-2 text-sm">
                 {completion.completedAt.slice(0, 10)} - {item?.title ?? "Task"}
               </div>
             );

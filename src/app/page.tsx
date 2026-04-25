@@ -93,14 +93,14 @@ export default function Home() {
         subtitle="One paragraph recap based on your full tracked context."
       >
         <div className="grid gap-3">
-          <p className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-700">
+          <p className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4 text-sm text-zinc-700">
             {latestSummary?.output ??
               "No summary yet for today. Generate one to see accomplishments and improvement advice."}
           </p>
           <div>
             <button
               onClick={generateDailySummary}
-              className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
+              className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700"
             >
               Generate Today&apos;s Summary
             </button>
@@ -110,20 +110,20 @@ export default function Home() {
 
       <SectionCard title="Totals" subtitle="Snapshot of your progress data across modules.">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-            <p className="text-xs uppercase tracking-wide text-zinc-500">Workouts Logged</p>
+          <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
+            <p className="text-xs uppercase tracking-wide text-sky-800/70">Workouts Logged</p>
             <p className="mt-1 text-2xl font-semibold">{totals.workouts}</p>
           </div>
-          <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-            <p className="text-xs uppercase tracking-wide text-zinc-500">Habit Check-ins</p>
+          <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
+            <p className="text-xs uppercase tracking-wide text-sky-800/70">Habit Check-ins</p>
             <p className="mt-1 text-2xl font-semibold">{totals.habitsLogged}</p>
           </div>
-          <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-            <p className="text-xs uppercase tracking-wide text-zinc-500">To-dos Completed</p>
+          <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
+            <p className="text-xs uppercase tracking-wide text-sky-800/70">To-dos Completed</p>
             <p className="mt-1 text-2xl font-semibold">{totals.completedTodos}</p>
           </div>
-          <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-            <p className="text-xs uppercase tracking-wide text-zinc-500">Goals Done ({year})</p>
+          <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
+            <p className="text-xs uppercase tracking-wide text-sky-800/70">Goals Done ({year})</p>
             <p className="mt-1 text-2xl font-semibold">{totals.goalsDone}</p>
           </div>
         </div>
@@ -134,7 +134,7 @@ export default function Home() {
       </SectionCard>
 
       <SectionCard title="Habit adherence" subtitle="Share of active habits completed each day.">
-        <MiniBars values={habitBars.map((b) => b.percent)} labels={dayLabels} barClassName="bg-emerald-700" />
+        <MiniBars values={habitBars.map((b) => b.percent)} labels={dayLabels} barClassName="bg-sky-600" />
       </SectionCard>
 
       <SectionCard title="Body weight" subtitle="From workout-day body weight entries.">
@@ -142,7 +142,7 @@ export default function Home() {
           <div className="flex flex-wrap items-end gap-4">
             <Sparkline values={weightValues} width={220} height={48} />
             <p className="text-sm text-zinc-600">
-              Latest: <span className="font-semibold text-zinc-900">{weightValues[weightValues.length - 1]}</span>
+              Latest: <span className="font-semibold text-sky-900">{weightValues[weightValues.length - 1]}</span>
             </p>
           </div>
         ) : (
@@ -152,16 +152,16 @@ export default function Home() {
 
       <SectionCard title="Cardio volume" subtitle={`Run / bike / swim minutes logged in the last ${CHART_DAYS} days.`}>
         <div className="grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-            <p className="text-xs uppercase text-zinc-500">Run</p>
+          <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
+            <p className="text-xs uppercase text-sky-800/70">Run</p>
             <p className="text-2xl font-semibold">{cardioTotals.run} min</p>
           </div>
-          <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-            <p className="text-xs uppercase text-zinc-500">Bike</p>
+          <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
+            <p className="text-xs uppercase text-sky-800/70">Bike</p>
             <p className="text-2xl font-semibold">{cardioTotals.bike} min</p>
           </div>
-          <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-            <p className="text-xs uppercase text-zinc-500">Swim</p>
+          <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
+            <p className="text-xs uppercase text-sky-800/70">Swim</p>
             <p className="text-2xl font-semibold">{cardioTotals.swim} min</p>
           </div>
         </div>
@@ -169,7 +169,7 @@ export default function Home() {
 
       <SectionCard title={`Goals (${year})`} subtitle="Completion rate for goals tagged to this year.">
         <div className="flex flex-wrap items-center gap-4">
-          <p className="text-3xl font-semibold">{goalProgress.percent}%</p>
+          <p className="text-3xl font-semibold text-sky-800">{goalProgress.percent}%</p>
           <p className="text-sm text-zinc-600">
             {goalProgress.done} of {goalProgress.total} goals completed
           </p>
@@ -188,7 +188,7 @@ export default function Home() {
                   userProfile: { ...prev.userProfile, name: e.target.value },
                 }))
               }
-              className="rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900"
+              className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
             />
           </label>
         </div>
@@ -198,7 +198,7 @@ export default function Home() {
         <div className="grid gap-4 md:grid-cols-2">
           {strengthTop.length ? (
             strengthTop.map((exercise) => (
-              <div key={exercise.exerciseId} className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+              <div key={exercise.exerciseId} className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
                 <p className="font-semibold">{exercise.exerciseName}</p>
                 <p className="mt-1 text-sm text-zinc-600">Best 1RM: {exercise.bestOneRepMax}</p>
                 <p className="text-sm text-zinc-600">Total reps: {exercise.totalReps}</p>
@@ -211,7 +211,7 @@ export default function Home() {
         </div>
         {strengthTop[0] ? (
           <div className="mt-4">
-            <p className="mb-2 text-xs uppercase tracking-wide text-zinc-500">
+            <p className="mb-2 text-xs uppercase tracking-wide text-sky-800/70">
               {strengthTop[0].exerciseName} — estimated 1RM trend
             </p>
             {topExerciseSeries.length ? (

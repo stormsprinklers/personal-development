@@ -1,8 +1,10 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  /* Soft cool base so sky accents read as intentional */
+  --background: #f5f9fc;
   --foreground: #171717;
+  --accent-sky-muted: #e0f2fe;
 }
 
 @theme inline {
@@ -14,8 +16,9 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #0b1120;
     --foreground: #ededed;
+    --accent-sky-muted: #172554;
   }
 }
 

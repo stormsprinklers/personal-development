@@ -127,13 +127,13 @@ export default function WorkoutsPage() {
               type="date"
               value={workoutDate}
               onChange={(e) => setWorkoutDate(e.target.value)}
-              className="ml-2 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+              className="ml-2 rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
             />
           </label>
           <button
             type="button"
             onClick={() => setWorkoutDate(today)}
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-50"
+            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:bg-sky-50"
           >
             Today
           </button>
@@ -146,25 +146,25 @@ export default function WorkoutsPage() {
             value={exerciseName}
             onChange={(event) => setExerciseName(event.target.value)}
             placeholder="Exercise name"
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
           />
           <select
             value={exerciseCategory}
             onChange={(event) => setExerciseCategory(event.target.value as "strength" | "run" | "bike" | "swim")}
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
           >
             <option value="strength">Strength</option>
             <option value="run">Run</option>
             <option value="bike">Bike</option>
             <option value="swim">Swim</option>
           </select>
-          <button onClick={addExercise} className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white">
+          <button onClick={addExercise} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700">
             Add exercise
           </button>
         </div>
-        <div className="max-h-48 overflow-y-auto rounded-lg border border-zinc-200">
+        <div className="max-h-48 overflow-y-auto rounded-lg border border-sky-200/80">
           <table className="w-full text-left text-sm">
-            <thead className="sticky top-0 bg-zinc-100 text-xs uppercase text-zinc-500">
+            <thead className="sticky top-0 bg-sky-50 text-xs uppercase text-sky-800/70">
               <tr>
                 <th className="px-3 py-2">Name</th>
                 <th className="px-3 py-2">Type</th>
@@ -174,7 +174,7 @@ export default function WorkoutsPage() {
             </thead>
             <tbody>
               {data.exercises.map((exercise) => (
-                <tr key={exercise.id} className="border-t border-zinc-100">
+                <tr key={exercise.id} className="border-t border-sky-100">
                   <td className="px-3 py-2">{exercise.name}</td>
                   <td className="px-3 py-2 text-zinc-600">{exercise.category}</td>
                   <td className="px-3 py-2 text-zinc-600">{exercise.archived ? "Archived" : "Active"}</td>
@@ -182,7 +182,7 @@ export default function WorkoutsPage() {
                     <button
                       type="button"
                       onClick={() => toggleArchiveExercise(exercise.id)}
-                      className="text-xs font-medium text-zinc-700 underline"
+                      className="text-xs font-medium text-sky-800/80 underline hover:text-sky-950"
                     >
                       {exercise.archived ? "Unarchive" : "Archive"}
                     </button>
@@ -206,7 +206,7 @@ export default function WorkoutsPage() {
           }}
           rows={3}
           placeholder="Recovery, sleep, pain, programming notes..."
-          className="min-h-[72px] w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+          className="min-h-[72px] w-full rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
         />
       </SectionCard>
 
@@ -215,7 +215,7 @@ export default function WorkoutsPage() {
           <select
             value={strengthExerciseId}
             onChange={(event) => setStrengthExerciseId(event.target.value)}
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
           >
             <option value="">Select exercise</option>
             {strengthExercises.map((exercise) => (
@@ -228,17 +228,17 @@ export default function WorkoutsPage() {
             type="number"
             value={weight}
             onChange={(event) => setWeight(Number(event.target.value))}
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
             placeholder="Weight"
           />
           <input
             type="number"
             value={reps}
             onChange={(event) => setReps(Number(event.target.value))}
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
             placeholder="Reps"
           />
-          <button onClick={addStrengthSet} className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white">
+          <button onClick={addStrengthSet} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700">
             Add set
           </button>
         </div>
@@ -249,7 +249,7 @@ export default function WorkoutsPage() {
           <select
             value={cardioType}
             onChange={(event) => setCardioType(event.target.value as "run" | "bike" | "swim")}
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
           >
             <option value="run">Run</option>
             <option value="bike">Bike</option>
@@ -259,7 +259,7 @@ export default function WorkoutsPage() {
             type="number"
             value={timeMinutes}
             onChange={(event) => setTimeMinutes(Number(event.target.value))}
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
             placeholder="Time (min)"
           />
           {(cardioType === "run" || cardioType === "bike") && (
@@ -268,7 +268,7 @@ export default function WorkoutsPage() {
               step="0.1"
               value={distance}
               onChange={(event) => setDistance(Number(event.target.value))}
-              className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
               placeholder="Distance"
             />
           )}
@@ -278,7 +278,7 @@ export default function WorkoutsPage() {
               step="0.1"
               value={incline}
               onChange={(event) => setIncline(Number(event.target.value))}
-              className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
               placeholder="Incline"
             />
           )}
@@ -287,11 +287,11 @@ export default function WorkoutsPage() {
               type="number"
               value={laps}
               onChange={(event) => setLaps(Number(event.target.value))}
-              className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
               placeholder="Laps"
             />
           )}
-          <button onClick={addCardioEntry} className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white">
+          <button onClick={addCardioEntry} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700">
             Add cardio
           </button>
         </div>
@@ -310,7 +310,7 @@ export default function WorkoutsPage() {
               return { ...base, bodyWeight: Number.isFinite(n) ? n : base.bodyWeight };
             });
           }}
-          className="max-w-xs rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+          className="max-w-xs rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
           placeholder="Body weight"
         />
       </SectionCard>
@@ -320,14 +320,14 @@ export default function WorkoutsPage() {
           {sessionForDate?.strengthSets.map((set) => {
             const name = data.exercises.find((exercise) => exercise.id === set.exerciseId)?.name ?? "Exercise";
             return (
-              <div key={set.id} className="flex items-center justify-between rounded-lg border border-zinc-200 px-3 py-2">
+              <div key={set.id} className="flex items-center justify-between rounded-lg border border-sky-200/80 px-3 py-2">
                 <span>
                   {name}: {set.weight} × {set.reps}
                 </span>
                 <button
                   type="button"
                   onClick={() => removeStrengthSet(set.id)}
-                  className="text-xs text-zinc-500 underline hover:text-zinc-800"
+                  className="text-xs text-sky-800/70 underline hover:text-sky-950"
                 >
                   Remove
                 </button>
@@ -335,7 +335,7 @@ export default function WorkoutsPage() {
             );
           })}
           {sessionForDate?.cardioEntries.map((entry) => (
-            <div key={entry.id} className="flex items-center justify-between rounded-lg border border-zinc-200 px-3 py-2">
+            <div key={entry.id} className="flex items-center justify-between rounded-lg border border-sky-200/80 px-3 py-2">
               <span>
                 {entry.type.toUpperCase()} — {entry.timeMinutes} min
                 {entry.distance != null ? `, ${entry.distance} distance` : ""}
@@ -345,7 +345,7 @@ export default function WorkoutsPage() {
               <button
                 type="button"
                 onClick={() => removeCardioEntry(entry.id)}
-                className="text-xs text-zinc-500 underline hover:text-zinc-800"
+                className="text-xs text-sky-800/70 underline hover:text-sky-950"
               >
                 Remove
               </button>

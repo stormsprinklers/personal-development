@@ -97,11 +97,11 @@ export default function JournalPage() {
             onChange={(event) => setEntryText(event.target.value)}
             rows={6}
             placeholder="Write your reflection..."
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
           />
           <div className="grid gap-2 md:grid-cols-3">
             {data.goals.map((goal) => (
-              <label key={goal.id} className="flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm">
+              <label key={goal.id} className="flex items-center gap-2 rounded-lg border border-sky-200/80 bg-sky-50/40 px-3 py-2 text-sm">
                 <input
                   type="checkbox"
                   checked={selectedGoalIds.includes(goal.id)}
@@ -112,7 +112,7 @@ export default function JournalPage() {
             ))}
           </div>
           <div>
-            <button onClick={addEntry} className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white">
+            <button onClick={addEntry} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700">
               Save Entry
             </button>
           </div>
@@ -122,7 +122,7 @@ export default function JournalPage() {
       <SectionCard title="AI Analysis + Q&A" subtitle="Analyze your latest entry or ask context-based questions.">
         <div className="grid gap-3">
           <div className="flex gap-2">
-            <button onClick={analyzeLatestEntry} className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white">
+            <button onClick={analyzeLatestEntry} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700">
               Analyze Latest Entry
             </button>
           </div>
@@ -131,13 +131,13 @@ export default function JournalPage() {
               value={question}
               onChange={(event) => setQuestion(event.target.value)}
               placeholder="Ask AI about your progress and patterns..."
-              className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
             />
-            <button onClick={askAiQuestion} className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white">
+            <button onClick={askAiQuestion} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700">
               Ask
             </button>
           </div>
-          <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm whitespace-pre-wrap">
+          <div className="rounded-lg border border-sky-200/80 bg-sky-50/70 p-3 text-sm whitespace-pre-wrap">
             {aiOutput || "AI output will appear here."}
           </div>
         </div>
@@ -150,10 +150,10 @@ export default function JournalPage() {
               .map((id) => data.goals.find((g) => g.id === id)?.title)
               .filter((t): t is string => Boolean(t));
             return (
-              <div key={entry.id} className="rounded-lg border border-zinc-200 p-3 text-sm">
-                <p className="mb-1 text-xs uppercase tracking-wide text-zinc-500">{entry.date}</p>
+              <div key={entry.id} className="rounded-lg border border-sky-200/80 bg-sky-50/30 p-3 text-sm">
+                <p className="mb-1 text-xs uppercase tracking-wide text-sky-800/70">{entry.date}</p>
                 {linkedTitles.length ? (
-                  <p className="mb-2 text-xs text-zinc-500">Linked goals: {linkedTitles.join(", ")}</p>
+                  <p className="mb-2 text-xs text-sky-800/65">Linked goals: {linkedTitles.join(", ")}</p>
                 ) : null}
                 <p className="whitespace-pre-wrap">{entry.content}</p>
               </div>

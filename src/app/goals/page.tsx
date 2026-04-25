@@ -90,7 +90,7 @@ export default function GoalsPage() {
               type="number"
               value={goalYear}
               onChange={(e) => setGoalYear(Number(e.target.value))}
-              className="ml-2 w-24 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+              className="ml-2 w-24 rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
             />
           </label>
         </div>
@@ -102,9 +102,9 @@ export default function GoalsPage() {
             value={sectionName}
             onChange={(event) => setSectionName(event.target.value)}
             placeholder="Section name"
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
           />
-          <button onClick={addSection} className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white">
+          <button onClick={addSection} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700">
             Add Section
           </button>
         </div>
@@ -115,7 +115,7 @@ export default function GoalsPage() {
           <select
             value={selectedSectionId}
             onChange={(event) => setSelectedSectionId(event.target.value)}
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
           >
             <option value="">Select section</option>
             {data.goalSections.map((section) => (
@@ -128,9 +128,9 @@ export default function GoalsPage() {
             value={goalTitle}
             onChange={(event) => setGoalTitle(event.target.value)}
             placeholder="Goal title"
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
           />
-          <button onClick={addGoal} className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white">
+          <button onClick={addGoal} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700">
             Add Goal
           </button>
         </div>
@@ -141,10 +141,10 @@ export default function GoalsPage() {
           {goalsForYear.map((goal) => {
             const section = data.goalSections.find((item) => item.id === goal.sectionId);
             return (
-              <label key={goal.id} className="flex items-center gap-3 rounded-lg border border-zinc-200 px-3 py-2">
+              <label key={goal.id} className="flex items-center gap-3 rounded-lg border border-sky-200/80 bg-sky-50/40 px-3 py-2">
                 <input type="checkbox" checked={goal.completed} onChange={() => toggleGoal(goal.id)} />
                 <span className="text-sm">
-                  {goal.title} <span className="text-zinc-500">({section?.name ?? "Unsectioned"})</span>
+                  {goal.title} <span className="text-sky-800/60">({section?.name ?? "Unsectioned"})</span>
                 </span>
               </label>
             );
@@ -158,7 +158,7 @@ export default function GoalsPage() {
           <select
             value={noteGoalId}
             onChange={(event) => setNoteGoalId(event.target.value)}
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
           >
             <option value="">Select goal</option>
             {goalsForYear.map((goal) => (
@@ -171,9 +171,9 @@ export default function GoalsPage() {
             value={noteText}
             onChange={(event) => setNoteText(event.target.value)}
             placeholder="Goal note"
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
           />
-          <button onClick={addNote} className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white">
+          <button onClick={addNote} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700">
             Add Note
           </button>
         </div>
@@ -182,7 +182,7 @@ export default function GoalsPage() {
             goalNotesForYear.map((note) => {
               const goal = data.goals.find((g) => g.id === note.goalId);
               return (
-                <div key={note.id} className="rounded-lg border border-zinc-200 px-3 py-2 text-sm">
+                <div key={note.id} className="rounded-lg border border-sky-200/80 bg-sky-50/40 px-3 py-2 text-sm">
                   {goal?.title ?? "Goal"}: {note.content}
                 </div>
               );
