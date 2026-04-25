@@ -18,7 +18,7 @@ export function AppShell({ title, description, children }: AppShellProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-50/90 via-zinc-50 to-zinc-100 text-zinc-900">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-8 md:px-10">
+      <div className="mx-auto flex w-full max-w-xl flex-col gap-5 px-3 py-4 sm:px-4 sm:py-5">
         <header className="rounded-2xl border border-sky-200/80 bg-white p-6 shadow-sm shadow-sky-100/50">
           <p className="text-xs font-semibold uppercase tracking-wider text-sky-700/80">
             Personal Development Hub
@@ -44,7 +44,7 @@ export function AppShell({ title, description, children }: AppShellProps) {
           ))}
         </nav>
 
-        <main className="grid gap-4">{children}</main>
+        <main className="grid gap-3">{children}</main>
       </div>
     </div>
   );
