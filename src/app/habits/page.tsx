@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
+import { currentHabitStreak } from "@/lib/metrics/habitStreaks";
 import { todayKey, useAppData } from "@/lib/storage";
 
 export default function HabitsPage() {
@@ -75,16 +76,23 @@ export default function HabitsPage() {
         <div className="grid gap-2">
           {data.habits.filter((habit) => habit.active).map((habit) => {
             const log = todayLogs.find((entry) => entry.habitId === habit.id);
+            const streak = currentHabitStreak(habit, data.habitLogs, today);
             return (
-              <label key={habit.id} className="flex items-center gap-3 rounded-lg border border-zinc-200 px-3 py-2">
-                <input
-                  type="checkbox"
-                  checked={log?.completed ?? false}
-                  onChange={(event) => toggleHabit(habit.id, event.target.checked)}
-                />
-                <span className="text-sm">
-                  {habit.name} <span className="text-zinc-500">({habit.type})</span>
-                </span>
+              <label
+                key={habit.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-zinc-200 px-3 py-2"
+              >
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={log?.completed ?? false}
+                    onChange={(event) => toggleHabit(habit.id, event.target.checked)}
+                  />
+                  <span className="text-sm">
+                    {habit.name} <span className="text-zinc-500">({habit.type})</span>
+                  </span>
+                </div>
+                <span className="text-xs font-medium text-zinc-500">Streak: {streak}d</span>
               </label>
             );
           })}

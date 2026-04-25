@@ -3,6 +3,14 @@ import { dailySummaryPrompt } from "@/lib/ai/prompts";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret) {
+    const auth = request.headers.get("authorization");
+    if (auth !== `Bearer ${cronSecret}`) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
+
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return Response.json({ error: "OPENAI_API_KEY is not configured." }, { status: 500 });

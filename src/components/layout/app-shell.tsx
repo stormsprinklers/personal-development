@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { APP_SECTIONS } from "@/lib/navigation";
+import { useAppData } from "@/lib/storage";
 
 type AppShellProps = {
   title: string;
@@ -12,6 +13,8 @@ type AppShellProps = {
 
 export function AppShell({ title, description, children }: AppShellProps) {
   const pathname = usePathname();
+  const { data } = useAppData();
+  const firstName = data.userProfile.name.split(/\s+/)[0] ?? data.userProfile.name;
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
@@ -20,7 +23,7 @@ export function AppShell({ title, description, children }: AppShellProps) {
           <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
             Personal Development Hub
           </p>
-          <p className="mt-2 text-sm font-medium text-zinc-600">Welcome, Austin.</p>
+          <p className="mt-2 text-sm font-medium text-zinc-600">Welcome, {firstName}.</p>
           <h1 className="mt-2 text-2xl font-semibold">{title}</h1>
           <p className="mt-1 text-sm text-zinc-600">{description}</p>
         </header>

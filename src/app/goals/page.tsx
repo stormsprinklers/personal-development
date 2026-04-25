@@ -1,17 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
 import { useAppData } from "@/lib/storage";
 
 export default function GoalsPage() {
   const { data, ready, setData } = useAppData();
+  const [goalYear, setGoalYear] = useState(() => new Date().getFullYear());
   const [sectionName, setSectionName] = useState("");
   const [selectedSectionId, setSelectedSectionId] = useState("");
   const [goalTitle, setGoalTitle] = useState("");
   const [noteText, setNoteText] = useState("");
   const [noteGoalId, setNoteGoalId] = useState("");
+
+  const goalsForYear = useMemo(
+    () => data.goals.filter((goal) => goal.year === goalYear),
+    [data.goals, goalYear],
+  );
+
+  const goalIdsForYear = useMemo(() => new Set(goalsForYear.map((g) => g.id)), [goalsForYear]);
+
+  const goalNotesForYear = useMemo(
+    () => data.goalNotes.filter((note) => goalIdsForYear.has(note.goalId)),
+    [data.goalNotes, goalIdsForYear],
+  );
 
   function addSection() {
     if (!sectionName.trim()) return;
@@ -33,6 +46,7 @@ export default function GoalsPage() {
           id: crypto.randomUUID(),
           sectionId: selectedSectionId,
           title: goalTitle.trim(),
+          year: goalYear,
           completed: false,
           createdAt: new Date().toISOString(),
         },
@@ -66,8 +80,22 @@ export default function GoalsPage() {
   return (
     <AppShell
       title="Goals"
-      description="Create annual goals by section and attach notes."
+      description="Create annual goals by section and year, then attach notes."
     >
+      <SectionCard title="Year focus" subtitle="View and add goals for a specific calendar year.">
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="text-sm text-zinc-600">
+            Year{" "}
+            <input
+              type="number"
+              value={goalYear}
+              onChange={(e) => setGoalYear(Number(e.target.value))}
+              className="ml-2 w-24 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+            />
+          </label>
+        </div>
+      </SectionCard>
+
       <SectionCard title="Create Goal Section" subtitle="Organize goals by life area.">
         <div className="grid gap-3 md:grid-cols-4">
           <input
@@ -110,7 +138,7 @@ export default function GoalsPage() {
 
       <SectionCard title="Goal Checklist" subtitle="Check completed goals to track annual progress.">
         <div className="grid gap-2">
-          {data.goals.map((goal) => {
+          {goalsForYear.map((goal) => {
             const section = data.goalSections.find((item) => item.id === goal.sectionId);
             return (
               <label key={goal.id} className="flex items-center gap-3 rounded-lg border border-zinc-200 px-3 py-2">
@@ -121,7 +149,7 @@ export default function GoalsPage() {
               </label>
             );
           })}
-          {!data.goals.length && <p className="text-sm text-zinc-600">No goals created yet.</p>}
+          {!goalsForYear.length && <p className="text-sm text-zinc-600">No goals for this year yet.</p>}
         </div>
       </SectionCard>
 
@@ -133,7 +161,7 @@ export default function GoalsPage() {
             className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
           >
             <option value="">Select goal</option>
-            {data.goals.map((goal) => (
+            {goalsForYear.map((goal) => (
               <option key={goal.id} value={goal.id}>
                 {goal.title}
               </option>
@@ -150,14 +178,18 @@ export default function GoalsPage() {
           </button>
         </div>
         <div className="mt-4 grid gap-2">
-          {data.goalNotes.map((note) => {
-            const goal = data.goals.find((g) => g.id === note.goalId);
-            return (
-              <div key={note.id} className="rounded-lg border border-zinc-200 px-3 py-2 text-sm">
-                {goal?.title ?? "Goal"}: {note.content}
-              </div>
-            );
-          })}
+          {goalNotesForYear.length ? (
+            goalNotesForYear.map((note) => {
+              const goal = data.goals.find((g) => g.id === note.goalId);
+              return (
+                <div key={note.id} className="rounded-lg border border-zinc-200 px-3 py-2 text-sm">
+                  {goal?.title ?? "Goal"}: {note.content}
+                </div>
+              );
+            })
+          ) : (
+            <p className="text-sm text-zinc-600">No notes for goals in this year yet.</p>
+          )}
         </div>
       </SectionCard>
     </AppShell>

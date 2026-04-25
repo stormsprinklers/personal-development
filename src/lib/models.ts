@@ -83,6 +83,7 @@ export type Goal = {
   id: string;
   sectionId: string;
   title: string;
+  year: number;
   completed: boolean;
   createdAt: string;
 };

@@ -51,3 +51,88 @@ model CardioEntry {
   laps            Int?
   workoutSession  WorkoutSession @relation(fields: [workoutSessionId], references: [id], onDelete: Cascade)
 }
+
+// --- Below mirrors client-side models for a future PostgreSQL migration ---
+
+model Habit {
+  id        String     @id @default(cuid())
+  name      String
+  type      String
+  active    Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  logs      HabitLog[]
+}
+
+model HabitLog {
+  id        String   @id @default(cuid())
+  habitId   String
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  date      DateTime
+  completed Boolean
+  notes     String?
+}
+
+model TodoList {
+  id        String     @id @default(cuid())
+  name      String
+  area      String
+  createdAt DateTime   @default(now())
+  items     TodoItem[]
+}
+
+model TodoItem {
+  id           String           @id @default(cuid())
+  listId       String
+  list         TodoList         @relation(fields: [listId], references: [id], onDelete: Cascade)
+  title        String
+  active       Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  completions  TodoCompletion[]
+}
+
+model TodoCompletion {
+  id           String   @id @default(cuid())
+  todoItemId   String
+  todoItem     TodoItem @relation(fields: [todoItemId], references: [id], onDelete: Cascade)
+  completedAt  DateTime
+}
+
+model GoalSection {
+  id    String @id @default(cuid())
+  name  String
+  goals Goal[]
+}
+
+model Goal {
+  id        String       @id @default(cuid())
+  sectionId String
+  section   GoalSection  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title     String
+  year      Int
+  completed Boolean      @default(false)
+  createdAt DateTime     @default(now())
+  notes     GoalNote[]
+}
+
+model GoalNote {
+  id        String   @id @default(cuid())
+  goalId    String
+  goal      Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model JournalEntry {
+  id        String   @id @default(cuid())
+  date      DateTime
+  content   String
+  goalIds   String[]
+}
+
+model AiInsight {
+  id        String   @id @default(cuid())
+  type      String
+  date      DateTime
+  prompt    String
+  output    String
+}

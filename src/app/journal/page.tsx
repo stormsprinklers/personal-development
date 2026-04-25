@@ -15,7 +15,11 @@ export default function JournalPage() {
   const [aiOutput, setAiOutput] = useState("");
 
   const today = todayKey();
-  const recentEntries = useMemo(() => data.journalEntries.slice(0, 10), [data.journalEntries]);
+  const journalOrdered = useMemo(
+    () => [...data.journalEntries].sort((a, b) => (a.date === b.date ? 0 : a.date < b.date ? 1 : -1)),
+    [data.journalEntries],
+  );
+  const recentEntries = useMemo(() => journalOrdered.slice(0, 12), [journalOrdered]);
 
   function toggleGoal(goalId: string) {
     setSelectedGoalIds((prev) =>
@@ -37,7 +41,7 @@ export default function JournalPage() {
   }
 
   async function analyzeLatestEntry() {
-    const latest = data.journalEntries[0];
+    const latest = journalOrdered[0];
     if (!latest) return;
     const context = buildAiContext(data, today);
     const prompt = journalAnalysisPrompt(latest.content, JSON.stringify(context, null, 2));
@@ -141,12 +145,20 @@ export default function JournalPage() {
 
       <SectionCard title="Recent Entries" subtitle="Most recent journal history and linked goals.">
         <div className="grid gap-2">
-          {recentEntries.map((entry) => (
-            <div key={entry.id} className="rounded-lg border border-zinc-200 p-3 text-sm">
-              <p className="mb-1 text-xs uppercase tracking-wide text-zinc-500">{entry.date}</p>
-              <p>{entry.content}</p>
-            </div>
-          ))}
+          {recentEntries.map((entry) => {
+            const linkedTitles = entry.goalIds
+              .map((id) => data.goals.find((g) => g.id === id)?.title)
+              .filter((t): t is string => Boolean(t));
+            return (
+              <div key={entry.id} className="rounded-lg border border-zinc-200 p-3 text-sm">
+                <p className="mb-1 text-xs uppercase tracking-wide text-zinc-500">{entry.date}</p>
+                {linkedTitles.length ? (
+                  <p className="mb-2 text-xs text-zinc-500">Linked goals: {linkedTitles.join(", ")}</p>
+                ) : null}
+                <p className="whitespace-pre-wrap">{entry.content}</p>
+              </div>
+            );
+          })}
           {!recentEntries.length && <p className="text-sm text-zinc-600">No entries yet.</p>}
         </div>
       </SectionCard>
