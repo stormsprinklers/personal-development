@@ -48,6 +48,12 @@ function parseStoredData(raw: string | null): AppData {
     const goals = goalsRaw.map((g) => ({
       ...g,
       year: typeof g.year === "number" ? g.year : new Date().getFullYear(),
+      linkedHabitIds:
+        Array.isArray((g as { linkedHabitIds?: string[] }).linkedHabitIds)
+          ? (g as { linkedHabitIds?: string[] }).linkedHabitIds
+          : (g as { linkedHabitId?: string }).linkedHabitId
+            ? [(g as { linkedHabitId?: string }).linkedHabitId as string]
+            : undefined,
     }));
     const sections = (parsed.goalSections ?? base.goalSections).map((section) => {
       if (section.id === "seed-sec-fitness") return { ...section, name: "Health" };
