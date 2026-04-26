@@ -27,9 +27,9 @@ function createDefaultData(): AppData {
     todoItems: [],
     todoCompletions: [],
     goalSections: [
-      { id: "seed-sec-fitness", name: "Fitness" },
-      { id: "seed-sec-career", name: "Career" },
-      { id: "seed-sec-personal", name: "Personal" },
+      { id: "seed-sec-fitness", name: "Health" },
+      { id: "seed-sec-career", name: "Meaning" },
+      { id: "seed-sec-personal", name: "Wealth" },
     ],
     goals: [],
     goalNotes: [],
@@ -49,10 +49,17 @@ function parseStoredData(raw: string | null): AppData {
       ...g,
       year: typeof g.year === "number" ? g.year : new Date().getFullYear(),
     }));
+    const sections = (parsed.goalSections ?? base.goalSections).map((section) => {
+      if (section.id === "seed-sec-fitness") return { ...section, name: "Health" };
+      if (section.id === "seed-sec-career") return { ...section, name: "Meaning" };
+      if (section.id === "seed-sec-personal") return { ...section, name: "Wealth" };
+      return section;
+    });
     return {
       ...base,
       ...parsed,
       userProfile: { ...base.userProfile, ...parsed.userProfile },
+      goalSections: sections,
       goals,
     };
   } catch {

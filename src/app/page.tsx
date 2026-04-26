@@ -101,7 +101,7 @@ export default function Home() {
         .filter((habit) => habit.active)
         .map((habit) => ({
           id: habit.id,
-          label: `${habit.name} (habit)`,
+          label: habit.name,
           completed: data.habitLogs.some(
             (log) => log.habitId === habit.id && log.date === today && log.completed,
           ),

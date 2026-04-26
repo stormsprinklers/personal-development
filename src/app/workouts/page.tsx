@@ -166,60 +166,85 @@ export default function WorkoutsPage() {
           </select>
         </div>
 
-        <div className="grid gap-2 text-sm text-zinc-700">
+        <div className="grid gap-4 text-sm text-zinc-700">
           {strengthBlocks.map((exercise) => {
             const sets = (sessionForDate?.strengthSets ?? []).filter((set) => set.exerciseId === exercise.id);
             const draft = setDrafts[exercise.id] ?? { weight: "", reps: "" };
 
             return (
-              <div key={exercise.id} className="rounded-lg border border-sky-200/80 p-3">
-                <p className="mb-2 font-medium text-zinc-900">{exercise.name} | Weight | Reps</p>
-                {sets.map((set, index) => (
-                  <div key={set.id} className="mb-1 grid grid-cols-[auto_1fr_1fr_auto] items-center gap-2">
-                    <span className="text-xs text-zinc-600">Set {index + 1}</span>
-                    <span>{set.weight}</span>
-                    <span>{set.reps}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeStrengthSet(set.id)}
-                      className="text-xs text-sky-800/70 underline hover:text-sky-950"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-                <div className="mt-2 grid grid-cols-[1fr_1fr_auto] gap-2">
-                  <input
-                    type="number"
-                    value={draft.weight}
-                    onChange={(event) =>
-                      setSetDrafts((prev) => ({
-                        ...prev,
-                        [exercise.id]: { ...draft, weight: event.target.value },
-                      }))
-                    }
-                    placeholder="Weight"
-                    className="rounded-lg border border-sky-200 bg-white px-2 py-1 text-sm"
-                  />
-                  <input
-                    type="number"
-                    value={draft.reps}
-                    onChange={(event) =>
-                      setSetDrafts((prev) => ({
-                        ...prev,
-                        [exercise.id]: { ...draft, reps: event.target.value },
-                      }))
-                    }
-                    placeholder="Reps"
-                    className="rounded-lg border border-sky-200 bg-white px-2 py-1 text-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => addStrengthSet(exercise.id)}
-                    className="rounded-lg bg-sky-600 px-3 py-1 text-xs font-medium text-white hover:bg-sky-700"
-                  >
-                    + Add set
-                  </button>
+              <div key={exercise.id} className="overflow-hidden rounded-lg border border-sky-200/80">
+                <div className="border-b border-sky-200/80 bg-sky-50/70 px-3 py-2 font-medium text-zinc-900">
+                  {exercise.name}
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[320px] table-fixed text-xs sm:text-sm">
+                    <thead>
+                      <tr className="border-b border-sky-100 text-sky-800/80">
+                        <th className="px-2 py-2 text-left">Set</th>
+                        <th className="px-2 py-2 text-left">Weight</th>
+                        <th className="px-2 py-2 text-left">Reps</th>
+                        <th className="px-2 py-2 text-right"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sets.map((set, index) => (
+                        <tr key={set.id} className="border-b border-sky-100/80">
+                          <td className="px-2 py-2">Set {index + 1}</td>
+                          <td className="px-2 py-2">{set.weight}</td>
+                          <td className="px-2 py-2">{set.reps}</td>
+                          <td className="px-2 py-2 text-right">
+                            <button
+                              type="button"
+                              onClick={() => removeStrengthSet(set.id)}
+                              className="text-xs text-sky-800/70 underline hover:text-sky-950"
+                            >
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      <tr>
+                        <td className="px-2 py-2 text-zinc-500">New</td>
+                        <td className="px-2 py-2">
+                          <input
+                            type="number"
+                            value={draft.weight}
+                            onChange={(event) =>
+                              setSetDrafts((prev) => ({
+                                ...prev,
+                                [exercise.id]: { ...draft, weight: event.target.value },
+                              }))
+                            }
+                            placeholder="Weight"
+                            className="w-full rounded border border-sky-200 bg-white px-2 py-1 text-xs sm:text-sm"
+                          />
+                        </td>
+                        <td className="px-2 py-2">
+                          <input
+                            type="number"
+                            value={draft.reps}
+                            onChange={(event) =>
+                              setSetDrafts((prev) => ({
+                                ...prev,
+                                [exercise.id]: { ...draft, reps: event.target.value },
+                              }))
+                            }
+                            placeholder="Reps"
+                            className="w-full rounded border border-sky-200 bg-white px-2 py-1 text-xs sm:text-sm"
+                          />
+                        </td>
+                        <td className="px-2 py-2 text-right">
+                          <button
+                            type="button"
+                            onClick={() => addStrengthSet(exercise.id)}
+                            className="rounded bg-sky-600 px-2 py-1 text-[11px] font-medium text-white hover:bg-sky-700 sm:text-xs"
+                          >
+                            + Add set
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
             );
@@ -227,74 +252,97 @@ export default function WorkoutsPage() {
           {selectedTemplateConfig.cardioTypes.map((cardioType) => {
             const entries = (sessionForDate?.cardioEntries ?? []).filter((entry) => entry.type === cardioType);
             const draft = cardioDrafts[cardioType];
-            const header =
-              cardioType === "swim"
-                ? "Swim | Laps | Time"
-                : cardioType === "run"
-                  ? "Run | Distance | Time"
-                  : "Bike | Distance | Time";
+            const nameHeader = cardioType === "swim" ? "Stroke" : "Type";
+            const metricHeader = cardioType === "swim" ? "Laps" : "Distance";
+            const title = cardioType === "swim" ? "Swim" : cardioType === "run" ? "Run" : "Bike";
 
             return (
-              <div key={cardioType} className="rounded-lg border border-sky-200/80 p-3">
-                <p className="mb-2 font-medium text-zinc-900">{header}</p>
-                {entries.map((entry) => (
-                  <div key={entry.id} className="mb-1 grid grid-cols-[1fr_1fr_1fr_auto] items-center gap-2">
-                    <span>{cardioType === "swim" ? draft.label : cardioType.toUpperCase()}</span>
-                    <span>{cardioType === "swim" ? entry.laps ?? "-" : entry.distance ?? "-"}</span>
-                    <span>{entry.timeMinutes}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeCardioEntry(entry.id)}
-                      className="text-xs text-sky-800/70 underline hover:text-sky-950"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-                <div className="mt-2 grid grid-cols-[1fr_1fr_1fr_auto] gap-2">
-                  <input
-                    value={draft.label}
-                    onChange={(event) =>
-                      setCardioDrafts((prev) => ({
-                        ...prev,
-                        [cardioType]: { ...prev[cardioType], label: event.target.value },
-                      }))
-                    }
-                    placeholder="Type"
-                    className="rounded-lg border border-sky-200 bg-white px-2 py-1 text-sm"
-                  />
-                  <input
-                    value={cardioType === "swim" ? draft.laps : draft.distance}
-                    onChange={(event) =>
-                      setCardioDrafts((prev) => ({
-                        ...prev,
-                        [cardioType]:
-                          cardioType === "swim"
-                            ? { ...prev[cardioType], laps: event.target.value }
-                            : { ...prev[cardioType], distance: event.target.value },
-                      }))
-                    }
-                    placeholder={cardioType === "swim" ? "Laps" : "Distance"}
-                    className="rounded-lg border border-sky-200 bg-white px-2 py-1 text-sm"
-                  />
-                  <input
-                    value={draft.time}
-                    onChange={(event) =>
-                      setCardioDrafts((prev) => ({
-                        ...prev,
-                        [cardioType]: { ...prev[cardioType], time: event.target.value },
-                      }))
-                    }
-                    placeholder="Time"
-                    className="rounded-lg border border-sky-200 bg-white px-2 py-1 text-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => addCardioEntry(cardioType)}
-                    className="rounded-lg bg-sky-600 px-3 py-1 text-xs font-medium text-white hover:bg-sky-700"
-                  >
-                    + Add set
-                  </button>
+              <div key={cardioType} className="overflow-hidden rounded-lg border border-sky-200/80">
+                <div className="border-b border-sky-200/80 bg-sky-50/70 px-3 py-2 font-medium text-zinc-900">
+                  {title}
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[320px] table-fixed text-xs sm:text-sm">
+                    <thead>
+                      <tr className="border-b border-sky-100 text-sky-800/80">
+                        <th className="px-2 py-2 text-left">{nameHeader}</th>
+                        <th className="px-2 py-2 text-left">{metricHeader}</th>
+                        <th className="px-2 py-2 text-left">Time</th>
+                        <th className="px-2 py-2 text-right"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {entries.map((entry) => (
+                        <tr key={entry.id} className="border-b border-sky-100/80">
+                          <td className="px-2 py-2">{cardioType === "swim" ? draft.label : cardioType.toUpperCase()}</td>
+                          <td className="px-2 py-2">{cardioType === "swim" ? entry.laps ?? "-" : entry.distance ?? "-"}</td>
+                          <td className="px-2 py-2">{entry.timeMinutes}</td>
+                          <td className="px-2 py-2 text-right">
+                            <button
+                              type="button"
+                              onClick={() => removeCardioEntry(entry.id)}
+                              className="text-xs text-sky-800/70 underline hover:text-sky-950"
+                            >
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      <tr>
+                        <td className="px-2 py-2">
+                          <input
+                            value={draft.label}
+                            onChange={(event) =>
+                              setCardioDrafts((prev) => ({
+                                ...prev,
+                                [cardioType]: { ...prev[cardioType], label: event.target.value },
+                              }))
+                            }
+                            placeholder={nameHeader}
+                            className="w-full rounded border border-sky-200 bg-white px-2 py-1 text-xs sm:text-sm"
+                          />
+                        </td>
+                        <td className="px-2 py-2">
+                          <input
+                            value={cardioType === "swim" ? draft.laps : draft.distance}
+                            onChange={(event) =>
+                              setCardioDrafts((prev) => ({
+                                ...prev,
+                                [cardioType]:
+                                  cardioType === "swim"
+                                    ? { ...prev[cardioType], laps: event.target.value }
+                                    : { ...prev[cardioType], distance: event.target.value },
+                              }))
+                            }
+                            placeholder={metricHeader}
+                            className="w-full rounded border border-sky-200 bg-white px-2 py-1 text-xs sm:text-sm"
+                          />
+                        </td>
+                        <td className="px-2 py-2">
+                          <input
+                            value={draft.time}
+                            onChange={(event) =>
+                              setCardioDrafts((prev) => ({
+                                ...prev,
+                                [cardioType]: { ...prev[cardioType], time: event.target.value },
+                              }))
+                            }
+                            placeholder="Time"
+                            className="w-full rounded border border-sky-200 bg-white px-2 py-1 text-xs sm:text-sm"
+                          />
+                        </td>
+                        <td className="px-2 py-2 text-right">
+                          <button
+                            type="button"
+                            onClick={() => addCardioEntry(cardioType)}
+                            className="rounded bg-sky-600 px-2 py-1 text-[11px] font-medium text-white hover:bg-sky-700 sm:text-xs"
+                          >
+                            + Add set
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
             );
