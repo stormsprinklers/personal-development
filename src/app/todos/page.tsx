@@ -195,11 +195,11 @@ export default function TodosPage() {
           </div>
         ) : null}
 
-        <div className="mb-3 flex gap-2">
+        <div className="mb-3 flex flex-wrap gap-2">
           <select
             value={activeListId}
             onChange={(event) => setSelectedListId(event.target.value)}
-            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+            className="min-w-0 flex-1 rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
           >
             {!data.todoLists.length ? <option value="">No lists yet</option> : null}
             {data.todoLists.map((list) => (
@@ -212,7 +212,7 @@ export default function TodosPage() {
             value={todoTitle}
             onChange={(event) => setTodoTitle(event.target.value)}
             placeholder="Add task"
-            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+            className="min-w-0 flex-[2] rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
           />
           <button onClick={addTodo} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700">
             +

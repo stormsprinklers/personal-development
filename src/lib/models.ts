@@ -85,6 +85,8 @@ export type Goal = {
   sectionId: string;
   title: string;
   year: number;
+  linkedHabitId?: string;
+  habitTargetDays?: number;
   completed: boolean;
   createdAt: string;
 };

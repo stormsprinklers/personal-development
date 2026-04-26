@@ -13,21 +13,14 @@ type AppShellProps = {
 
 export function AppShell({ title, description: _description, children }: AppShellProps) {
   void _description;
+  void title;
   const pathname = usePathname();
   const { data } = useAppData();
-  const firstName = data.userProfile.name.split(/\s+/)[0] ?? data.userProfile.name;
+  void data;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-50/90 via-zinc-50 to-zinc-100 text-zinc-900">
-      <div className="mx-auto flex w-full max-w-xl flex-col gap-5 px-3 py-4 sm:px-4 sm:py-5">
-        <header className="rounded-2xl border border-sky-200/80 bg-white p-6 shadow-sm shadow-sky-100/50">
-          <p className="text-xs font-semibold uppercase tracking-wider text-sky-700/80">
-            Personal Development Hub
-          </p>
-          <p className="mt-2 text-sm font-medium text-sky-800">Welcome, {firstName}.</p>
-          <h1 className="mt-2 text-2xl font-semibold text-zinc-900">{title}</h1>
-        </header>
-
+    <div className="min-h-screen overflow-x-hidden bg-gradient-to-b from-sky-50/90 via-zinc-50 to-zinc-100 text-zinc-900">
+      <div className="mx-auto flex w-full max-w-xl min-w-0 flex-col gap-5 px-3 py-4 sm:px-4 sm:py-5">
         <nav className="flex flex-wrap gap-2">
           {APP_SECTIONS.map((section) => (
             <Link
@@ -44,7 +37,7 @@ export function AppShell({ title, description: _description, children }: AppShel
           ))}
         </nav>
 
-        <main className="grid gap-3">{children}</main>
+        <main className="grid min-w-0 gap-3">{children}</main>
       </div>
     </div>
   );

@@ -11,29 +11,18 @@ export default function GoalsPage() {
   const { data, ready, setData } = useAppData();
   const goalYear = new Date().getFullYear();
   const [sectionName, setSectionName] = useState("");
-  const [selectedSectionId, setSelectedSectionId] = useState("");
-  const [goalTitle, setGoalTitle] = useState("");
-  const [goalTaskDrafts, setGoalTaskDrafts] = useState<Record<string, string>>({});
+  const [goalDraftsBySection, setGoalDraftsBySection] = useState<Record<string, string>>({});
+  const [openGoalId, setOpenGoalId] = useState<string | null>(null);
+  const [goalTitleDraft, setGoalTitleDraft] = useState("");
+  const [goalTaskDraft, setGoalTaskDraft] = useState("");
+  const [linkedHabitDraft, setLinkedHabitDraft] = useState<string>("");
+  const [habitTargetDraft, setHabitTargetDraft] = useState<string>("30");
 
   const goalsForYear = useMemo(
     () => data.goals.filter((goal) => goal.year === goalYear),
     [data.goals, goalYear],
   );
-
-  const goalIdsForYear = useMemo(() => new Set(goalsForYear.map((g) => g.id)), [goalsForYear]);
-
-  const goalNotesForYear = useMemo(
-    () => data.goalNotes.filter((note) => goalIdsForYear.has(note.goalId)),
-    [data.goalNotes, goalIdsForYear],
-  );
-  const goalsBySection = useMemo(
-    () =>
-      data.goalSections.map((section) => ({
-        section,
-        goals: goalsForYear.filter((goal) => goal.sectionId === section.id),
-      })),
-    [data.goalSections, goalsForYear],
-  );
+  const allHabits = useMemo(() => data.habits.filter((habit) => habit.active), [data.habits]);
 
   function addSection() {
     if (!sectionName.trim()) return;
@@ -42,19 +31,19 @@ export default function GoalsPage() {
       ...prev,
       goalSections: [{ id, name: sectionName.trim() }, ...prev.goalSections],
     }));
-    setSelectedSectionId(id);
     setSectionName("");
   }
 
-  function addGoal() {
-    if (!goalTitle.trim() || !selectedSectionId) return;
+  function addGoal(sectionId: string) {
+    const title = goalDraftsBySection[sectionId]?.trim();
+    if (!title) return;
     setData((prev) => ({
       ...prev,
       goals: [
         {
           id: crypto.randomUUID(),
-          sectionId: selectedSectionId,
-          title: goalTitle.trim(),
+          sectionId,
+          title,
           year: goalYear,
           completed: false,
           createdAt: new Date().toISOString(),
@@ -62,11 +51,111 @@ export default function GoalsPage() {
         ...prev.goals,
       ],
     }));
-    setGoalTitle("");
+    setGoalDraftsBySection((prev) => ({ ...prev, [sectionId]: "" }));
+  }
+
+  function computeGoalProgress(goalId: string) {
+    const goal = data.goals.find((item) => item.id === goalId);
+    if (!goal) return 0;
+
+    const tasks = data.todoItems.filter((item) => item.goalId === goalId);
+    const doneTasks = tasks.filter((item) => !item.active).length;
+    const taskProgress = tasks.length ? (doneTasks / tasks.length) * 100 : 0;
+
+    let habitProgress = 0;
+    if (goal.linkedHabitId && goal.habitTargetDays && goal.habitTargetDays > 0) {
+      const completedDays = data.habitLogs.filter(
+        (log) =>
+          log.habitId === goal.linkedHabitId &&
+          log.completed &&
+          log.date.startsWith(`${goalYear}-`),
+      ).length;
+      habitProgress = Math.min(100, (completedDays / goal.habitTargetDays) * 100);
+    }
+
+    if (goal.linkedHabitId && goal.habitTargetDays) {
+      return Math.min(100, (taskProgress + habitProgress) / 2);
+    }
+    return Math.min(100, taskProgress);
+  }
+
+  const goalsBySection = data.goalSections.map((section) => {
+    const goals = goalsForYear
+      .filter((goal) => goal.sectionId === section.id)
+      .sort((a, b) => Number(a.completed) - Number(b.completed));
+
+    const sectionProgress = goals.length
+      ? goals.reduce((sum, goal) => sum + computeGoalProgress(goal.id), 0) / goals.length
+      : 0;
+
+    return { section, goals, sectionProgress };
+  });
+
+  const overallProgress = goalsForYear.length
+    ? goalsForYear.reduce((sum, goal) => sum + computeGoalProgress(goal.id), 0) / goalsForYear.length
+    : 0;
+
+  function openGoalEditor(goalId: string) {
+    const goal = data.goals.find((g) => g.id === goalId);
+    if (!goal) return;
+    setOpenGoalId(goalId);
+    setGoalTitleDraft(goal.title);
+    setLinkedHabitDraft(goal.linkedHabitId ?? "");
+    setHabitTargetDraft(String(goal.habitTargetDays ?? 30));
+    setGoalTaskDraft("");
+  }
+
+  function closeGoalEditor() {
+    setOpenGoalId(null);
+    setGoalTitleDraft("");
+    setGoalTaskDraft("");
+    setLinkedHabitDraft("");
+    setHabitTargetDraft("30");
+  }
+
+  function saveGoalEdits() {
+    if (!openGoalId || !goalTitleDraft.trim()) return;
+    const target = Number(habitTargetDraft);
+    setData((prev) => ({
+      ...prev,
+      goals: prev.goals.map((goal) =>
+        goal.id === openGoalId
+          ? {
+              ...goal,
+              title: goalTitleDraft.trim(),
+              linkedHabitId: linkedHabitDraft || undefined,
+              habitTargetDays:
+                linkedHabitDraft && Number.isFinite(target) && target > 0 ? target : undefined,
+            }
+          : goal,
+      ),
+    }));
+  }
+
+  function deleteGoal(goalId: string) {
+    setData((prev) => ({
+      ...prev,
+      goals: prev.goals.filter((goal) => goal.id !== goalId),
+      goalNotes: prev.goalNotes.filter((note) => note.goalId !== goalId),
+      todoItems: prev.todoItems.filter((item) => item.goalId !== goalId),
+      todoCompletions: prev.todoCompletions.filter((completion) => {
+        const item = prev.todoItems.find((todo) => todo.id === completion.todoItemId);
+        return item?.goalId !== goalId;
+      }),
+    }));
+    if (openGoalId === goalId) closeGoalEditor();
+  }
+
+  function markGoalComplete(goalId: string) {
+    if (!window.confirm("Do you really want to mark this goal as complete?")) return;
+    setData((prev) => ({
+      ...prev,
+      goals: prev.goals.map((goal) => (goal.id === goalId ? { ...goal, completed: true } : goal)),
+    }));
   }
 
   function addGoalTask(goalId: string) {
-    const title = goalTaskDrafts[goalId]?.trim();
+    const title = goalTaskDraft.trim();
     if (!title) return;
 
     setData((prev) => {
@@ -98,151 +187,215 @@ export default function GoalsPage() {
         ],
       };
     });
-
-    setGoalTaskDrafts((prev) => ({ ...prev, [goalId]: "" }));
+    setGoalTaskDraft("");
   }
 
-  function toggleGoal(goalId: string) {
+  function toggleGoalTask(goalId: string, taskId: string) {
     setData((prev) => ({
       ...prev,
-      goals: prev.goals.map((goal) => (goal.id === goalId ? { ...goal, completed: !goal.completed } : goal)),
+      todoItems: prev.todoItems.map((item) =>
+        item.id === taskId && item.goalId === goalId ? { ...item, active: !item.active } : item,
+      ),
     }));
   }
 
   if (!ready) return <div className="p-6">Loading goals...</div>;
 
   return (
-    <AppShell
-      title="Goals"
-      description="Simple goals with section headings and task breakdowns."
-    >
-      <SectionCard title={`Goals ${goalYear}`}>
-        <p className="text-sm text-zinc-600">Current year goals only.</p>
+    <AppShell title="Goals" description="">
+      <SectionCard title={`Progress: ${overallProgress.toFixed(1)}%`}>
+        <div />
       </SectionCard>
 
-      <SectionCard title="New Section">
-        <div className="grid gap-3 md:grid-cols-4">
+      <SectionCard title="Annual Goals">
+        <div className="grid gap-6">
+          {goalsBySection.map(({ section, goals, sectionProgress }) => (
+            <div key={section.id}>
+              <h3 className="mb-2 text-base font-semibold text-zinc-900">
+                {section.name}: ({sectionProgress.toFixed(1)}%)
+              </h3>
+              <div className="grid gap-2">
+                {goals.map((goal) => {
+                  const progress = computeGoalProgress(goal.id);
+                  return (
+                    <div key={goal.id} className="rounded-lg border border-sky-200/80 bg-sky-50/30 px-3 py-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm text-zinc-900">- {goal.title}</p>
+                        <button
+                          onClick={() => openGoalEditor(goal.id)}
+                          className="rounded-md border border-sky-200 bg-white px-2 py-1 text-xs text-zinc-700 hover:bg-sky-50"
+                          aria-label="Edit goal"
+                        >
+                          ✎
+                        </button>
+                      </div>
+                      <div className="mt-1 h-2 rounded bg-sky-100">
+                        <div className="h-2 rounded bg-sky-500" style={{ width: `${progress}%` }} />
+                      </div>
+                      <p className="mt-1 text-xs text-zinc-600">{progress.toFixed(1)}%</p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-2 flex gap-2">
+                <input
+                  value={goalDraftsBySection[section.id] ?? ""}
+                  onChange={(event) =>
+                    setGoalDraftsBySection((prev) => ({ ...prev, [section.id]: event.target.value }))
+                  }
+                  placeholder="Goal"
+                  className="w-full rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+                />
+                <button
+                  onClick={() => addGoal(section.id)}
+                  className="rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
+                >
+                  + Add Goal
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+
+      <SectionCard title="+ Add Section">
+        <div className="flex gap-2">
           <input
             value={sectionName}
             onChange={(event) => setSectionName(event.target.value)}
-            placeholder="Section name"
-            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+            placeholder="Section"
+            className="w-full rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
           />
-          <button onClick={addSection} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700">
-            Add Section
-          </button>
-        </div>
-      </SectionCard>
-
-      <SectionCard title="New Goal">
-        <div className="grid gap-3 md:grid-cols-4">
-          <select
-            value={selectedSectionId}
-            onChange={(event) => setSelectedSectionId(event.target.value)}
-            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+          <button
+            onClick={addSection}
+            className="rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
           >
-            <option value="">Select section</option>
-            {data.goalSections.map((section) => (
-              <option key={section.id} value={section.id}>
-                {section.name}
-              </option>
-            ))}
-          </select>
-          <input
-            value={goalTitle}
-            onChange={(event) => setGoalTitle(event.target.value)}
-            placeholder="Goal title"
-            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
-          />
-          <button onClick={addGoal} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700">
-            Add Goal
+            +
           </button>
         </div>
       </SectionCard>
 
-      <SectionCard title="Goal List">
-        <div className="grid gap-5">
-          {goalsBySection.map(({ section, goals }) => (
-            <div key={section.id}>
-              <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-sky-800/70">{section.name}</h3>
-              {goals.length ? (
-                <div className="grid gap-2">
-                  {goals.map((goal) => {
-                    const goalTasks = data.todoItems.filter((item) => item.goalId === goal.id);
-                    const doneGoalTasks = goalTasks.filter((item) => !item.active).length;
-                    const progressPercent = goalTasks.length
-                      ? Math.round((doneGoalTasks / goalTasks.length) * 100)
-                      : 0;
-                    const linkedNotes = goalNotesForYear.filter((note) => note.goalId === goal.id);
+      {openGoalId ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 p-3 sm:items-center">
+          <div className="w-full max-w-md rounded-xl border border-sky-200 bg-white p-4 shadow-xl">
+            {(() => {
+              const goal = data.goals.find((g) => g.id === openGoalId);
+              if (!goal) return null;
+              const goalTasks = data.todoItems.filter((item) => item.goalId === goal.id);
+              const progress = computeGoalProgress(goal.id);
+              return (
+                <div className="grid gap-3">
+                  <h3 className="text-base font-semibold text-zinc-900">Goal Details</h3>
+                  <input
+                    value={goalTitleDraft}
+                    onChange={(event) => setGoalTitleDraft(event.target.value)}
+                    className="w-full rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+                  />
 
-                    return (
-                      <div key={goal.id} className="rounded-lg border border-sky-200/80 bg-sky-50/40 px-3 py-3">
-                        <label className="flex items-start gap-3">
+                  <div>
+                    <p className="mb-1 text-xs uppercase tracking-wide text-sky-800/70">
+                      Goal tasks
+                    </p>
+                    <div className="grid gap-1">
+                      {goalTasks.map((task) => (
+                        <label key={task.id} className="flex items-center gap-2 text-sm text-zinc-700">
                           <input
                             type="checkbox"
-                            checked={goal.completed}
-                            onChange={() => toggleGoal(goal.id)}
-                            className="mt-1"
+                            checked={!task.active}
+                            onChange={() => toggleGoalTask(goal.id, task.id)}
                           />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-zinc-900">{goal.title}</p>
-                            <p className="text-xs text-zinc-600">
-                              Task progress: {progressPercent}% ({doneGoalTasks}/{goalTasks.length || 0})
-                            </p>
-                          </div>
+                          <span>{task.title}</span>
                         </label>
+                      ))}
+                      {!goalTasks.length ? <p className="text-sm text-zinc-600">No tasks yet.</p> : null}
+                    </div>
+                    <div className="mt-2 flex gap-2">
+                      <input
+                        value={goalTaskDraft}
+                        onChange={(event) => setGoalTaskDraft(event.target.value)}
+                        placeholder="Add task"
+                        className="w-full rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+                      />
+                      <button
+                        onClick={() => addGoalTask(goal.id)}
+                        className="rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
 
-                        <div className="mt-2 flex gap-2">
-                          <input
-                            value={goalTaskDrafts[goal.id] ?? ""}
-                            onChange={(event) =>
-                              setGoalTaskDrafts((prev) => ({ ...prev, [goal.id]: event.target.value }))
-                            }
-                            placeholder="Add task for this goal"
-                            className="w-full rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
-                          />
-                          <button
-                            onClick={() => addGoalTask(goal.id)}
-                            className="rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
-                          >
-                            +
-                          </button>
-                        </div>
+                  <div>
+                    <p className="mb-1 text-xs uppercase tracking-wide text-sky-800/70">
+                      Habit association
+                    </p>
+                    <div className="grid grid-cols-[1fr_auto] gap-2">
+                      <select
+                        value={linkedHabitDraft}
+                        onChange={(event) => setLinkedHabitDraft(event.target.value)}
+                        className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+                      >
+                        <option value="">No linked habit</option>
+                        {allHabits.map((habit) => (
+                          <option key={habit.id} value={habit.id}>
+                            {habit.name}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="number"
+                        min={1}
+                        value={habitTargetDraft}
+                        onChange={(event) => setHabitTargetDraft(event.target.value)}
+                        className="w-24 rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+                        placeholder="Days"
+                      />
+                    </div>
+                  </div>
 
-                        {goalTasks.length ? (
-                          <div className="mt-2 grid gap-1">
-                            {goalTasks.map((task) => (
-                              <div key={task.id} className="text-xs text-zinc-600">
-                                {task.active ? "☐" : "☑"} {task.title}
-                              </div>
-                            ))}
-                          </div>
-                        ) : null}
+                  <div>
+                    <div className="h-2 rounded bg-sky-100">
+                      <div className="h-2 rounded bg-sky-500" style={{ width: `${progress}%` }} />
+                    </div>
+                    <p className="mt-1 text-xs text-zinc-600">{progress.toFixed(1)}%</p>
+                  </div>
 
-                        {linkedNotes.length ? (
-                          <div className="mt-2 grid gap-1">
-                            {linkedNotes.map((note) => (
-                              <p key={note.id} className="text-xs text-zinc-600">
-                                {note.content}
-                              </p>
-                            ))}
-                          </div>
-                        ) : null}
-                      </div>
-                    );
-                  })}
+                  <div className="flex flex-wrap justify-between gap-2">
+                    <button
+                      onClick={() => deleteGoal(goal.id)}
+                      className="rounded-lg border border-red-200 bg-white px-3 py-2 text-sm text-red-700 hover:bg-red-50"
+                    >
+                      Delete Goal
+                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={closeGoalEditor}
+                        className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:bg-sky-50"
+                      >
+                        Close
+                      </button>
+                      <button
+                        onClick={saveGoalEdits}
+                        className="rounded-lg bg-sky-600 px-3 py-2 text-sm text-white hover:bg-sky-700"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => markGoalComplete(goal.id)}
+                    className="rounded-lg bg-zinc-900 px-3 py-2 text-sm text-white hover:bg-zinc-700"
+                  >
+                    Mark Goal Complete
+                  </button>
                 </div>
-              ) : (
-                <p className="text-sm text-zinc-600">No goals in this section.</p>
-              )}
-            </div>
-          ))}
-
-          {!goalsForYear.length ? (
-            <p className="text-sm text-zinc-600">No goals for this year yet.</p>
-          ) : null}
+              );
+            })()}
+          </div>
         </div>
-      </SectionCard>
+      ) : null}
     </AppShell>
   );
 }
