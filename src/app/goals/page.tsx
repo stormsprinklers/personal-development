@@ -170,15 +170,15 @@ export default function GoalsPage() {
       }
     }
 
-    const hasBodyWeightGoal =
-      typeof goal.bodyWeightStart === "number" &&
-      typeof goal.bodyWeightTarget === "number" &&
-      goal.bodyWeightTarget !== goal.bodyWeightStart;
-    if (hasBodyWeightGoal) {
+    const bwStart = goal.bodyWeightStart;
+    const bwTarget = goal.bodyWeightTarget;
+    if (
+      typeof bwStart === "number" &&
+      typeof bwTarget === "number" &&
+      bwTarget !== bwStart
+    ) {
       const latest = latestBodyWeightInYear(data, goalYear);
-      progressParts.push(
-        bodyWeightGoalProgress(goal.bodyWeightStart, goal.bodyWeightTarget, latest),
-      );
+      progressParts.push(bodyWeightGoalProgress(bwStart, bwTarget, latest));
     }
 
     return Math.min(100, progressParts.reduce((sum, value) => sum + value, 0) / progressParts.length);

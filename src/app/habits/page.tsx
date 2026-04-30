@@ -173,7 +173,7 @@ export default function HabitsPage() {
                           type="button"
                           title="Missed today"
                           aria-label="Log habit as missed today"
-                          aria-pressed={Boolean(log) && log.completed === false}
+                          aria-pressed={log?.completed === false}
                           onClick={() => setTodayHabitLog(habit.id, false)}
                           className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm font-semibold transition-colors ${
                             log && log.completed === false
