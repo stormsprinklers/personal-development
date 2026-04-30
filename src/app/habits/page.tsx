@@ -69,12 +69,12 @@ export default function HabitsPage() {
     }
   }
 
-  function toggleHabit(habitId: string, checked: boolean) {
+  function setTodayHabitLog(habitId: string, completed: boolean) {
     setData((prev) => {
       const existing = prev.habitLogs.find((log) => log.habitId === habitId && log.date === today);
       const nextLogs = existing
-        ? prev.habitLogs.map((log) => (log.id === existing.id ? { ...log, completed: checked } : log))
-        : [{ id: crypto.randomUUID(), habitId, date: today, completed: checked }, ...prev.habitLogs];
+        ? prev.habitLogs.map((log) => (log.id === existing.id ? { ...log, completed } : log))
+        : [{ id: crypto.randomUUID(), habitId, date: today, completed }, ...prev.habitLogs];
 
       return { ...prev, habitLogs: nextLogs };
     });
@@ -104,6 +104,7 @@ export default function HabitsPage() {
             <option value="break">Break</option>
           </select>
           <button
+            type="button"
             onClick={addHabit}
             className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700"
           >
@@ -152,13 +153,38 @@ export default function HabitsPage() {
                   </div>
                 ) : (
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={log?.completed ?? false}
-                        onChange={(event) => toggleHabit(habit.id, event.target.checked)}
-                      />
-                      <span className="text-sm">
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <div className="flex shrink-0 gap-1.5">
+                        <button
+                          type="button"
+                          title="Done today"
+                          aria-label="Log habit as done today"
+                          aria-pressed={log?.completed === true}
+                          onClick={() => setTodayHabitLog(habit.id, true)}
+                          className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm font-semibold transition-colors ${
+                            log?.completed === true
+                              ? "border-emerald-600 bg-emerald-600 text-white shadow-sm"
+                              : "border-sky-200 bg-white text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50"
+                          }`}
+                        >
+                          ✓
+                        </button>
+                        <button
+                          type="button"
+                          title="Missed today"
+                          aria-label="Log habit as missed today"
+                          aria-pressed={Boolean(log) && log.completed === false}
+                          onClick={() => setTodayHabitLog(habit.id, false)}
+                          className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm font-semibold transition-colors ${
+                            log && log.completed === false
+                              ? "border-red-600 bg-red-600 text-white shadow-sm"
+                              : "border-sky-200 bg-white text-red-700 hover:border-red-300 hover:bg-red-50"
+                          }`}
+                        >
+                          ✗
+                        </button>
+                      </div>
+                      <span className="min-w-0 text-sm">
                         {habit.name} <span className="text-sky-800/60">({habit.type})</span>
                       </span>
                     </div>
@@ -194,7 +220,7 @@ export default function HabitsPage() {
             const habit = data.habits.find((h) => h.id === log.habitId);
             return (
               <div key={log.id} className="rounded-lg border border-sky-200/80 bg-sky-50/40 px-3 py-2 text-sm">
-                {log.date}: {habit?.name ?? "Habit"} - {log.completed ? "Complete" : "Incomplete"}
+                {log.date}: {habit?.name ?? "Habit"} — {log.completed ? "Done" : "Missed"}
               </div>
             );
           })}

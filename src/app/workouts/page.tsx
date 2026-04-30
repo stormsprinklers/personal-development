@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
+import { MeasurementUnitsCard } from "@/components/measurement-units-card";
 import type { CardioType, WorkoutSession } from "@/lib/models";
+import { normalizeMeasurementPreferences, runBikeDistanceUnitAbbr, weightUnitAbbr } from "@/lib/units";
 import { todayKey, useAppData } from "@/lib/storage";
 
 type WorkoutTemplate = {
@@ -21,6 +23,9 @@ const WORKOUT_TEMPLATES: WorkoutTemplate[] = [
 
 export default function WorkoutsPage() {
   const { data, ready, upsertWorkoutForDate } = useAppData();
+  const prefs = useMemo(() => normalizeMeasurementPreferences(data.measurementPreferences), [data.measurementPreferences]);
+  const weightAbbr = weightUnitAbbr(prefs.weightUnit);
+  const distanceAbbr = runBikeDistanceUnitAbbr(prefs.runBikeDistanceUnit);
   const today = todayKey();
   const [workoutDate, setWorkoutDate] = useState(today);
   const [selectedTemplate, setSelectedTemplate] = useState<string>("Leg Day");
@@ -41,6 +46,12 @@ export default function WorkoutsPage() {
   );
 
   const sessionForDate = data.workoutSessions.find((s) => s.date === workoutDate);
+  const [bodyWeightDraft, setBodyWeightDraft] = useState("");
+
+  useEffect(() => {
+    const w = sessionForDate?.bodyWeight;
+    setBodyWeightDraft(w != null && !Number.isNaN(w) ? String(w) : "");
+  }, [workoutDate, sessionForDate?.bodyWeight]);
   const selectedTemplateConfig =
     WORKOUT_TEMPLATES.find((template) => template.name === selectedTemplate) ?? WORKOUT_TEMPLATES[0];
   const templateStrengthExercises = useMemo(
@@ -129,6 +140,21 @@ export default function WorkoutsPage() {
     });
   }
 
+  function commitBodyWeight() {
+    const trimmed = bodyWeightDraft.trim();
+    upsertWorkoutForDate(workoutDate, (existing) => {
+      const base = existing ?? emptySession();
+      if (!trimmed) {
+        return { ...base, bodyWeight: undefined };
+      }
+      const n = Number(trimmed);
+      if (!Number.isFinite(n) || n <= 0) {
+        return { ...base, bodyWeight: undefined };
+      }
+      return { ...base, bodyWeight: n };
+    });
+  }
+
   if (!ready) return <div className="p-6">Loading workouts...</div>;
 
   return (
@@ -148,8 +174,23 @@ export default function WorkoutsPage() {
               className="absolute inset-0 cursor-pointer opacity-0"
             />
           </label>
+          <label className="flex min-w-0 flex-1 flex-wrap items-center gap-2 text-sm text-zinc-700 sm:flex-initial">
+            <span className="shrink-0">Body weight ({weightAbbr})</span>
+            <input
+              type="number"
+              step="0.1"
+              min={0}
+              value={bodyWeightDraft}
+              onChange={(e) => setBodyWeightDraft(e.target.value)}
+              onBlur={commitBodyWeight}
+              placeholder="—"
+              className="min-w-0 flex-1 rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80 sm:w-28 sm:flex-none"
+            />
+          </label>
         </div>
       </SectionCard>
+
+      <MeasurementUnitsCard />
 
       <SectionCard title={`${selectedTemplate} [change workout]`}>
         <div className="mb-4">
@@ -181,7 +222,7 @@ export default function WorkoutsPage() {
                     <thead>
                       <tr className="border-b border-sky-100 text-sky-800/80">
                         <th className="px-2 py-2 text-left">Set</th>
-                        <th className="px-2 py-2 text-left">Weight</th>
+                        <th className="px-2 py-2 text-left">Weight ({weightAbbr})</th>
                         <th className="px-2 py-2 text-left">Reps</th>
                         <th className="px-2 py-2 text-right"></th>
                       </tr>
@@ -190,7 +231,9 @@ export default function WorkoutsPage() {
                       {sets.map((set, index) => (
                         <tr key={set.id} className="border-b border-sky-100/80">
                           <td className="px-2 py-2">Set {index + 1}</td>
-                          <td className="px-2 py-2">{set.weight}</td>
+                          <td className="px-2 py-2">
+                            {set.weight} {weightAbbr}
+                          </td>
                           <td className="px-2 py-2">{set.reps}</td>
                           <td className="px-2 py-2 text-right">
                             <button
@@ -215,7 +258,7 @@ export default function WorkoutsPage() {
                                 [exercise.id]: { ...draft, weight: event.target.value },
                               }))
                             }
-                            placeholder="Weight"
+                            placeholder={`Weight (${weightAbbr})`}
                             className="w-full rounded border border-sky-200 bg-white px-2 py-1 text-xs sm:text-sm"
                           />
                         </td>
@@ -253,7 +296,8 @@ export default function WorkoutsPage() {
             const entries = (sessionForDate?.cardioEntries ?? []).filter((entry) => entry.type === cardioType);
             const draft = cardioDrafts[cardioType];
             const nameHeader = cardioType === "swim" ? "Stroke" : "Type";
-            const metricHeader = cardioType === "swim" ? "Laps" : "Distance";
+            const metricHeader =
+              cardioType === "swim" ? "Laps" : `Distance (${distanceAbbr})`;
             const title = cardioType === "swim" ? "Swim" : cardioType === "run" ? "Run" : "Bike";
 
             return (
@@ -267,7 +311,7 @@ export default function WorkoutsPage() {
                       <tr className="border-b border-sky-100 text-sky-800/80">
                         <th className="px-2 py-2 text-left">{nameHeader}</th>
                         <th className="px-2 py-2 text-left">{metricHeader}</th>
-                        <th className="px-2 py-2 text-left">Time</th>
+                        <th className="px-2 py-2 text-left">Time (min)</th>
                         <th className="px-2 py-2 text-right"></th>
                       </tr>
                     </thead>
@@ -275,8 +319,14 @@ export default function WorkoutsPage() {
                       {entries.map((entry) => (
                         <tr key={entry.id} className="border-b border-sky-100/80">
                           <td className="px-2 py-2">{cardioType === "swim" ? draft.label : cardioType.toUpperCase()}</td>
-                          <td className="px-2 py-2">{cardioType === "swim" ? entry.laps ?? "-" : entry.distance ?? "-"}</td>
-                          <td className="px-2 py-2">{entry.timeMinutes}</td>
+                          <td className="px-2 py-2">
+                            {cardioType === "swim"
+                              ? entry.laps ?? "-"
+                              : entry.distance != null
+                                ? `${entry.distance} ${distanceAbbr}`
+                                : "-"}
+                          </td>
+                          <td className="px-2 py-2">{entry.timeMinutes} min</td>
                           <td className="px-2 py-2 text-right">
                             <button
                               type="button"
@@ -327,7 +377,7 @@ export default function WorkoutsPage() {
                                 [cardioType]: { ...prev[cardioType], time: event.target.value },
                               }))
                             }
-                            placeholder="Time"
+                            placeholder="Time (min)"
                             className="w-full rounded border border-sky-200 bg-white px-2 py-1 text-xs sm:text-sm"
                           />
                         </td>

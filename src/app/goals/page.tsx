@@ -1,11 +1,37 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
+import { CompleteExitRow, COMPLETE_EXIT_MS } from "@/components/complete-exit-row";
+import { MeasurementUnitsCard } from "@/components/measurement-units-card";
+import { normalizeMeasurementPreferences, runBikeDistanceUnitAbbr, weightUnitAbbr } from "@/lib/units";
+import { todoItemsForGoal } from "@/lib/todo-helpers";
 import { useAppData } from "@/lib/storage";
 
-const GOAL_TASKS_LIST_NAME = "Goal Tasks";
+function latestBodyWeightInYear(data: { workoutSessions: { date: string; bodyWeight?: number }[] }, year: number) {
+  const prefix = `${year}-`;
+  const sessions = data.workoutSessions
+    .filter(
+      (s) =>
+        s.date.startsWith(prefix) &&
+        typeof s.bodyWeight === "number" &&
+        !Number.isNaN(s.bodyWeight) &&
+        s.bodyWeight > 0,
+    )
+    .sort((a, b) => b.date.localeCompare(a.date));
+  return sessions[0]?.bodyWeight;
+}
+
+function bodyWeightGoalProgress(start: number, target: number, latest: number | undefined): number {
+  const current = latest ?? start;
+  if (!Number.isFinite(start) || !Number.isFinite(target)) return 0;
+  if (target === start) return Math.abs(current - target) < 1e-6 ? 100 : 0;
+  if (target > start) {
+    return Math.min(100, Math.max(0, ((current - start) / (target - start)) * 100));
+  }
+  return Math.min(100, Math.max(0, ((start - current) / (start - target)) * 100));
+}
 
 export default function GoalsPage() {
   const { data, ready, setData } = useAppData();
@@ -15,6 +41,7 @@ export default function GoalsPage() {
   const [openGoalId, setOpenGoalId] = useState<string | null>(null);
   const [goalTitleDraft, setGoalTitleDraft] = useState("");
   const [goalTaskDraft, setGoalTaskDraft] = useState("");
+  const [goalListNameDraft, setGoalListNameDraft] = useState("");
   const [linkedHabitDrafts, setLinkedHabitDrafts] = useState<string[]>([]);
   const [habitTargetDraft, setHabitTargetDraft] = useState<string>("30");
   const [newLinkedHabitName, setNewLinkedHabitName] = useState<string>("");
@@ -22,6 +49,10 @@ export default function GoalsPage() {
   const [linkedExerciseDraft, setLinkedExerciseDraft] = useState<string>("");
   const [exerciseStartDraft, setExerciseStartDraft] = useState<string>("");
   const [exerciseTargetDraft, setExerciseTargetDraft] = useState<string>("");
+  const [bodyWeightStartDraft, setBodyWeightStartDraft] = useState<string>("");
+  const [bodyWeightTargetDraft, setBodyWeightTargetDraft] = useState<string>("");
+  const [fadingGoalTaskIds, setFadingGoalTaskIds] = useState<string[]>([]);
+  const exitingGoalTaskIdsRef = useRef(new Set<string>());
 
   const goalsForYear = useMemo(
     () => data.goals.filter((goal) => goal.year === goalYear),
@@ -32,6 +63,12 @@ export default function GoalsPage() {
     () => data.exercises.filter((exercise) => !exercise.archived),
     [data.exercises],
   );
+  const measurementPrefs = useMemo(
+    () => normalizeMeasurementPreferences(data.measurementPreferences),
+    [data.measurementPreferences],
+  );
+  const weightAbbr = weightUnitAbbr(measurementPrefs.weightUnit);
+  const distanceAbbr = runBikeDistanceUnitAbbr(measurementPrefs.runBikeDistanceUnit);
 
   function addSection() {
     if (!sectionName.trim()) return;
@@ -66,8 +103,9 @@ export default function GoalsPage() {
   function computeGoalProgress(goalId: string) {
     const goal = data.goals.find((item) => item.id === goalId);
     if (!goal) return 0;
+    if (goal.completed === true) return 100;
 
-    const tasks = data.todoItems.filter((item) => item.goalId === goalId);
+    const tasks = todoItemsForGoal(data, goalId);
     const doneTasks = tasks.filter((item) => !item.active).length;
     const taskProgress = tasks.length ? (doneTasks / tasks.length) * 100 : 0;
 
@@ -131,6 +169,18 @@ export default function GoalsPage() {
         progressParts.push(exerciseProgress);
       }
     }
+
+    const hasBodyWeightGoal =
+      typeof goal.bodyWeightStart === "number" &&
+      typeof goal.bodyWeightTarget === "number" &&
+      goal.bodyWeightTarget !== goal.bodyWeightStart;
+    if (hasBodyWeightGoal) {
+      const latest = latestBodyWeightInYear(data, goalYear);
+      progressParts.push(
+        bodyWeightGoalProgress(goal.bodyWeightStart, goal.bodyWeightTarget, latest),
+      );
+    }
+
     return Math.min(100, progressParts.reduce((sum, value) => sum + value, 0) / progressParts.length);
   }
 
@@ -155,6 +205,8 @@ export default function GoalsPage() {
     if (!goal) return;
     setOpenGoalId(goalId);
     setGoalTitleDraft(goal.title);
+    const linked = data.todoLists.find((l) => l.goalId === goalId);
+    setGoalListNameDraft(linked?.name ?? "");
     setLinkedHabitDrafts(goal.linkedHabitIds ?? []);
     setHabitTargetDraft(String(goal.habitTargetDays ?? 30));
     setLinkedExerciseDraft(goal.linkedExerciseId ?? "");
@@ -164,7 +216,46 @@ export default function GoalsPage() {
     setExerciseTargetDraft(
       typeof goal.exerciseTargetValue === "number" ? String(goal.exerciseTargetValue) : "",
     );
+    setBodyWeightStartDraft(
+      typeof goal.bodyWeightStart === "number" ? String(goal.bodyWeightStart) : "",
+    );
+    setBodyWeightTargetDraft(
+      typeof goal.bodyWeightTarget === "number" ? String(goal.bodyWeightTarget) : "",
+    );
     setGoalTaskDraft("");
+  }
+
+  function saveGoalTaskListName(goalId: string) {
+    const name = goalListNameDraft.trim();
+    if (!name) return;
+    setData((prev) => ({
+      ...prev,
+      todoLists: prev.todoLists.map((l) => (l.goalId === goalId ? { ...l, name } : l)),
+    }));
+  }
+
+  function createEmptyGoalTaskList(goalId: string) {
+    setData((prev) => {
+      if (prev.todoLists.some((l) => l.goalId === goalId)) return prev;
+      const goal = prev.goals.find((g) => g.id === goalId);
+      if (!goal) return prev;
+      const listId = crypto.randomUUID();
+      const name = goalListNameDraft.trim() || `${goal.title} tasks`;
+      return {
+        ...prev,
+        todoLists: [
+          {
+            id: listId,
+            name,
+            area: "",
+            goalId,
+            isMain: false,
+            createdAt: new Date().toISOString(),
+          },
+          ...prev.todoLists,
+        ],
+      };
+    });
   }
 
   function closeGoalEditor() {
@@ -176,6 +267,11 @@ export default function GoalsPage() {
     setLinkedExerciseDraft("");
     setExerciseStartDraft("");
     setExerciseTargetDraft("");
+    setBodyWeightStartDraft("");
+    setBodyWeightTargetDraft("");
+    setGoalListNameDraft("");
+    setFadingGoalTaskIds([]);
+    exitingGoalTaskIdsRef.current.clear();
   }
 
   function saveGoalEdits() {
@@ -189,6 +285,14 @@ export default function GoalsPage() {
       Number.isFinite(exerciseStart) &&
       Number.isFinite(exerciseTarget) &&
       exerciseTarget > exerciseStart;
+    const bwStart = Number(bodyWeightStartDraft);
+    const bwTarget = Number(bodyWeightTargetDraft);
+    const canSaveBodyWeightGoal =
+      Number.isFinite(bwStart) &&
+      Number.isFinite(bwTarget) &&
+      bwTarget !== bwStart &&
+      bwStart > 0 &&
+      bwTarget > 0;
     setData((prev) => ({
       ...prev,
       goals: prev.goals.map((goal) =>
@@ -202,23 +306,40 @@ export default function GoalsPage() {
               linkedExerciseId: hasExerciseLink ? linkedExerciseDraft : undefined,
               exerciseStartValue: canSaveExerciseNumbers ? exerciseStart : undefined,
               exerciseTargetValue: canSaveExerciseNumbers ? exerciseTarget : undefined,
+              bodyWeightStart: canSaveBodyWeightGoal ? bwStart : undefined,
+              bodyWeightTarget: canSaveBodyWeightGoal ? bwTarget : undefined,
+              completed: goal.completed === true,
             }
           : goal,
       ),
     }));
+    closeGoalEditor();
   }
 
   function deleteGoal(goalId: string) {
-    setData((prev) => ({
+    setData((prev) => {
+      const removedListIds = prev.todoLists.filter((l) => l.goalId === goalId).map((l) => l.id);
+      return {
       ...prev,
       goals: prev.goals.filter((goal) => goal.id !== goalId),
       goalNotes: prev.goalNotes.filter((note) => note.goalId !== goalId),
-      todoItems: prev.todoItems.filter((item) => item.goalId !== goalId),
+      todoLists: prev.todoLists.filter((l) => l.goalId !== goalId),
+      todoSections: prev.todoSections.filter((s) => !removedListIds.includes(s.listId)),
+      dashboardTodoListIds: prev.dashboardTodoListIds?.filter((id) => !removedListIds.includes(id)),
+      todoItems: prev.todoItems.filter((item) => {
+        const list = prev.todoLists.find((l) => l.id === item.listId);
+        if (list?.goalId === goalId) return false;
+        return item.goalId !== goalId;
+      }),
       todoCompletions: prev.todoCompletions.filter((completion) => {
         const item = prev.todoItems.find((todo) => todo.id === completion.todoItemId);
-        return item?.goalId !== goalId;
+        if (!item) return true;
+        const list = prev.todoLists.find((l) => l.id === item.listId);
+        if (list?.goalId === goalId) return false;
+        return item.goalId !== goalId;
       }),
-    }));
+    };
+    });
     if (openGoalId === goalId) closeGoalEditor();
   }
 
@@ -228,6 +349,7 @@ export default function GoalsPage() {
       ...prev,
       goals: prev.goals.map((goal) => (goal.id === goalId ? { ...goal, completed: true } : goal)),
     }));
+    closeGoalEditor();
   }
 
   function addGoalTask(goalId: string) {
@@ -235,14 +357,19 @@ export default function GoalsPage() {
     if (!title) return;
 
     setData((prev) => {
-      let listId = prev.todoLists.find((list) => list.name === GOAL_TASKS_LIST_NAME)?.id;
+      const goal = prev.goals.find((g) => g.id === goalId);
+      if (!goal) return prev;
+      let listId = prev.todoLists.find((l) => l.goalId === goalId)?.id;
       const nextLists = [...prev.todoLists];
       if (!listId) {
         listId = crypto.randomUUID();
+        const listName = goalListNameDraft.trim() || `${goal.title} tasks`;
         nextLists.unshift({
           id: listId,
-          name: GOAL_TASKS_LIST_NAME,
+          name: listName,
           area: "",
+          goalId,
+          isMain: false,
           createdAt: new Date().toISOString(),
         });
       }
@@ -254,7 +381,6 @@ export default function GoalsPage() {
           {
             id: crypto.randomUUID(),
             listId,
-            goalId,
             title,
             active: true,
             createdAt: new Date().toISOString(),
@@ -267,12 +393,43 @@ export default function GoalsPage() {
   }
 
   function toggleGoalTask(goalId: string, taskId: string) {
-    setData((prev) => ({
-      ...prev,
-      todoItems: prev.todoItems.map((item) =>
-        item.id === taskId && item.goalId === goalId ? { ...item, active: !item.active } : item,
-      ),
-    }));
+    const listId = data.todoLists.find((l) => l.goalId === goalId)?.id;
+    const task = data.todoItems.find((item) =>
+      item.id === taskId && (listId ? item.listId === listId : item.goalId === goalId),
+    );
+    if (!task) return;
+
+    if (!task.active) {
+      setData((prev) => {
+        const lid = prev.todoLists.find((l) => l.goalId === goalId)?.id;
+        return {
+          ...prev,
+          todoItems: prev.todoItems.map((item) => {
+            const matches = item.id === taskId && (lid ? item.listId === lid : item.goalId === goalId);
+            return matches ? { ...item, active: true } : item;
+          }),
+        };
+      });
+      return;
+    }
+
+    if (exitingGoalTaskIdsRef.current.has(taskId)) return;
+    exitingGoalTaskIdsRef.current.add(taskId);
+    setFadingGoalTaskIds((prev) => (prev.includes(taskId) ? prev : [...prev, taskId]));
+    window.setTimeout(() => {
+      exitingGoalTaskIdsRef.current.delete(taskId);
+      setFadingGoalTaskIds((prev) => prev.filter((id) => id !== taskId));
+      setData((prev) => {
+        const lid = prev.todoLists.find((l) => l.goalId === goalId)?.id;
+        return {
+          ...prev,
+          todoItems: prev.todoItems.map((item) => {
+            const matches = item.id === taskId && (lid ? item.listId === lid : item.goalId === goalId);
+            return matches ? { ...item, active: false } : item;
+          }),
+        };
+      });
+    }, COMPLETE_EXIT_MS);
   }
 
   function toggleLinkedHabit(habitId: string) {
@@ -310,6 +467,8 @@ export default function GoalsPage() {
         <div />
       </SectionCard>
 
+      <MeasurementUnitsCard />
+
       <SectionCard title="Annual Goals">
         <div className="grid gap-6">
           {goalsBySection.map(({ section, goals, sectionProgress }) => (
@@ -321,10 +480,21 @@ export default function GoalsPage() {
                 {goals.map((goal) => {
                   const progress = computeGoalProgress(goal.id);
                   return (
-                    <div key={goal.id} className="rounded-lg border border-sky-200/80 bg-sky-50/30 px-3 py-2">
+                    <div
+                      key={goal.id}
+                      className={`rounded-lg border border-sky-200/80 px-3 py-2 ${
+                        goal.completed === true ? "bg-emerald-50/60" : "bg-sky-50/30"
+                      }`}
+                    >
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm text-zinc-900">{goal.title}</p>
+                        <p className="text-sm text-zinc-900">
+                          {goal.title}
+                          {goal.completed === true ? (
+                            <span className="ml-2 text-xs font-medium text-emerald-800">Done</span>
+                          ) : null}
+                        </p>
                         <button
+                          type="button"
                           onClick={() => openGoalEditor(goal.id)}
                           className="rounded-md border border-sky-200 bg-white px-2 py-1 text-xs text-zinc-700 hover:bg-sky-50"
                           aria-label="Edit goal"
@@ -351,6 +521,7 @@ export default function GoalsPage() {
                   className="w-full rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
                 />
                 <button
+                  type="button"
                   onClick={() => addGoal(section.id)}
                   className="rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
                 >
@@ -371,6 +542,7 @@ export default function GoalsPage() {
             className="w-full rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
           />
           <button
+            type="button"
             onClick={addSection}
             className="rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
           >
@@ -385,16 +557,17 @@ export default function GoalsPage() {
             {(() => {
               const goal = data.goals.find((g) => g.id === openGoalId);
               if (!goal) return null;
-              const goalTasks = data.todoItems.filter((item) => item.goalId === goal.id);
+              const goalTasks = todoItemsForGoal(data, goal.id);
+              const hasGoalList = data.todoLists.some((l) => l.goalId === goal.id);
               const progress = computeGoalProgress(goal.id);
               const linkedExercise = allExercises.find((exercise) => exercise.id === linkedExerciseDraft);
               const exerciseMetricLabel =
                 linkedExercise?.category === "strength"
-                  ? "Weight"
+                  ? `Weight (${weightAbbr})`
                   : linkedExercise?.category === "swim"
                     ? "Laps"
                     : linkedExercise
-                      ? "Distance"
+                      ? `Distance (${distanceAbbr})`
                       : "Metric";
 
               const currentExerciseBest = (() => {
@@ -406,7 +579,7 @@ export default function GoalsPage() {
                     .flatMap((session) => session.strengthSets)
                     .filter((set) => set.exerciseId === linkedExercise.id)
                     .reduce((max, set) => Math.max(max, set.weight), 0);
-                  return bestWeight > 0 ? `${bestWeight}` : null;
+                  return bestWeight > 0 ? `${bestWeight} ${weightAbbr}` : null;
                 }
                 if (linkedExercise.category === "run" || linkedExercise.category === "bike") {
                   const bestDistance = data.workoutSessions
@@ -414,15 +587,17 @@ export default function GoalsPage() {
                     .flatMap((session) => session.cardioEntries)
                     .filter((entry) => entry.type === linkedExercise.category)
                     .reduce((max, entry) => Math.max(max, entry.distance ?? 0), 0);
-                  return bestDistance > 0 ? `${bestDistance}` : null;
+                  return bestDistance > 0 ? `${bestDistance} ${distanceAbbr}` : null;
                 }
                 const bestLaps = data.workoutSessions
                   .filter((session) => session.date.startsWith(yearPrefix))
                   .flatMap((session) => session.cardioEntries)
                   .filter((entry) => entry.type === "swim")
                   .reduce((max, entry) => Math.max(max, entry.laps ?? 0), 0);
-                return bestLaps > 0 ? `${bestLaps}` : null;
+                return bestLaps > 0 ? `${bestLaps} laps` : null;
               })();
+
+              const latestBwThisYear = latestBodyWeightInYear(data, goalYear);
 
               return (
                 <div className="grid gap-3">
@@ -434,19 +609,44 @@ export default function GoalsPage() {
                   />
 
                   <div>
-                    <p className="mb-1 text-xs uppercase tracking-wide text-sky-800/70">
-                      Goal tasks
-                    </p>
+                    <p className="mb-1 text-xs uppercase tracking-wide text-sky-800/70">Goal task list</p>
+                    <div className="mb-2 flex flex-wrap gap-2">
+                      <input
+                        value={goalListNameDraft}
+                        onChange={(event) => setGoalListNameDraft(event.target.value)}
+                        placeholder="List name"
+                        className="min-w-0 flex-1 rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+                      />
+                      {hasGoalList ? (
+                        <button
+                          type="button"
+                          onClick={() => saveGoalTaskListName(goal.id)}
+                          className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-sky-50"
+                        >
+                          Save name
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => createEmptyGoalTaskList(goal.id)}
+                          className="rounded-lg bg-sky-600 px-3 py-2 text-xs font-medium text-white hover:bg-sky-700"
+                        >
+                          Create list
+                        </button>
+                      )}
+                    </div>
                     <div className="grid gap-1">
                       {goalTasks.map((task) => (
-                        <label key={task.id} className="flex items-center gap-2 text-sm text-zinc-700">
-                          <input
-                            type="checkbox"
-                            checked={!task.active}
-                            onChange={() => toggleGoalTask(goal.id, task.id)}
-                          />
-                          <span>{task.title}</span>
-                        </label>
+                        <CompleteExitRow key={task.id} exiting={fadingGoalTaskIds.includes(task.id)}>
+                          <label className="flex items-center gap-2 text-sm text-zinc-700">
+                            <input
+                              type="checkbox"
+                              checked={!task.active || fadingGoalTaskIds.includes(task.id)}
+                              onChange={() => toggleGoalTask(goal.id, task.id)}
+                            />
+                            <span>{task.title}</span>
+                          </label>
+                        </CompleteExitRow>
                       ))}
                       {!goalTasks.length ? <p className="text-sm text-zinc-600">No tasks yet.</p> : null}
                     </div>
@@ -458,6 +658,7 @@ export default function GoalsPage() {
                         className="w-full rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
                       />
                       <button
+                        type="button"
                         onClick={() => addGoalTask(goal.id)}
                         className="rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
                       >
@@ -502,6 +703,7 @@ export default function GoalsPage() {
                           <option value="break">Break</option>
                         </select>
                         <button
+                          type="button"
                           onClick={addLinkedHabit}
                           className="rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
                         >
@@ -554,10 +756,38 @@ export default function GoalsPage() {
                       </div>
                       {linkedExercise ? (
                         <p className="text-xs text-zinc-600">
-                          This year&apos;s best {exerciseMetricLabel.toLowerCase()}: {currentExerciseBest ?? "No entries yet"}
+                          This year&apos;s best: {currentExerciseBest ?? "No entries yet"}
                         </p>
                       ) : null}
                     </div>
+                  </div>
+
+                  <div>
+                    <p className="mb-1 text-xs uppercase tracking-wide text-sky-800/70">Body weight goal</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="number"
+                        step="0.1"
+                        min={0}
+                        value={bodyWeightStartDraft}
+                        onChange={(event) => setBodyWeightStartDraft(event.target.value)}
+                        placeholder={`Start (${weightAbbr})`}
+                        className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+                      />
+                      <input
+                        type="number"
+                        step="0.1"
+                        min={0}
+                        value={bodyWeightTargetDraft}
+                        onChange={(event) => setBodyWeightTargetDraft(event.target.value)}
+                        placeholder={`Goal (${weightAbbr})`}
+                        className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+                      />
+                    </div>
+                    <p className="mt-1 text-xs text-zinc-600">
+                      Progress uses your most recent body weight logged this year on Workouts. Latest:{" "}
+                      {latestBwThisYear != null ? `${latestBwThisYear} ${weightAbbr}` : "—"}
+                    </p>
                   </div>
 
                   <div>
@@ -569,6 +799,7 @@ export default function GoalsPage() {
 
                   <div className="flex flex-wrap justify-between gap-2">
                     <button
+                      type="button"
                       onClick={() => deleteGoal(goal.id)}
                       className="rounded-lg border border-red-200 bg-white px-3 py-2 text-sm text-red-700 hover:bg-red-50"
                     >
@@ -576,12 +807,14 @@ export default function GoalsPage() {
                     </button>
                     <div className="flex gap-2">
                       <button
+                        type="button"
                         onClick={closeGoalEditor}
                         className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:bg-sky-50"
                       >
                         Close
                       </button>
                       <button
+                        type="button"
                         onClick={saveGoalEdits}
                         className="rounded-lg bg-sky-600 px-3 py-2 text-sm text-white hover:bg-sky-700"
                       >
@@ -591,6 +824,7 @@ export default function GoalsPage() {
                   </div>
 
                   <button
+                    type="button"
                     onClick={() => markGoalComplete(goal.id)}
                     className="rounded-lg bg-zinc-900 px-3 py-2 text-sm text-white hover:bg-zinc-700"
                   >

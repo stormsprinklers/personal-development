@@ -58,6 +58,19 @@ export type TodoList = {
   name: string;
   area: string;
   createdAt: string;
+  /** Exactly one list should be main; it never links to a goal. */
+  isMain?: boolean;
+  /** When set, this entire list belongs to that goal (tasks do not use item.goalId). */
+  goalId?: string;
+};
+
+/** Headings within a list (used on the main list for multiple sections). */
+export type TodoSection = {
+  id: string;
+  listId: string;
+  name: string;
+  sortOrder: number;
+  createdAt: string;
 };
 
 export type TodoItem = {
@@ -65,6 +78,8 @@ export type TodoItem = {
   listId: string;
   title: string;
   goalId?: string;
+  /** Optional section within this list (see `TodoSection`). */
+  sectionId?: string;
   active: boolean;
   createdAt: string;
 };
@@ -90,6 +105,9 @@ export type Goal = {
   linkedExerciseId?: string;
   exerciseStartValue?: number;
   exerciseTargetValue?: number;
+  /** Progress from start → target using the latest body weight logged this year on workouts. */
+  bodyWeightStart?: number;
+  bodyWeightTarget?: number;
   completed: boolean;
   createdAt: string;
 };
@@ -123,15 +141,31 @@ export type UserProfile = {
   timezone: string;
 };
 
+/** Stored values match the user’s chosen units (no conversion in the app). */
+export type WeightUnit = "lb" | "kg";
+
+/** Run and bike distance entries use this unit. */
+export type RunBikeDistanceUnit = "mi" | "km" | "yd";
+
+export type MeasurementPreferences = {
+  weightUnit: WeightUnit;
+  runBikeDistanceUnit: RunBikeDistanceUnit;
+};
+
 export type AppData = {
   userProfile: UserProfile;
+  measurementPreferences?: MeasurementPreferences;
   exercises: Exercise[];
   workoutSessions: WorkoutSession[];
   habits: Habit[];
   habitLogs: HabitLog[];
   todoLists: TodoList[];
+  /** Headings for tasks on a list (intended for the main list). */
+  todoSections: TodoSection[];
   todoItems: TodoItem[];
   todoCompletions: TodoCompletion[];
+  /** Which lists feed the dashboard “Today” todo list; defaults to main only when unset/empty. */
+  dashboardTodoListIds?: string[];
   goalSections: GoalSection[];
   goals: Goal[];
   goalNotes: GoalNote[];

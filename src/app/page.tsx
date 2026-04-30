@@ -1,13 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
+import { CompleteExitRow, COMPLETE_EXIT_MS } from "@/components/complete-exit-row";
 import { Sparkline } from "@/components/charts/sparkline";
 import { buildAiContext } from "@/lib/ai/contextBuilder";
 import { dailySummaryPrompt } from "@/lib/ai/prompts";
 import { bodyWeightTrend, goalsProgressForYear } from "@/lib/metrics/dashboardMetrics";
 import { strengthSummaryByExercise } from "@/lib/metrics/workoutMetrics";
+import { normalizeMeasurementPreferences, weightUnitAbbr } from "@/lib/units";
+import { effectiveDashboardTodoListIds } from "@/lib/todo-helpers";
 import { todayKey, useAppData } from "@/lib/storage";
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -27,9 +30,15 @@ function toDateKey(date: Date) {
 
 export default function Home() {
   const { data, setData } = useAppData();
+  const weightAbbr = useMemo(
+    () => weightUnitAbbr(normalizeMeasurementPreferences(data.measurementPreferences).weightUnit),
+    [data.measurementPreferences],
+  );
   const today = todayKey();
   const [weekOffset, setWeekOffset] = useState(0);
   const [showAllDailyItems, setShowAllDailyItems] = useState(false);
+  const [exitingDailyKeys, setExitingDailyKeys] = useState<string[]>([]);
+  const exitingDailyRef = useRef(new Set<string>());
   const year = new Date().getFullYear();
   const weekStart = useMemo(() => new Date(startOfWeek(new Date()).getTime() + weekOffset * WEEK_MS), [weekOffset]);
   const weekEnd = useMemo(() => new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000), [weekStart]);
@@ -90,31 +99,48 @@ export default function Home() {
   const weeklyHabitAdherence = habitTarget ? Math.round((habitChecksInWeek / habitTarget) * 100) : 0;
 
   const goalProgress = useMemo(() => goalsProgressForYear(data, year), [data, year]);
-  const mainListId = data.todoLists[0]?.id ?? "";
+  const dashboardListIds = useMemo(() => effectiveDashboardTodoListIds(data), [data.todoLists, data.dashboardTodoListIds]);
   const todaysTodos = useMemo(
-    () => data.todoItems.filter((item) => item.listId === mainListId && item.active),
-    [data.todoItems, mainListId],
+    () => data.todoItems.filter((item) => dashboardListIds.includes(item.listId) && item.active),
+    [data.todoItems, dashboardListIds],
   );
+
+  function toggleDashboardList(listId: string, nextChecked: boolean) {
+    setData((prev) => {
+      const main = prev.todoLists.find((l) => l.isMain)?.id ?? prev.todoLists[0]?.id ?? "";
+      let ids = effectiveDashboardTodoListIds(prev);
+      if (nextChecked) ids = [...new Set([...ids, listId])];
+      else ids = ids.filter((id) => id !== listId);
+      if (!ids.length && main) ids = [main];
+      return { ...prev, dashboardTodoListIds: ids };
+    });
+  }
   const todaysHabits = useMemo(
     () =>
       data.habits
         .filter((habit) => habit.active)
+        .filter((habit) => !data.habitLogs.some((log) => log.habitId === habit.id && log.date === today))
         .map((habit) => ({
           id: habit.id,
           label: habit.name,
-          completed: data.habitLogs.some(
-            (log) => log.habitId === habit.id && log.date === today && log.completed,
-          ),
-        }))
-        .filter((habit) => !habit.completed),
+        })),
     [data.habits, data.habitLogs, today],
   );
+  const showListSourceOnTodos = dashboardListIds.length > 1;
   const dailyItems = useMemo(
     () => [
-      ...todaysTodos.map((todo) => ({ kind: "todo" as const, id: todo.id, label: todo.title })),
+      ...todaysTodos.map((todo) => {
+        const listName = data.todoLists.find((l) => l.id === todo.listId)?.name ?? "";
+        return {
+          kind: "todo" as const,
+          id: todo.id,
+          label: todo.title,
+          listLabel: showListSourceOnTodos ? listName : undefined,
+        };
+      }),
       ...todaysHabits.map((habit) => ({ kind: "habit" as const, id: habit.id, label: habit.label })),
     ],
-    [todaysTodos, todaysHabits],
+    [todaysTodos, todaysHabits, data.todoLists, showListSourceOnTodos],
   );
   const dailyVisible = showAllDailyItems ? dailyItems : dailyItems.slice(0, 5);
   const hiddenDailyCount = Math.max(0, dailyItems.length - 5);
@@ -148,25 +174,45 @@ export default function Home() {
     }));
   }
 
-  function completeTodo(todoId: string) {
-    setData((prev) => ({
-      ...prev,
-      todoItems: prev.todoItems.map((item) => (item.id === todoId ? { ...item, active: false } : item)),
-      todoCompletions: [
-        { id: crypto.randomUUID(), todoItemId: todoId, completedAt: new Date().toISOString() },
-        ...prev.todoCompletions,
-      ],
-    }));
+  function dailyItemKey(item: { kind: "todo" | "habit"; id: string }) {
+    return `${item.kind}-${item.id}`;
   }
 
-  function completeHabit(habitId: string) {
-    setData((prev) => {
-      const existing = prev.habitLogs.find((log) => log.habitId === habitId && log.date === today);
-      const nextLogs = existing
-        ? prev.habitLogs.map((log) => (log.id === existing.id ? { ...log, completed: true } : log))
-        : [{ id: crypto.randomUUID(), habitId, date: today, completed: true }, ...prev.habitLogs];
-      return { ...prev, habitLogs: nextLogs };
-    });
+  function completeTodo(todoId: string) {
+    const key = `todo-${todoId}`;
+    if (exitingDailyRef.current.has(key)) return;
+    exitingDailyRef.current.add(key);
+    setExitingDailyKeys((prev) => [...prev, key]);
+    window.setTimeout(() => {
+      exitingDailyRef.current.delete(key);
+      setExitingDailyKeys((prev) => prev.filter((k) => k !== key));
+      setData((prev) => ({
+        ...prev,
+        todoItems: prev.todoItems.map((item) => (item.id === todoId ? { ...item, active: false } : item)),
+        todoCompletions: [
+          { id: crypto.randomUUID(), todoItemId: todoId, completedAt: new Date().toISOString() },
+          ...prev.todoCompletions,
+        ],
+      }));
+    }, COMPLETE_EXIT_MS);
+  }
+
+  function logHabitTodayWithExit(habitId: string, completed: boolean) {
+    const key = `habit-${habitId}`;
+    if (exitingDailyRef.current.has(key)) return;
+    exitingDailyRef.current.add(key);
+    setExitingDailyKeys((prev) => [...prev, key]);
+    window.setTimeout(() => {
+      exitingDailyRef.current.delete(key);
+      setExitingDailyKeys((prev) => prev.filter((k) => k !== key));
+      setData((prev) => {
+        const existing = prev.habitLogs.find((log) => log.habitId === habitId && log.date === today);
+        const nextLogs = existing
+          ? prev.habitLogs.map((log) => (log.id === existing.id ? { ...log, completed } : log))
+          : [{ id: crypto.randomUUID(), habitId, date: today, completed }, ...prev.habitLogs];
+        return { ...prev, habitLogs: nextLogs };
+      });
+    }, COMPLETE_EXIT_MS);
   }
 
   return (
@@ -175,18 +221,68 @@ export default function Home() {
       description="Weekly view of your health and progress toward goals."
     >
       <SectionCard title="Today">
+        <div className="mb-3 grid gap-2 rounded-lg border border-sky-200/70 bg-sky-50/50 p-3">
+          <p className="text-xs font-medium uppercase tracking-wide text-sky-800/70">Lists on dashboard</p>
+          <div className="flex flex-wrap gap-3">
+            {data.todoLists.map((list) => (
+              <label key={list.id} className="flex items-center gap-2 text-sm text-zinc-700">
+                <input
+                  type="checkbox"
+                  checked={dashboardListIds.includes(list.id)}
+                  onChange={(e) => toggleDashboardList(list.id, e.target.checked)}
+                />
+                <span>{list.isMain ? `${list.name} (main)` : list.name}</span>
+              </label>
+            ))}
+          </div>
+        </div>
         <div className="grid gap-2">
           {dailyVisible.map((item) => (
-            <label
-              key={`${item.kind}-${item.id}`}
-              className="flex items-center gap-3 rounded-lg border border-sky-200/80 bg-sky-50/40 px-3 py-2"
-            >
-              <input
-                type="checkbox"
-                onChange={() => (item.kind === "todo" ? completeTodo(item.id) : completeHabit(item.id))}
-              />
-              <span className="text-sm">{item.label}</span>
-            </label>
+            <CompleteExitRow key={dailyItemKey(item)} exiting={exitingDailyKeys.includes(dailyItemKey(item))}>
+              {item.kind === "todo" ? (
+                <label className="flex items-center gap-3 rounded-lg border border-sky-200/80 bg-sky-50/40 px-3 py-2">
+                  <input
+                    type="checkbox"
+                    checked={exitingDailyKeys.includes(dailyItemKey(item))}
+                    onChange={() => completeTodo(item.id)}
+                  />
+                  <span className="text-sm">
+                    {"listLabel" in item && item.listLabel ? (
+                      <>
+                        <span className="mr-1 text-xs text-sky-800/70">[{item.listLabel}]</span>
+                        {item.label}
+                      </>
+                    ) : (
+                      item.label
+                    )}
+                  </span>
+                </label>
+              ) : (
+                <div className="flex flex-wrap items-center gap-3 rounded-lg border border-sky-200/80 bg-sky-50/40 px-3 py-2">
+                  <div className="flex shrink-0 gap-1.5">
+                    <button
+                      type="button"
+                      title="Done today"
+                      aria-label="Log habit as done today"
+                      onClick={() => logHabitTodayWithExit(item.id, true)}
+                      className="flex h-9 w-9 items-center justify-center rounded-full border border-sky-200 bg-white text-sm font-semibold text-emerald-700 transition-colors hover:border-emerald-300 hover:bg-emerald-50"
+                    >
+                      ✓
+                    </button>
+                    <button
+                      type="button"
+                      title="Missed today"
+                      aria-label="Log habit as missed today"
+                      onClick={() => logHabitTodayWithExit(item.id, false)}
+                      className="flex h-9 w-9 items-center justify-center rounded-full border border-sky-200 bg-white text-sm font-semibold text-red-700 transition-colors hover:border-red-300 hover:bg-red-50"
+                    >
+                      ✗
+                    </button>
+                  </div>
+                  <span className="min-w-0 text-sm">{item.label}</span>
+                </div>
+              )}
+            </CompleteExitRow>
           ))}
           {!dailyItems.length ? <p className="text-sm text-zinc-600">No items for today.</p> : null}
           {hiddenDailyCount > 0 ? (
@@ -239,8 +335,10 @@ export default function Home() {
       <SectionCard title={`Health (${weekLabel})`}>
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
-            <p className="text-xs uppercase tracking-wide text-sky-800/70">Estimated 1RM</p>
-            <p className="mt-1 text-2xl font-semibold">{estimatedOneRm || "-"}</p>
+            <p className="text-xs uppercase tracking-wide text-sky-800/70">Estimated 1RM ({weightAbbr})</p>
+            <p className="mt-1 text-2xl font-semibold">
+              {estimatedOneRm ? `${estimatedOneRm} ${weightAbbr}` : "-"}
+            </p>
           </div>
           <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
             <p className="text-xs uppercase tracking-wide text-sky-800/70">Cardio Health Score</p>
@@ -253,12 +351,17 @@ export default function Home() {
           </div>
         </div>
         <div className="mt-3 rounded-xl border border-sky-200/80 bg-sky-50/50 p-4">
-          <p className="mb-2 text-xs uppercase tracking-wide text-sky-800/70">Weight Trend (This Week)</p>
+          <p className="mb-2 text-xs uppercase tracking-wide text-sky-800/70">
+            Weight trend (this week, {weightAbbr})
+          </p>
           {weightValues.length ? (
             <div className="flex flex-wrap items-end gap-4">
               <Sparkline values={weightValues} width={220} height={48} />
               <p className="text-sm text-zinc-600">
-                Latest: <span className="font-semibold text-sky-900">{weightValues[weightValues.length - 1]}</span>
+                Latest:{" "}
+                <span className="font-semibold text-sky-900">
+                  {weightValues[weightValues.length - 1]} {weightAbbr}
+                </span>
               </p>
             </div>
           ) : (
@@ -293,7 +396,9 @@ export default function Home() {
               {weeklyStrength.map((exercise) => (
                 <div key={exercise.exerciseId} className="flex items-center justify-between text-sm">
                   <span className="font-medium text-zinc-800">{exercise.exerciseName}</span>
-                  <span className="text-zinc-600">1RM {exercise.bestOneRepMax}</span>
+                  <span className="text-zinc-600">
+                    1RM {exercise.bestOneRepMax} {weightAbbr}
+                  </span>
                 </div>
               ))}
             </div>

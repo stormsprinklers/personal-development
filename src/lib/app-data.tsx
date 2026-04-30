@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AppData, WorkoutSession } from "@/lib/models";
+import { MAIN_TODO_LIST_ID, normalizeTodoListsAndItems } from "@/lib/todo-helpers";
+import { normalizeMeasurementPreferences } from "@/lib/units";
 
 const STORAGE_KEY = "self-improvement-app-data-v1";
 
@@ -12,6 +14,7 @@ export const todayKey = () => new Date().toISOString().slice(0, 10);
 function createDefaultData(): AppData {
   return {
     userProfile: { name: "Austin", timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+    measurementPreferences: normalizeMeasurementPreferences(),
     exercises: [
       { id: "seed-ex-back-squat", name: "Back Squat", category: "strength", archived: false, createdAt: nowIso() },
       { id: "seed-ex-bench", name: "Bench Press", category: "strength", archived: false, createdAt: nowIso() },
@@ -23,8 +26,17 @@ function createDefaultData(): AppData {
     workoutSessions: [],
     habits: [],
     habitLogs: [],
-    todoLists: [],
+    todoLists: [
+      {
+        id: MAIN_TODO_LIST_ID,
+        name: "Main",
+        area: "",
+        isMain: true,
+        createdAt: nowIso(),
+      },
+    ],
     todoItems: [],
+    todoSections: [],
     todoCompletions: [],
     goalSections: [
       { id: "seed-sec-fitness", name: "Health" },
@@ -48,6 +60,7 @@ function parseStoredData(raw: string | null): AppData {
     const goals = goalsRaw.map((g) => ({
       ...g,
       year: typeof g.year === "number" ? g.year : new Date().getFullYear(),
+      completed: g.completed === true,
       linkedHabitIds:
         Array.isArray((g as { linkedHabitIds?: string[] }).linkedHabitIds)
           ? (g as { linkedHabitIds?: string[] }).linkedHabitIds
@@ -61,13 +74,29 @@ function parseStoredData(raw: string | null): AppData {
       if (section.id === "seed-sec-personal") return { ...section, name: "Wealth" };
       return section;
     });
-    return {
+    const merged: AppData = {
       ...base,
       ...parsed,
       userProfile: { ...base.userProfile, ...parsed.userProfile },
+      measurementPreferences: normalizeMeasurementPreferences(parsed.measurementPreferences),
       goalSections: sections,
       goals,
+      todoLists: parsed.todoLists ?? base.todoLists,
+      todoItems: parsed.todoItems ?? base.todoItems,
+      todoSections: parsed.todoSections ?? base.todoSections,
+      dashboardTodoListIds: parsed.dashboardTodoListIds,
     };
+    const { todoLists, todoItems } = normalizeTodoListsAndItems(
+      merged.todoLists,
+      merged.todoItems,
+      merged.goals,
+      nowIso,
+    );
+    let dashboardTodoListIds = merged.dashboardTodoListIds?.filter((id) => todoLists.some((l) => l.id === id));
+    if (dashboardTodoListIds?.length === 0) dashboardTodoListIds = undefined;
+    if (dashboardTodoListIds?.length) dashboardTodoListIds = [...new Set(dashboardTodoListIds)];
+    const todoSections = (merged.todoSections ?? []).filter((s) => todoLists.some((l) => l.id === s.listId));
+    return { ...merged, todoLists, todoItems, todoSections, dashboardTodoListIds };
   } catch {
     return createDefaultData();
   }
