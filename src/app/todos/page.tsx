@@ -318,7 +318,7 @@ export default function TodosPage() {
       description="Simple editable task list."
     >
       <SectionCard title={activeList?.name ?? "My To-Do List"}>
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <button
             onClick={() => setListMenuOpen((prev) => !prev)}
             className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:bg-sky-50"
@@ -336,7 +336,7 @@ export default function TodosPage() {
             <div className="grid gap-3">
               {sortedTodoLists.map((list) => (
                 <div key={list.id} className="grid gap-2 rounded-lg border border-sky-200/60 bg-white/80 p-2">
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     {renameListId === list.id ? (
                       <>
                         <input
@@ -358,7 +358,7 @@ export default function TodosPage() {
                             setSelectedListId(list.id);
                             setListMenuOpen(false);
                           }}
-                          className={`w-full rounded-lg px-3 py-2 text-left text-sm ${
+                          className={`min-w-0 flex-1 rounded-lg px-3 py-2 text-left text-sm ${
                             activeListId === list.id ? "bg-sky-600 text-white" : "bg-white text-zinc-700 hover:bg-sky-50"
                           }`}
                         >
@@ -371,7 +371,7 @@ export default function TodosPage() {
                         </button>
                         <button
                           onClick={() => startRenameList(list.id, list.name)}
-                          className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-xs text-zinc-700 hover:bg-sky-50"
+                          className="shrink-0 rounded-lg border border-sky-200 bg-white px-3 py-2 text-xs text-zinc-700 hover:bg-sky-50"
                         >
                           Edit
                         </button>
@@ -398,7 +398,7 @@ export default function TodosPage() {
                 </div>
               ))}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <input
                 value={newListName}
                 onChange={(event) => setNewListName(event.target.value)}
@@ -407,7 +407,7 @@ export default function TodosPage() {
               />
               <button
                 onClick={addList}
-                className="rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
+                className="w-full rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 sm:w-auto"
               >
                 +
               </button>
@@ -490,7 +490,7 @@ export default function TodosPage() {
             placeholder="Add task"
             className="min-w-0 flex-[2] rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
           />
-          <button onClick={addTodo} className="rounded-lg bg-sky-600 px-4 py-2 text-sm text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700">
+          <button onClick={addTodo} className="w-full rounded-lg bg-sky-600 px-4 py-2 text-sm text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700 sm:w-auto">
             +
           </button>
         </div>
@@ -519,7 +519,7 @@ export default function TodosPage() {
                     ✗
                   </button>
                 </div>
-                <span className="min-w-0 text-sm">{habit.name} (habit)</span>
+                <span className="min-w-0 flex-1 break-words text-sm">{habit.name} (habit)</span>
               </div>
             </CompleteExitRow>
           ))}
@@ -573,7 +573,7 @@ export default function TodosPage() {
                             <select
                               value={item.sectionId ?? ""}
                               onChange={(event) => setTodoItemSection(item.id, event.target.value)}
-                              className="rounded border border-sky-200 bg-white px-2 py-1 text-xs text-zinc-800"
+                              className="min-w-0 flex-1 rounded border border-sky-200 bg-white px-2 py-1 text-xs text-zinc-800 sm:flex-none"
                               aria-label="Move to section"
                             >
                               <option value="">No section</option>
@@ -586,7 +586,7 @@ export default function TodosPage() {
                             <button
                               type="button"
                               onClick={() => startEditTodo(item.id, item.title)}
-                              className="rounded-md border border-sky-200 bg-white px-2 py-1 text-xs text-zinc-700 hover:bg-sky-50"
+                              className="shrink-0 rounded-md border border-sky-200 bg-white px-2 py-1 text-xs text-zinc-700 hover:bg-sky-50"
                               aria-label="Edit task"
                             >
                               ✎
@@ -594,7 +594,7 @@ export default function TodosPage() {
                             <button
                               type="button"
                               onClick={() => deleteTodoItem(item.id)}
-                              className="rounded-md border border-red-200 bg-white px-2 py-1 text-xs text-red-700 hover:bg-red-50"
+                              className="shrink-0 rounded-md border border-red-200 bg-white px-2 py-1 text-xs text-red-700 hover:bg-red-50"
                               aria-label="Delete task"
                             >
                               🗑
@@ -650,7 +650,7 @@ export default function TodosPage() {
                       <button
                         type="button"
                         onClick={() => startEditTodo(item.id, item.title)}
-                        className="rounded-md border border-sky-200 bg-white px-2 py-1 text-xs text-zinc-700 hover:bg-sky-50"
+                        className="shrink-0 rounded-md border border-sky-200 bg-white px-2 py-1 text-xs text-zinc-700 hover:bg-sky-50"
                         aria-label="Edit task"
                       >
                         ✎
@@ -658,7 +658,7 @@ export default function TodosPage() {
                       <button
                         type="button"
                         onClick={() => deleteTodoItem(item.id)}
-                        className="rounded-md border border-red-200 bg-white px-2 py-1 text-xs text-red-700 hover:bg-red-50"
+                        className="shrink-0 rounded-md border border-red-200 bg-white px-2 py-1 text-xs text-red-700 hover:bg-red-50"
                         aria-label="Delete task"
                       >
                         🗑

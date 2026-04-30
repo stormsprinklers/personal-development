@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AppData, WorkoutSession } from "@/lib/models";
 import { MAIN_TODO_LIST_ID, normalizeTodoListsAndItems } from "@/lib/todo-helpers";
+import { sanitizeWorkoutRoutines } from "@/lib/workout-routines";
 import { normalizeMeasurementPreferences } from "@/lib/units";
 
 const STORAGE_KEY = "self-improvement-app-data-v1";
@@ -12,17 +13,19 @@ const nowIso = () => new Date().toISOString();
 export const todayKey = () => new Date().toISOString().slice(0, 10);
 
 function createDefaultData(): AppData {
+  const exercises = [
+    { id: "seed-ex-back-squat", name: "Back Squat", category: "strength" as const, archived: false, createdAt: nowIso() },
+    { id: "seed-ex-bench", name: "Bench Press", category: "strength" as const, archived: false, createdAt: nowIso() },
+    { id: "seed-ex-deadlift", name: "Deadlift", category: "strength" as const, archived: false, createdAt: nowIso() },
+    { id: "seed-ex-run", name: "Running", category: "run" as const, archived: false, createdAt: nowIso() },
+    { id: "seed-ex-bike", name: "Cycling", category: "bike" as const, archived: false, createdAt: nowIso() },
+    { id: "seed-ex-swim", name: "Swimming", category: "swim" as const, archived: false, createdAt: nowIso() },
+  ];
   return {
     userProfile: { name: "Austin", timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
     measurementPreferences: normalizeMeasurementPreferences(),
-    exercises: [
-      { id: "seed-ex-back-squat", name: "Back Squat", category: "strength", archived: false, createdAt: nowIso() },
-      { id: "seed-ex-bench", name: "Bench Press", category: "strength", archived: false, createdAt: nowIso() },
-      { id: "seed-ex-deadlift", name: "Deadlift", category: "strength", archived: false, createdAt: nowIso() },
-      { id: "seed-ex-run", name: "Running", category: "run", archived: false, createdAt: nowIso() },
-      { id: "seed-ex-bike", name: "Cycling", category: "bike", archived: false, createdAt: nowIso() },
-      { id: "seed-ex-swim", name: "Swimming", category: "swim", archived: false, createdAt: nowIso() },
-    ],
+    exercises,
+    workoutRoutines: sanitizeWorkoutRoutines(undefined, exercises),
     workoutSessions: [],
     habits: [],
     habitLogs: [],
@@ -96,7 +99,8 @@ function parseStoredData(raw: string | null): AppData {
     if (dashboardTodoListIds?.length === 0) dashboardTodoListIds = undefined;
     if (dashboardTodoListIds?.length) dashboardTodoListIds = [...new Set(dashboardTodoListIds)];
     const todoSections = (merged.todoSections ?? []).filter((s) => todoLists.some((l) => l.id === s.listId));
-    return { ...merged, todoLists, todoItems, todoSections, dashboardTodoListIds };
+    const workoutRoutines = sanitizeWorkoutRoutines(merged.workoutRoutines, merged.exercises);
+    return { ...merged, todoLists, todoItems, todoSections, dashboardTodoListIds, workoutRoutines };
   } catch {
     return createDefaultData();
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
 import { CompleteExitRow, COMPLETE_EXIT_MS } from "@/components/complete-exit-row";
@@ -53,6 +53,19 @@ export default function GoalsPage() {
   const [bodyWeightTargetDraft, setBodyWeightTargetDraft] = useState<string>("");
   const [fadingGoalTaskIds, setFadingGoalTaskIds] = useState<string[]>([]);
   const exitingGoalTaskIdsRef = useRef(new Set<string>());
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const previousOverflow = document.body.style.overflow;
+    if (openGoalId) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = previousOverflow;
+    }
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [openGoalId]);
 
   const goalsForYear = useMemo(
     () => data.goals.filter((goal) => goal.year === goalYear),
@@ -552,8 +565,8 @@ export default function GoalsPage() {
       </SectionCard>
 
       {openGoalId ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 p-3 sm:items-center">
-          <div className="w-full max-w-md rounded-xl border border-sky-200 bg-white p-4 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto overscroll-contain bg-black/35 p-3 sm:items-center">
+          <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-xl border border-sky-200 bg-white p-4 shadow-xl">
             {(() => {
               const goal = data.goals.find((g) => g.id === openGoalId);
               if (!goal) return null;

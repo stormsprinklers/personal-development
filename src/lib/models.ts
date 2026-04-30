@@ -35,6 +35,16 @@ export type WorkoutSession = {
   cardioEntries: CardioEntry[];
 };
 
+/** User-defined workout split: strength exercise ids + which cardio blocks to show. */
+export type WorkoutRoutine = {
+  id: string;
+  name: string;
+  strengthExerciseIds: string[];
+  cardioTypes: CardioType[];
+  sortOrder: number;
+  createdAt: string;
+};
+
 export type HabitType = "build" | "break";
 
 export type Habit = {
@@ -156,6 +166,8 @@ export type AppData = {
   userProfile: UserProfile;
   measurementPreferences?: MeasurementPreferences;
   exercises: Exercise[];
+  /** Workout templates (e.g. Leg Day); strength ids reference `exercises`. */
+  workoutRoutines: WorkoutRoutine[];
   workoutSessions: WorkoutSession[];
   habits: Habit[];
   habitLogs: HabitLog[];
