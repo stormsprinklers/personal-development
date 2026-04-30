@@ -17,7 +17,7 @@ export function MiniBars({ values, labels, maxHeight = 72, barClassName = "bg-sk
             title={labels?.[i] ?? String(v)}
           />
           {labels?.[i] ? (
-            <span className="max-w-[3rem] truncate text-[10px] text-sky-700/70">{labels[i]}</span>
+            <span className="max-w-[3rem] break-words text-[10px] text-sky-700/70">{labels[i]}</span>
           ) : null}
         </div>
       ))}

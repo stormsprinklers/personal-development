@@ -23,6 +23,8 @@ export default function TodosPage() {
   const [newTaskSectionId, setNewTaskSectionId] = useState("");
   const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
   const [editingTodoTitle, setEditingTodoTitle] = useState("");
+  const [draggingTodoId, setDraggingTodoId] = useState<string | null>(null);
+  const [dragOverSectionId, setDragOverSectionId] = useState<string | null>(null);
   const exitingTodoIdsRef = useRef(new Set<string>());
   const exitingHabitIdsRef = useRef(new Set<string>());
 
@@ -228,6 +230,22 @@ export default function TodosPage() {
     });
   }
 
+  function startDraggingTodo(todoId: string) {
+    setDraggingTodoId(todoId);
+  }
+
+  function endDraggingTodo() {
+    setDraggingTodoId(null);
+    setDragOverSectionId(null);
+  }
+
+  function dropTodoOnSection(sectionIdOrEmpty: string) {
+    if (!draggingTodoId) return;
+    setTodoItemSection(draggingTodoId, sectionIdOrEmpty);
+    setDraggingTodoId(null);
+    setDragOverSectionId(null);
+  }
+
   function completeTodo(todoId: string) {
     if (exitingTodoIdsRef.current.has(todoId)) return;
     exitingTodoIdsRef.current.add(todoId);
@@ -293,6 +311,27 @@ export default function TodosPage() {
     setRenameValue("");
   }
 
+  function deleteTodoList(listId: string) {
+    setData((prev) => {
+      const main = mainTodoListId(prev.todoLists);
+      if (listId === main) return prev;
+      const removedTodoIds = prev.todoItems.filter((item) => item.listId === listId).map((item) => item.id);
+      return {
+        ...prev,
+        todoLists: prev.todoLists.filter((list) => list.id !== listId),
+        todoSections: prev.todoSections.filter((section) => section.listId !== listId),
+        todoItems: prev.todoItems.filter((item) => item.listId !== listId),
+        todoCompletions: prev.todoCompletions.filter((completion) => !removedTodoIds.includes(completion.todoItemId)),
+        dashboardTodoListIds: prev.dashboardTodoListIds?.filter((id) => id !== listId),
+      };
+    });
+    if (selectedListId === listId) setSelectedListId("");
+    if (renameListId === listId) {
+      setRenameListId(null);
+      setRenameValue("");
+    }
+  }
+
   function logHabitTodayWithExit(habitId: string, completed: boolean) {
     if (exitingHabitIdsRef.current.has(habitId)) return;
     exitingHabitIdsRef.current.add(habitId);
@@ -332,21 +371,21 @@ export default function TodosPage() {
         </div>
 
         {listMenuOpen ? (
-          <div className="mb-4 grid gap-2 rounded-lg border border-sky-200/80 bg-sky-50/40 p-3">
-            <div className="grid gap-3">
+          <div className="mb-4 grid min-w-0 gap-2 rounded-lg border border-sky-200/80 bg-sky-50/40 p-3">
+            <div className="grid min-w-0 gap-3">
               {sortedTodoLists.map((list) => (
-                <div key={list.id} className="grid gap-2 rounded-lg border border-sky-200/60 bg-white/80 p-2">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
+                <div key={list.id} className="grid min-w-0 gap-2 rounded-lg border border-sky-200/60 bg-white/80 p-2">
+                  <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
                     {renameListId === list.id ? (
                       <>
                         <input
                           value={renameValue}
                           onChange={(event) => setRenameValue(event.target.value)}
-                          className="w-full rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+                          className="min-w-0 flex-1 rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
                         />
                         <button
                           onClick={saveRenameList}
-                          className="rounded-lg bg-sky-600 px-3 py-2 text-xs font-medium text-white hover:bg-sky-700"
+                          className="w-full rounded-lg bg-sky-600 px-3 py-2 text-xs font-medium text-white hover:bg-sky-700 sm:w-auto"
                         >
                           Save
                         </button>
@@ -358,7 +397,7 @@ export default function TodosPage() {
                             setSelectedListId(list.id);
                             setListMenuOpen(false);
                           }}
-                          className={`min-w-0 flex-1 rounded-lg px-3 py-2 text-left text-sm ${
+                          className={`min-w-0 flex-1 break-words rounded-lg px-3 py-2 text-left text-sm ${
                             activeListId === list.id ? "bg-sky-600 text-white" : "bg-white text-zinc-700 hover:bg-sky-50"
                           }`}
                         >
@@ -375,6 +414,19 @@ export default function TodosPage() {
                         >
                           Edit
                         </button>
+                        {!list.isMain ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm(`Delete list "${list.name}" and all its tasks?`)) {
+                                deleteTodoList(list.id);
+                              }
+                            }}
+                            className="shrink-0 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs text-red-700 hover:bg-red-50"
+                          >
+                            Delete
+                          </button>
+                        ) : null}
                       </>
                     )}
                   </div>
@@ -398,12 +450,12 @@ export default function TodosPage() {
                 </div>
               ))}
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex min-w-0 flex-wrap gap-2">
               <input
                 value={newListName}
                 onChange={(event) => setNewListName(event.target.value)}
                 placeholder="New list name"
-                className="w-full rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+                className="min-w-0 flex-1 rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
               />
               <button
                 onClick={addList}
@@ -525,14 +577,39 @@ export default function TodosPage() {
           ))}
           {mainTaskBlocks
             ? mainTaskBlocks.map((block) => (
-                <div key={block.key} className="grid gap-2">
+                <div
+                  key={block.key}
+                  className={`grid gap-2 rounded-lg border border-dashed p-2 transition-colors ${
+                    dragOverSectionId === block.key ? "border-sky-400 bg-sky-100/50" : "border-transparent"
+                  }`}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setDragOverSectionId(block.key);
+                  }}
+                  onDragEnter={(event) => {
+                    event.preventDefault();
+                    setDragOverSectionId(block.key);
+                  }}
+                  onDragLeave={() => {
+                    if (dragOverSectionId === block.key) setDragOverSectionId(null);
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    dropTodoOnSection(block.key === "_uncat" ? "" : block.key);
+                  }}
+                >
                   <h4 className="text-xs font-semibold uppercase tracking-wide text-sky-800/80">{block.title}</h4>
                   {block.items.length === 0 ? (
                     <p className="pl-1 text-xs text-zinc-500">No tasks in this section.</p>
                   ) : (
                     block.items.map((item) => (
                       <CompleteExitRow key={item.id} exiting={fadingTaskIds.includes(item.id)}>
-                        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-sky-200/80 bg-sky-50/40 px-3 py-2">
+                        <div
+                          className="flex flex-wrap items-center gap-2 rounded-lg border border-sky-200/80 bg-sky-50/40 px-3 py-2"
+                          draggable={editingTodoId !== item.id}
+                          onDragStart={() => startDraggingTodo(item.id)}
+                          onDragEnd={endDraggingTodo}
+                        >
                         {editingTodoId === item.id ? (
                           <div className="flex min-w-0 w-full flex-wrap items-center gap-2">
                             <input
@@ -568,21 +645,11 @@ export default function TodosPage() {
                                 checked={fadingTaskIds.includes(item.id)}
                                 onChange={() => completeTodo(item.id)}
                               />
-                              <span className="truncate text-sm">{item.title}</span>
+                              <span className="break-words text-sm">{item.title}</span>
                             </label>
-                            <select
-                              value={item.sectionId ?? ""}
-                              onChange={(event) => setTodoItemSection(item.id, event.target.value)}
-                              className="min-w-0 flex-1 rounded border border-sky-200 bg-white px-2 py-1 text-xs text-zinc-800 sm:flex-none"
-                              aria-label="Move to section"
-                            >
-                              <option value="">No section</option>
-                              {mainSectionsOrdered.map((sec) => (
-                                <option key={sec.id} value={sec.id}>
-                                  {sec.name}
-                                </option>
-                              ))}
-                            </select>
+                            <span className="rounded border border-sky-200 bg-white px-2 py-1 text-xs text-zinc-600">
+                              Drag to move
+                            </span>
                             <button
                               type="button"
                               onClick={() => startEditTodo(item.id, item.title)}
@@ -645,7 +712,7 @@ export default function TodosPage() {
                           checked={fadingTaskIds.includes(item.id)}
                           onChange={() => completeTodo(item.id)}
                         />
-                        <span className="truncate text-sm">{item.title}</span>
+                        <span className="break-words text-sm">{item.title}</span>
                       </label>
                       <button
                         type="button"
@@ -716,7 +783,7 @@ export default function TodosPage() {
                     </div>
                   ) : (
                     <>
-                      <span className="min-w-0 flex-1 truncate">{todo?.title ?? "Task"}</span>
+                      <span className="min-w-0 flex-1 break-words">{todo?.title ?? "Task"}</span>
                       {todo ? (
                         <>
                           <button
