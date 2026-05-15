@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
 import { CompleteExitRow, COMPLETE_EXIT_MS } from "@/components/complete-exit-row";
@@ -15,8 +15,8 @@ import { todayKey, useAppData } from "@/lib/storage";
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-function startOfWeek(date: Date) {
-  const d = new Date(date);
+function startOfWeekForDateKey(dateKey: string) {
+  const d = new Date(`${dateKey}T12:00:00`);
   const day = d.getDay();
   const diff = day === 0 ? -6 : 1 - day;
   d.setDate(d.getDate() + diff);
@@ -28,6 +28,15 @@ function toDateKey(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
+function formatDashboardDayLabel(dateKey: string) {
+  return new Date(`${dateKey}T12:00:00`).toLocaleDateString(undefined, {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
 export default function Home() {
   const { data, setData } = useAppData();
   const weightAbbr = useMemo(
@@ -35,12 +44,23 @@ export default function Home() {
     [data.measurementPreferences],
   );
   const today = todayKey();
+  const [dashboardDate, setDashboardDate] = useState(today);
   const [weekOffset, setWeekOffset] = useState(0);
   const [showAllDailyItems, setShowAllDailyItems] = useState(false);
   const [exitingDailyKeys, setExitingDailyKeys] = useState<string[]>([]);
   const exitingDailyRef = useRef(new Set<string>());
-  const year = new Date().getFullYear();
-  const weekStart = useMemo(() => new Date(startOfWeek(new Date()).getTime() + weekOffset * WEEK_MS), [weekOffset]);
+  const [journalQuickText, setJournalQuickText] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  const goalYear = useMemo(() => new Date(`${dashboardDate}T12:00:00`).getFullYear(), [dashboardDate]);
+
+  useEffect(() => {
+    setWeekOffset(0);
+  }, [dashboardDate]);
+
+  const weekAnchor = useMemo(() => startOfWeekForDateKey(dashboardDate), [dashboardDate]);
+  const weekStart = useMemo(() => new Date(weekAnchor.getTime() + weekOffset * WEEK_MS), [weekAnchor, weekOffset]);
   const weekEnd = useMemo(() => new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000), [weekStart]);
   const weekStartKey = toDateKey(weekStart);
   const weekEndKey = toDateKey(weekEnd);
@@ -98,7 +118,7 @@ export default function Home() {
   const habitTarget = activeHabits.length * 7;
   const weeklyHabitAdherence = habitTarget ? Math.round((habitChecksInWeek / habitTarget) * 100) : 0;
 
-  const goalProgress = useMemo(() => goalsProgressForYear(data, year), [data, year]);
+  const goalProgress = useMemo(() => goalsProgressForYear(data, goalYear), [data, goalYear]);
   const dashboardListIds = useMemo(() => effectiveDashboardTodoListIds(data), [data.todoLists, data.dashboardTodoListIds]);
   const todaysTodos = useMemo(
     () => data.todoItems.filter((item) => dashboardListIds.includes(item.listId) && item.active),
@@ -119,12 +139,12 @@ export default function Home() {
     () =>
       data.habits
         .filter((habit) => habit.active)
-        .filter((habit) => !data.habitLogs.some((log) => log.habitId === habit.id && log.date === today))
+        .filter((habit) => !data.habitLogs.some((log) => log.habitId === habit.id && log.date === dashboardDate))
         .map((habit) => ({
           id: habit.id,
           label: habit.name,
         })),
-    [data.habits, data.habitLogs, today],
+    [data.habits, data.habitLogs, dashboardDate],
   );
   const showListSourceOnTodos = dashboardListIds.length > 1;
   const dailyItems = useMemo(
@@ -145,33 +165,89 @@ export default function Home() {
   const dailyVisible = showAllDailyItems ? dailyItems : dailyItems.slice(0, 5);
   const hiddenDailyCount = Math.max(0, dailyItems.length - 5);
 
-  const latestSummary = data.aiInsights.find((insight) => insight.type === "daily_summary" && insight.date === today);
+  const latestSummary = useMemo(
+    () => data.aiInsights.find((insight) => insight.type === "daily_summary" && insight.date === dashboardDate),
+    [data.aiInsights, dashboardDate],
+  );
 
-  async function generateDailySummary() {
-    const context = buildAiContext(data, today);
+  async function runDailySummaryGeneration(targetDate: string, signal?: AbortSignal) {
+    const context = buildAiContext(data, targetDate);
     const prompt = dailySummaryPrompt(JSON.stringify(context, null, 2));
     const response = await fetch("/api/ai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ prompt, temperature: 0.4 }),
+      ...(signal ? { signal } : {}),
     });
     const payload = (await response.json()) as { output?: string; error?: string };
     const text = payload.output ?? payload.error;
-    if (!text) return;
-
+    if (!text?.trim()) throw new Error("No summary returned.");
     setData((prev) => ({
       ...prev,
       aiInsights: [
         {
           id: crypto.randomUUID(),
           type: "daily_summary",
-          date: today,
+          date: targetDate,
           prompt,
           output: text,
         },
-        ...prev.aiInsights.filter((insight) => !(insight.type === "daily_summary" && insight.date === today)),
+        ...prev.aiInsights.filter((insight) => !(insight.type === "daily_summary" && insight.date === targetDate)),
       ],
     }));
+  }
+
+  useEffect(() => {
+    const insight = data.aiInsights.find((i) => i.type === "daily_summary" && i.date === dashboardDate);
+    if (insight?.output?.trim()) {
+      setAiLoading(false);
+      setAiError(null);
+      return;
+    }
+
+    const ac = new AbortController();
+    let cancelled = false;
+
+    (async () => {
+      setAiLoading(true);
+      setAiError(null);
+      try {
+        await runDailySummaryGeneration(dashboardDate, ac.signal);
+      } catch (e) {
+        if (ac.signal.aborted || cancelled) return;
+        setAiError(e instanceof Error ? e.message : "Could not generate summary.");
+      } finally {
+        if (!ac.signal.aborted && !cancelled) setAiLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      ac.abort();
+      setAiLoading(false);
+    };
+  }, [dashboardDate, data.aiInsights, data, setData]);
+
+  async function regenerateDailySummary() {
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      await runDailySummaryGeneration(dashboardDate);
+    } catch (e) {
+      setAiError(e instanceof Error ? e.message : "Could not generate summary.");
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+  function saveJournalQuick() {
+    const text = journalQuickText.trim();
+    if (!text) return;
+    setData((prev) => ({
+      ...prev,
+      journalEntries: [{ id: crypto.randomUUID(), date: dashboardDate, content: text, goalIds: [] }, ...prev.journalEntries],
+    }));
+    setJournalQuickText("");
   }
 
   function dailyItemKey(item: { kind: "todo" | "habit"; id: string }) {
@@ -206,21 +282,34 @@ export default function Home() {
       exitingDailyRef.current.delete(key);
       setExitingDailyKeys((prev) => prev.filter((k) => k !== key));
       setData((prev) => {
-        const existing = prev.habitLogs.find((log) => log.habitId === habitId && log.date === today);
+        const existing = prev.habitLogs.find((log) => log.habitId === habitId && log.date === dashboardDate);
         const nextLogs = existing
           ? prev.habitLogs.map((log) => (log.id === existing.id ? { ...log, completed } : log))
-          : [{ id: crypto.randomUUID(), habitId, date: today, completed }, ...prev.habitLogs];
+          : [{ id: crypto.randomUUID(), habitId, date: dashboardDate, completed }, ...prev.habitLogs];
         return { ...prev, habitLogs: nextLogs };
       });
     }, COMPLETE_EXIT_MS);
   }
 
   return (
-    <AppShell
-      title="Dashboard"
-      description="Weekly view of your health and progress toward goals."
-    >
-      <SectionCard title="Today">
+    <AppShell title="Dashboard" description="Your day, summary, journal, and weekly health at a glance.">
+      <SectionCard title="Day">
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="relative inline-flex cursor-pointer items-center rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-sky-50">
+            {formatDashboardDayLabel(dashboardDate)}
+            <input
+              type="date"
+              value={dashboardDate}
+              max={today}
+              onChange={(e) => setDashboardDate(e.target.value)}
+              className="absolute inset-0 cursor-pointer opacity-0"
+            />
+          </label>
+          <p className="text-xs text-zinc-500">Tap the date to choose another day.</p>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Tasks & habits">
         <div className="mb-3 grid gap-2 rounded-lg border border-sky-200/70 bg-sky-50/50 p-3">
           <p className="text-xs font-medium uppercase tracking-wide text-sky-800/70">Lists on dashboard</p>
           <div className="flex flex-wrap gap-3">
@@ -284,7 +373,7 @@ export default function Home() {
               )}
             </CompleteExitRow>
           ))}
-          {!dailyItems.length ? <p className="text-sm text-zinc-600">No items for today.</p> : null}
+          {!dailyItems.length ? <p className="text-sm text-zinc-600">No open tasks or habits to log for this day.</p> : null}
           {hiddenDailyCount > 0 ? (
             <button
               onClick={() => setShowAllDailyItems((prev) => !prev)}
@@ -296,43 +385,64 @@ export default function Home() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Week">
-        <div className="flex items-center justify-between gap-3">
-          <button
-            onClick={() => setWeekOffset((prev) => prev - 1)}
-            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:bg-sky-50"
-          >
-            Previous Week
-          </button>
-          <p className="text-sm font-medium text-sky-800/80">{weekLabel}</p>
-          <button
-            onClick={() => setWeekOffset((prev) => Math.min(prev + 1, 0))}
-            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:bg-sky-50 disabled:opacity-40"
-            disabled={weekOffset === 0}
-          >
-            Next Week
-          </button>
-        </div>
-      </SectionCard>
-
-      <SectionCard title="Daily AI Summary">
+      <SectionCard title="Daily AI summary">
         <div className="grid gap-3">
-          <p className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4 text-sm text-zinc-700">
-            {latestSummary?.output ??
-              "No summary yet for today. Generate one to see accomplishments and improvement advice."}
+          {aiLoading ? <p className="text-sm text-sky-800/80">Generating summary…</p> : null}
+          {aiError ? <p className="rounded-lg border border-red-200 bg-red-50/80 p-3 text-sm text-red-800">{aiError}</p> : null}
+          <p className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4 text-sm text-zinc-700 whitespace-pre-wrap">
+            {latestSummary?.output?.trim() ?? (aiLoading ? "" : "Summary will appear here once generated.")}
           </p>
           <div>
             <button
-              onClick={generateDailySummary}
-              className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700"
+              type="button"
+              disabled={aiLoading}
+              onClick={() => void regenerateDailySummary()}
+              className="rounded-lg border border-sky-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-sky-50 disabled:opacity-50"
             >
-              Generate Today&apos;s Summary
+              Regenerate summary
             </button>
           </div>
         </div>
       </SectionCard>
 
+      <SectionCard title="Quick journal">
+        <p className="mb-2 text-xs text-zinc-500">Saved for {dashboardDate}. Link goals from the full Journal page.</p>
+        <textarea
+          value={journalQuickText}
+          onChange={(e) => setJournalQuickText(e.target.value)}
+          placeholder="A few lines about your day…"
+          rows={4}
+          className="mb-2 w-full resize-y rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+        />
+        <button
+          type="button"
+          onClick={saveJournalQuick}
+          disabled={!journalQuickText.trim()}
+          className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700 disabled:opacity-40"
+        >
+          Save entry
+        </button>
+      </SectionCard>
+
       <SectionCard title={`Health (${weekLabel})`}>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => setWeekOffset((prev) => prev - 1)}
+            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:bg-sky-50"
+          >
+            Previous week
+          </button>
+          <p className="text-center text-xs text-zinc-500">Week relative to selected day</p>
+          <button
+            type="button"
+            onClick={() => setWeekOffset((prev) => Math.min(prev + 1, 0))}
+            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:bg-sky-50 disabled:opacity-40"
+            disabled={weekOffset === 0}
+          >
+            Next week
+          </button>
+        </div>
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
             <p className="text-xs uppercase tracking-wide text-sky-800/70">Estimated 1RM ({weightAbbr})</p>
@@ -341,12 +451,12 @@ export default function Home() {
             </p>
           </div>
           <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
-            <p className="text-xs uppercase tracking-wide text-sky-800/70">Cardio Health Score</p>
+            <p className="text-xs uppercase tracking-wide text-sky-800/70">Cardio health score</p>
             <p className="mt-1 text-2xl font-semibold">{cardioHealthScore}</p>
             <p className="text-xs text-zinc-600">{cardioMinutes} min total cardio</p>
           </div>
           <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
-            <p className="text-xs uppercase tracking-wide text-sky-800/70">Workout Sessions</p>
+            <p className="text-xs uppercase tracking-wide text-sky-800/70">Workout sessions</p>
             <p className="mt-1 text-2xl font-semibold">{weeklyWorkouts.length}</p>
           </div>
         </div>
@@ -370,27 +480,27 @@ export default function Home() {
         </div>
       </SectionCard>
 
-      <SectionCard title={`Progress Towards Goals (${year})`}>
+      <SectionCard title={`Progress toward goals (${goalYear})`}>
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
-            <p className="text-xs uppercase tracking-wide text-sky-800/70">Annual Goals</p>
+            <p className="text-xs uppercase tracking-wide text-sky-800/70">Annual goals</p>
             <p className="mt-1 text-2xl font-semibold text-sky-800">{goalProgress.percent}%</p>
             <p className="text-xs text-zinc-600">
               {goalProgress.done} of {goalProgress.total} completed
             </p>
           </div>
           <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
-            <p className="text-xs uppercase text-sky-800/70">Completed To-dos (Week)</p>
+            <p className="text-xs uppercase text-sky-800/70">Completed to-dos (week)</p>
             <p className="text-2xl font-semibold">{weeklyTodoCompletions}</p>
           </div>
           <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
-            <p className="text-xs uppercase text-sky-800/70">Habit Adherence (Week)</p>
+            <p className="text-xs uppercase text-sky-800/70">Habit adherence (week)</p>
             <p className="text-2xl font-semibold">{weeklyHabitAdherence}%</p>
           </div>
         </div>
 
         <div className="mt-3 rounded-xl border border-sky-200/80 bg-sky-50/50 p-4">
-          <p className="mb-2 text-xs uppercase tracking-wide text-sky-800/70">Top Strength Lifts (Week)</p>
+          <p className="mb-2 text-xs uppercase tracking-wide text-sky-800/70">Top strength lifts (week)</p>
           {weeklyStrength.length ? (
             <div className="grid gap-2">
               {weeklyStrength.map((exercise) => (
