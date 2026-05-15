@@ -17,6 +17,12 @@ export type StrengthSet = {
   weight: number;
 };
 
+/** Free-form note for one strength exercise on a session (shown next time you log this routine). */
+export type StrengthExerciseNote = {
+  exerciseId: string;
+  note: string;
+};
+
 export type CardioEntry = {
   id: string;
   type: CardioType;
@@ -34,6 +40,8 @@ export type WorkoutSession = {
   bodyWeight?: number;
   notes?: string;
   strengthSets: StrengthSet[];
+  /** Per-exercise notes for this session’s strength block. */
+  strengthExerciseNotes?: StrengthExerciseNote[];
   cardioEntries: CardioEntry[];
 };
 

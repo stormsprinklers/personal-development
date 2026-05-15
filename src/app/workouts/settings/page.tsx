@@ -66,10 +66,14 @@ export default function WorkoutSettingsPage() {
         ...routine,
         strengthExerciseIds: routine.strengthExerciseIds.filter((id) => id !== exerciseId),
       })),
-      workoutSessions: prev.workoutSessions.map((session) => ({
-        ...session,
-        strengthSets: session.strengthSets.filter((set) => set.exerciseId !== exerciseId),
-      })),
+      workoutSessions: prev.workoutSessions.map((session) => {
+        const nextNotes = session.strengthExerciseNotes?.filter((n) => n.exerciseId !== exerciseId);
+        return {
+          ...session,
+          strengthSets: session.strengthSets.filter((set) => set.exerciseId !== exerciseId),
+          strengthExerciseNotes: nextNotes?.length ? nextNotes : undefined,
+        };
+      }),
       goals: prev.goals.map((goal) =>
         goal.linkedExerciseId === exerciseId
           ? {

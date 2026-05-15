@@ -5,13 +5,23 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
-import type { CardioType, Exercise, WorkoutSession, WorkoutRoutine } from "@/lib/models";
+import type { CardioType, Exercise, StrengthExerciseNote, WorkoutSession, WorkoutRoutine } from "@/lib/models";
 import { findLastSessionForRoutine, formatShortWorkoutDate } from "@/lib/workout-session-helpers";
 import { normalizeMeasurementPreferences, runBikeDistanceUnitAbbr, weightUnitAbbr } from "@/lib/units";
 import { todayKey, useAppData } from "@/lib/storage";
 
 const CARDIO_TYPES: CardioType[] = ["run", "bike", "swim"];
 const ADD_ROUTINE_OPTION = "__add_routine__";
+
+function mergeStrengthExerciseNotes(
+  notes: StrengthExerciseNote[] | undefined,
+  exerciseId: string,
+  rawNote: string,
+): StrengthExerciseNote[] | undefined {
+  const others = (notes ?? []).filter((n) => n.exerciseId !== exerciseId);
+  if (!rawNote.trim()) return others.length ? others : undefined;
+  return [...others, { exerciseId, note: rawNote }];
+}
 
 export default function WorkoutsPage() {
   const { data, ready, upsertWorkoutForDate, setData } = useAppData();
@@ -118,6 +128,14 @@ export default function WorkoutsPage() {
       date: workoutDate,
       strengthSets: [],
       cardioEntries: [],
+    });
+  }
+
+  function setStrengthExerciseNote(exerciseId: string, rawNote: string) {
+    upsertWorkoutForDate(workoutDate, (existing) => {
+      const base = existing ?? emptySession();
+      const strengthExerciseNotes = mergeStrengthExerciseNotes(base.strengthExerciseNotes, exerciseId, rawNote);
+      return tagRoutine({ ...base, strengthExerciseNotes });
     });
   }
 
@@ -281,24 +299,32 @@ export default function WorkoutsPage() {
             const lastSets = lastRoutineSession
               ? lastRoutineSession.strengthSets.filter((set) => set.exerciseId === exercise.id)
               : [];
+            const lastNoteRaw =
+              lastRoutineSession?.strengthExerciseNotes?.find((n) => n.exerciseId === exercise.id)?.note ?? "";
+            const lastNoteTrim = lastNoteRaw.trim();
+            const exerciseNote =
+              sessionForDate?.strengthExerciseNotes?.find((n) => n.exerciseId === exercise.id)?.note ?? "";
 
             return (
               <div key={exercise.id} className="overflow-hidden rounded-lg border border-sky-200/80">
                 <div className="border-b border-sky-200/80 bg-sky-50/70 px-3 py-2 font-medium text-zinc-900">{exercise.name}</div>
                 {lastRoutineSession && lastSessionLabel ? (
                   <p className="border-b border-sky-100/80 bg-white/70 px-3 py-2 text-xs leading-relaxed text-zinc-600">
+                    <span className="font-medium text-zinc-800">Last time ({lastSessionLabel}):</span>{" "}
                     {lastSets.length ? (
                       <>
-                        <span className="font-medium text-zinc-800">Last time ({lastSessionLabel}):</span>{" "}
                         {lastSets.length} set{lastSets.length !== 1 ? "s" : ""} —{" "}
                         {lastSets.map((s) => `${s.weight} ${weightAbbr} × ${s.reps}`).join(", ")}
                       </>
                     ) : (
-                      <>
-                        <span className="font-medium text-zinc-800">Last time ({lastSessionLabel}):</span> no sets logged
-                        for this exercise.
-                      </>
+                      <span>No sets logged for this exercise.</span>
                     )}
+                    {lastNoteTrim ? (
+                      <span className="mt-1.5 block text-zinc-600">
+                        <span className="font-medium text-zinc-800">Note:</span>{" "}
+                        <span className="whitespace-pre-wrap">{lastNoteTrim}</span>
+                      </span>
+                    ) : null}
                   </p>
                 ) : null}
                 <div className="overflow-x-auto">
@@ -348,6 +374,18 @@ export default function WorkoutsPage() {
                       </tr>
                     </tbody>
                   </table>
+                </div>
+                <div className="border-t border-sky-100/80 bg-sky-50/30 px-3 py-2">
+                  <label className="grid gap-1">
+                    <span className="text-xs font-medium text-sky-800/80">Notes (optional)</span>
+                    <textarea
+                      value={exerciseNote}
+                      onChange={(event) => setStrengthExerciseNote(exercise.id, event.target.value)}
+                      placeholder="Form cues, how it felt, next target…"
+                      rows={2}
+                      className="w-full resize-y rounded-md border border-sky-200 bg-white px-2 py-1.5 text-xs text-zinc-800 placeholder:text-zinc-400 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80 sm:text-sm"
+                    />
+                  </label>
                 </div>
               </div>
             );
