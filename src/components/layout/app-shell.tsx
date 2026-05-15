@@ -21,6 +21,7 @@ export function AppShell({ title, description: _description, children, actions }
   const { data } = useAppData();
   void data;
 
+  const onRoutineEditPage = pathname.startsWith("/workouts/routines/");
   const workoutTopActions =
     pathname === "/workouts" ? (
       <Link
@@ -31,15 +32,27 @@ export function AppShell({ title, description: _description, children, actions }
       >
         ⚙
       </Link>
-    ) : pathname === "/workouts/settings" ? (
-      <Link
-        href="/workouts"
-        className="inline-flex h-10 min-w-10 shrink-0 items-center justify-center rounded-full border border-sky-200/90 bg-white px-3 text-sm font-medium text-zinc-700 shadow-sm hover:border-sky-300 hover:bg-sky-50/80"
-        aria-label="Back to workouts"
-        title="Back to workouts"
-      >
-        ← Workouts
-      </Link>
+    ) : pathname === "/workouts/settings" || onRoutineEditPage ? (
+      <div className="flex shrink-0 items-center gap-2">
+        {onRoutineEditPage ? (
+          <Link
+            href="/workouts/settings"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-sky-200/90 bg-white text-lg text-zinc-700 shadow-sm hover:border-sky-300 hover:bg-sky-50/80"
+            aria-label="Workout settings"
+            title="Workout settings"
+          >
+            ⚙
+          </Link>
+        ) : null}
+        <Link
+          href="/workouts"
+          className="inline-flex h-10 min-w-10 shrink-0 items-center justify-center rounded-full border border-sky-200/90 bg-white px-3 text-sm font-medium text-zinc-700 shadow-sm hover:border-sky-300 hover:bg-sky-50/80"
+          aria-label="Back to workouts"
+          title="Back to workouts"
+        >
+          ← Workouts
+        </Link>
+      </div>
     ) : null;
 
   const topRight = actions ?? workoutTopActions;

@@ -29,6 +29,8 @@ export type CardioEntry = {
 export type WorkoutSession = {
   id: string;
   date: string;
+  /** When set, this session was logged under that workout routine (used for “last time” hints). */
+  routineId?: string;
   bodyWeight?: number;
   notes?: string;
   strengthSets: StrengthSet[];

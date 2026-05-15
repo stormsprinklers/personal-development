@@ -129,6 +129,7 @@ export default function Home() {
   const showListSourceOnTodos = dashboardListIds.length > 1;
   const dailyItems = useMemo(
     () => [
+      ...todaysHabits.map((habit) => ({ kind: "habit" as const, id: habit.id, label: habit.label })),
       ...todaysTodos.map((todo) => {
         const listName = data.todoLists.find((l) => l.id === todo.listId)?.name ?? "";
         return {
@@ -138,7 +139,6 @@ export default function Home() {
           listLabel: showListSourceOnTodos ? listName : undefined,
         };
       }),
-      ...todaysHabits.map((habit) => ({ kind: "habit" as const, id: habit.id, label: habit.label })),
     ],
     [todaysTodos, todaysHabits, data.todoLists, showListSourceOnTodos],
   );

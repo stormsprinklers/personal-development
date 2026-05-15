@@ -28,10 +28,11 @@ export default function HabitsPage() {
       d.setDate(d.getDate() - (29 - idx));
       const key = d.toISOString().slice(0, 10);
       const log = data.habitLogs.find((entry) => entry.habitId === habit.id && entry.date === key);
+      const status: "good" | "bad" | "none" = !log ? "none" : log.completed === true ? "good" : "bad";
       return {
         key,
         dayOfMonth: d.getDate(),
-        status: log?.completed === true ? "good" : "bad",
+        status,
       };
     });
 
@@ -248,20 +249,6 @@ export default function HabitsPage() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Habit History">
-        <div className="grid gap-2">
-          {data.habitLogs.slice(0, 30).map((log) => {
-            const habit = data.habits.find((h) => h.id === log.habitId);
-            return (
-              <div key={log.id} className="rounded-lg border border-sky-200/80 bg-sky-50/40 px-3 py-2 text-sm">
-                {log.date}: {habit?.name ?? "Habit"} — {log.completed ? "Done" : "Missed"}
-              </div>
-            );
-          })}
-          {!data.habitLogs.length && <p className="text-sm text-zinc-600">No history yet.</p>}
-        </div>
-      </SectionCard>
-
       {habitCalendarData ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto overscroll-contain bg-black/35 p-3 sm:items-center">
           <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-xl border border-sky-200 bg-white p-4 shadow-xl">
@@ -292,20 +279,26 @@ export default function HabitsPage() {
             </div>
 
             <div className="grid grid-cols-7 gap-1 rounded-lg border border-sky-200/80 bg-white p-2">
-              {habitCalendarData.days.map((day) => (
-                <div
-                  key={day.key}
-                  className={`rounded-md px-1 py-2 text-center text-xs font-medium ${
-                    day.status === "good"
-                      ? "bg-emerald-100 text-emerald-900"
-                      : "bg-red-100 text-red-900"
-                  }`}
-                  title={`${day.key}: ${day.status === "good" ? "Accomplished" : "Missed"}`}
-                >
-                  <div>{day.dayOfMonth}</div>
-                  <div className="text-[10px] opacity-80">{day.key.slice(5)}</div>
-                </div>
-              ))}
+              {habitCalendarData.days.map((day) => {
+                const cellClass =
+                  day.status === "good"
+                    ? "bg-emerald-100 text-emerald-900"
+                    : day.status === "bad"
+                      ? "bg-red-100 text-red-900"
+                      : "bg-zinc-100 text-zinc-600 ring-1 ring-inset ring-zinc-200/90";
+                const label =
+                  day.status === "good" ? "Accomplished" : day.status === "bad" ? "Missed (marked ✗)" : "Unmarked";
+                return (
+                  <div
+                    key={day.key}
+                    className={`rounded-md px-1 py-2 text-center text-xs font-medium ${cellClass}`}
+                    title={`${day.key}: ${label}`}
+                  >
+                    <div>{day.dayOfMonth}</div>
+                    <div className="text-[10px] opacity-80">{day.key.slice(5)}</div>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="mt-3 flex justify-end">

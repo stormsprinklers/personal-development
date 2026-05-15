@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CompleteExitRow, COMPLETE_EXIT_MS } from "@/components/complete-exit-row";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
-import { mainTodoListId } from "@/lib/todo-helpers";
+import { mainTodoListId, reassignMainTodoList } from "@/lib/todo-helpers";
 import { todayKey, useAppData } from "@/lib/storage";
 
 export default function TodosPage() {
@@ -128,6 +128,20 @@ export default function TodosPage() {
     setSelectedListId(id);
     setNewListName("");
     setListMenuOpen(false);
+  }
+
+  function makeMainList(listId: string) {
+    const list = data.todoLists.find((l) => l.id === listId);
+    if (!list || list.isMain) return;
+    if (
+      list.goalId &&
+      !window.confirm(
+        `“${list.name}” is linked to a goal. The main list cannot be goal-linked, so that link will be removed. Continue?`,
+      )
+    ) {
+      return;
+    }
+    setData((prev) => reassignMainTodoList(prev, listId));
   }
 
   function setListGoalLink(listId: string, goalIdOrEmpty: string) {
@@ -414,6 +428,15 @@ export default function TodosPage() {
                         >
                           Edit
                         </button>
+                        {!list.isMain ? (
+                          <button
+                            type="button"
+                            onClick={() => makeMainList(list.id)}
+                            className="shrink-0 rounded-lg border border-sky-200 bg-white px-3 py-2 text-xs font-medium text-sky-800 hover:bg-sky-50"
+                          >
+                            Make main
+                          </button>
+                        ) : null}
                         {!list.isMain ? (
                           <button
                             type="button"

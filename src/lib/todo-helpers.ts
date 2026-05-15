@@ -1,5 +1,22 @@
 import type { AppData, Goal, TodoItem, TodoList } from "@/lib/models";
 
+/** Make `listId` the only main list. Clears goal link on that list (main cannot be goal-linked). */
+export function reassignMainTodoList(data: AppData, listId: string): AppData {
+  const target = data.todoLists.find((l) => l.id === listId);
+  if (!target || target.isMain) return data;
+  const clearedGoalId = target.goalId;
+  const todoLists = data.todoLists.map((l) =>
+    l.id === listId ? { ...l, isMain: true, goalId: undefined } : { ...l, isMain: false },
+  );
+  const todoItems =
+    clearedGoalId != null
+      ? data.todoItems.map((it) =>
+          it.listId === listId && it.goalId === clearedGoalId ? { ...it, goalId: undefined } : it,
+        )
+      : data.todoItems;
+  return { ...data, todoLists, todoItems };
+}
+
 const LEGACY_GOAL_TASKS_LIST_NAME = "Goal Tasks";
 
 export const MAIN_TODO_LIST_ID = "seed-list-main";
