@@ -4,8 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
 import { CompleteExitRow, COMPLETE_EXIT_MS } from "@/components/complete-exit-row";
-import { MeasurementUnitsCard } from "@/components/measurement-units-card";
-import { normalizeMeasurementPreferences, runBikeDistanceUnitAbbr, weightUnitAbbr } from "@/lib/units";
+import { runBikeDistanceUnitAbbr, weightUnitAbbr, defaultMeasurementPreferences } from "@/lib/units";
 import { todoItemsForGoal } from "@/lib/todo-helpers";
 import { useAppData } from "@/lib/storage";
 
@@ -44,8 +43,6 @@ export default function GoalsPage() {
   const [goalListNameDraft, setGoalListNameDraft] = useState("");
   const [linkedHabitDrafts, setLinkedHabitDrafts] = useState<string[]>([]);
   const [habitTargetDraft, setHabitTargetDraft] = useState<string>("30");
-  const [newLinkedHabitName, setNewLinkedHabitName] = useState<string>("");
-  const [newLinkedHabitType, setNewLinkedHabitType] = useState<"build" | "break">("build");
   const [linkedExerciseDraft, setLinkedExerciseDraft] = useState<string>("");
   const [exerciseStartDraft, setExerciseStartDraft] = useState<string>("");
   const [exerciseTargetDraft, setExerciseTargetDraft] = useState<string>("");
@@ -76,10 +73,7 @@ export default function GoalsPage() {
     () => data.exercises.filter((exercise) => !exercise.archived),
     [data.exercises],
   );
-  const measurementPrefs = useMemo(
-    () => normalizeMeasurementPreferences(data.measurementPreferences),
-    [data.measurementPreferences],
-  );
+  const measurementPrefs = useMemo(() => defaultMeasurementPreferences(), []);
   const weightAbbr = weightUnitAbbr(measurementPrefs.weightUnit);
   const distanceAbbr = runBikeDistanceUnitAbbr(measurementPrefs.runBikeDistanceUnit);
 
@@ -451,27 +445,6 @@ export default function GoalsPage() {
     );
   }
 
-  function addLinkedHabit() {
-    const name = newLinkedHabitName.trim();
-    if (!name) return;
-    const newHabitId = crypto.randomUUID();
-    setData((prev) => ({
-      ...prev,
-      habits: [
-        {
-          id: newHabitId,
-          name,
-          type: newLinkedHabitType,
-          active: true,
-          createdAt: new Date().toISOString(),
-        },
-        ...prev.habits,
-      ],
-    }));
-    setLinkedHabitDrafts((prev) => (prev.includes(newHabitId) ? prev : [...prev, newHabitId]));
-    setNewLinkedHabitName("");
-  }
-
   if (!ready) return <div className="p-6">Loading goals...</div>;
 
   return (
@@ -479,8 +452,6 @@ export default function GoalsPage() {
       <SectionCard title={`Progress: ${overallProgress.toFixed(1)}%`}>
         <div />
       </SectionCard>
-
-      <MeasurementUnitsCard />
 
       <SectionCard title="Annual Goals">
         <div className="grid gap-6">
@@ -612,6 +583,13 @@ export default function GoalsPage() {
 
               const latestBwThisYear = latestBodyWeightInYear(data, goalYear);
 
+              const habitCompletionsRequired = (() => {
+                const fromDraft = Number(habitTargetDraft);
+                if (Number.isFinite(fromDraft) && fromDraft > 0) return fromDraft;
+                if (goal.habitTargetDays && goal.habitTargetDays > 0) return goal.habitTargetDays;
+                return null;
+              })();
+
               return (
                 <div className="grid gap-3">
                   <h3 className="text-base font-semibold text-zinc-900">Goal Details</h3>
@@ -688,49 +666,34 @@ export default function GoalsPage() {
                       <div className="max-h-40 overflow-y-auto rounded-lg border border-sky-200 bg-white p-2">
                         <div className="grid gap-1">
                           {allHabits.map((habit) => (
-                            <label key={habit.id} className="flex items-center gap-2 text-sm text-zinc-700">
+                            <label key={habit.id} className="flex w-full items-center gap-2 text-sm text-zinc-700">
                               <input
                                 type="checkbox"
+                                className="shrink-0"
                                 checked={linkedHabitDrafts.includes(habit.id)}
                                 onChange={() => toggleLinkedHabit(habit.id)}
                               />
-                              <span>{habit.name}</span>
+                              <span className="min-w-0 flex-1">{habit.name}</span>
+                              {linkedHabitDrafts.includes(habit.id) && habitCompletionsRequired != null ? (
+                                <span className="shrink-0 text-xs font-medium tabular-nums text-sky-800/90">
+                                  {habitCompletionsRequired} completions required
+                                </span>
+                              ) : null}
                             </label>
                           ))}
                           {!allHabits.length ? <p className="text-sm text-zinc-600">No habits available.</p> : null}
                         </div>
                       </div>
-                      <div className="grid grid-cols-[1fr_auto_auto] gap-2">
+                      <label className="grid gap-1 text-xs text-zinc-600">
+                        <span>Required successful days per linked habit (this year)</span>
                         <input
-                          value={newLinkedHabitName}
-                          onChange={(event) => setNewLinkedHabitName(event.target.value)}
-                          placeholder="New habit"
-                          className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+                          type="number"
+                          min={1}
+                          value={habitTargetDraft}
+                          onChange={(event) => setHabitTargetDraft(event.target.value)}
+                          className="w-28 rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-800 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
                         />
-                        <select
-                          value={newLinkedHabitType}
-                          onChange={(event) => setNewLinkedHabitType(event.target.value as "build" | "break")}
-                          className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
-                        >
-                          <option value="build">Build</option>
-                          <option value="break">Break</option>
-                        </select>
-                        <button
-                          type="button"
-                          onClick={addLinkedHabit}
-                          className="rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
-                        >
-                          + Add Habit
-                        </button>
-                      </div>
-                      <input
-                        type="number"
-                        min={1}
-                        value={habitTargetDraft}
-                        onChange={(event) => setHabitTargetDraft(event.target.value)}
-                        className="w-24 rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
-                        placeholder="Days"
-                      />
+                      </label>
                     </div>
                   </div>
 
