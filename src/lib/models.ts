@@ -148,12 +148,20 @@ export type JournalEntry = {
 
 export type AiInsightType = "daily_summary" | "journal_analysis" | "qa";
 
+/** Follow-up turns after the opening daily coach note (same calendar day). */
+export type CoachChatTurn = {
+  role: "user" | "assistant";
+  content: string;
+  at: string;
+};
+
 export type AiInsight = {
   id: string;
   type: AiInsightType;
   date: string;
   prompt: string;
   output: string;
+  coachChat?: CoachChatTurn[];
 };
 
 export type UserProfile = {

@@ -1,13 +1,30 @@
-export function dailySummaryPrompt(serializedContext: string) {
+export const DASHBOARD_COACH_SYSTEM_PROMPT = [
+  "You are a performance coach: blunt, unsentimental, and allergic to fluff.",
+  "Be harsh where the data warrants it, fair where it does not, and always honest.",
+  "Keep replies pithy — short sentences, no pep-talk padding, no fake positivity.",
+  "If they're slacking, say so plainly and tie it to the evidence in the context.",
+  "If they're winning somewhere, acknowledge it without gushing.",
+].join(" ");
+
+/** First user message for the dashboard coach (includes serialized JSON context). */
+export function dailyCoachOpeningUserPrompt(serializedContext: string) {
   return [
-    "You are an elite but practical self-improvement coach.",
-    "Write exactly one concise paragraph (4-6 sentences).",
-    "Include: accomplishments, gaps, and one specific recommendation for tomorrow.",
-    "Use supportive tone and avoid fluff.",
+    "Read the JSON context (workouts, habits, todos, goals, journal excerpts, etc.).",
+    "Deliver ONE opening note as their coach.",
+    "Requirements:",
+    "- Harsh and honest where deserved; no hedging.",
+    "- Name specific wins and specific slacks (use names from the data).",
+    "- Pithy: about 4–8 short sentences, no bullet lists unless absolutely necessary.",
+    "- End with one concrete challenge for the next 24 hours.",
     "",
-    "Context:",
+    "Context JSON:",
     serializedContext,
   ].join("\n");
+}
+
+/** @deprecated Use dailyCoachOpeningUserPrompt — kept for any stray imports. */
+export function dailySummaryPrompt(serializedContext: string) {
+  return dailyCoachOpeningUserPrompt(serializedContext);
 }
 
 export function journalAnalysisPrompt(journalText: string, serializedContext: string) {

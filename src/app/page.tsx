@@ -6,7 +6,7 @@ import { SectionCard } from "@/components/layout/section-card";
 import { CompleteExitRow, COMPLETE_EXIT_MS } from "@/components/complete-exit-row";
 import { Sparkline } from "@/components/charts/sparkline";
 import { buildAiContext } from "@/lib/ai/contextBuilder";
-import { dailySummaryPrompt } from "@/lib/ai/prompts";
+import { DASHBOARD_COACH_SYSTEM_PROMPT, dailyCoachOpeningUserPrompt } from "@/lib/ai/prompts";
 import { bodyWeightTrend, goalsProgressForYear } from "@/lib/metrics/dashboardMetrics";
 import { strengthSummaryByExercise } from "@/lib/metrics/workoutMetrics";
 import { normalizeMeasurementPreferences, weightUnitAbbr } from "@/lib/units";
@@ -52,11 +52,19 @@ export default function Home() {
   const [journalQuickText, setJournalQuickText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [coachInput, setCoachInput] = useState("");
+  const [coachSending, setCoachSending] = useState(false);
+  const [coachError, setCoachError] = useState<string | null>(null);
 
   const goalYear = useMemo(() => new Date(`${dashboardDate}T12:00:00`).getFullYear(), [dashboardDate]);
 
   useEffect(() => {
     setWeekOffset(0);
+  }, [dashboardDate]);
+
+  useEffect(() => {
+    setCoachInput("");
+    setCoachError(null);
   }, [dashboardDate]);
 
   const weekAnchor = useMemo(() => startOfWeekForDateKey(dashboardDate), [dashboardDate]);
@@ -172,11 +180,16 @@ export default function Home() {
 
   async function runDailySummaryGeneration(targetDate: string, signal?: AbortSignal) {
     const context = buildAiContext(data, targetDate);
-    const prompt = dailySummaryPrompt(JSON.stringify(context, null, 2));
+    const serialized = JSON.stringify(context, null, 2);
+    const userContent = dailyCoachOpeningUserPrompt(serialized);
+    const messages = [
+      { role: "system" as const, content: DASHBOARD_COACH_SYSTEM_PROMPT },
+      { role: "user" as const, content: userContent },
+    ];
     const response = await fetch("/api/ai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, temperature: 0.4 }),
+      body: JSON.stringify({ messages, temperature: 0.55 }),
       ...(signal ? { signal } : {}),
     });
     const payload = (await response.json()) as { output?: string; error?: string };
@@ -189,12 +202,62 @@ export default function Home() {
           id: crypto.randomUUID(),
           type: "daily_summary",
           date: targetDate,
-          prompt,
-          output: text,
+          prompt: userContent,
+          output: text.trim(),
         },
         ...prev.aiInsights.filter((insight) => !(insight.type === "daily_summary" && insight.date === targetDate)),
       ],
     }));
+  }
+
+  async function sendCoachMessage() {
+    const text = coachInput.trim();
+    const insight = data.aiInsights.find((i) => i.type === "daily_summary" && i.date === dashboardDate);
+    if (!text || !insight?.output?.trim() || coachSending) return;
+    const openingUserPrompt =
+      insight.prompt?.trim() ||
+      dailyCoachOpeningUserPrompt(JSON.stringify(buildAiContext(data, dashboardDate), null, 2));
+    setCoachSending(true);
+    setCoachError(null);
+    try {
+      const prevChat = insight.coachChat ?? [];
+      const historyOpenAi = prevChat.map((t) => ({ role: t.role, content: t.content }));
+      const messages = [
+        { role: "system" as const, content: DASHBOARD_COACH_SYSTEM_PROMPT },
+        { role: "user" as const, content: openingUserPrompt },
+        { role: "assistant" as const, content: insight.output },
+        ...historyOpenAi,
+        { role: "user" as const, content: text },
+      ];
+      const response = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages, temperature: 0.55 }),
+      });
+      const payload = (await response.json()) as { output?: string; error?: string };
+      const reply = payload.output ?? payload.error;
+      if (!reply?.trim()) throw new Error("No reply from coach.");
+      const now = new Date().toISOString();
+      setData((prev) => ({
+        ...prev,
+        aiInsights: prev.aiInsights.map((row) => {
+          if (row.type !== "daily_summary" || row.date !== dashboardDate) return row;
+          return {
+            ...row,
+            coachChat: [
+              ...(row.coachChat ?? []),
+              { role: "user" as const, content: text, at: now },
+              { role: "assistant" as const, content: reply.trim(), at: now },
+            ],
+          };
+        }),
+      }));
+      setCoachInput("");
+    } catch (e) {
+      setCoachError(e instanceof Error ? e.message : "Chat failed.");
+    } finally {
+      setCoachSending(false);
+    }
   }
 
   useEffect(() => {
@@ -227,18 +290,6 @@ export default function Home() {
       setAiLoading(false);
     };
   }, [dashboardDate, data.aiInsights, data, setData]);
-
-  async function regenerateDailySummary() {
-    setAiLoading(true);
-    setAiError(null);
-    try {
-      await runDailySummaryGeneration(dashboardDate);
-    } catch (e) {
-      setAiError(e instanceof Error ? e.message : "Could not generate summary.");
-    } finally {
-      setAiLoading(false);
-    }
-  }
 
   function saveJournalQuick() {
     const text = journalQuickText.trim();
@@ -376,32 +427,66 @@ export default function Home() {
           {!dailyItems.length ? <p className="text-sm text-zinc-600">No open tasks or habits to log for this day.</p> : null}
           {hiddenDailyCount > 0 ? (
             <button
+              type="button"
               onClick={() => setShowAllDailyItems((prev) => !prev)}
-              className="w-fit text-sm font-medium text-sky-800/80 underline"
+              className="mt-2 w-full rounded-lg border border-sky-200 bg-white px-4 py-2.5 text-sm font-medium text-sky-800 shadow-sm hover:bg-sky-50"
             >
-              {showAllDailyItems ? "Show less" : `Show ${hiddenDailyCount} more`}
+              {showAllDailyItems ? "Show less" : `Show more (${hiddenDailyCount})`}
             </button>
           ) : null}
         </div>
       </SectionCard>
 
-      <SectionCard title="Daily AI summary">
+      <SectionCard title="Daily coach">
         <div className="grid gap-3">
-          {aiLoading ? <p className="text-sm text-sky-800/80">Generating summary…</p> : null}
+          {aiLoading ? <p className="text-sm text-sky-800/80">Pulling your coach&apos;s opening note…</p> : null}
           {aiError ? <p className="rounded-lg border border-red-200 bg-red-50/80 p-3 text-sm text-red-800">{aiError}</p> : null}
-          <p className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4 text-sm text-zinc-700 whitespace-pre-wrap">
-            {latestSummary?.output?.trim() ?? (aiLoading ? "" : "Summary will appear here once generated.")}
+          <p className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4 text-sm leading-relaxed text-zinc-800 whitespace-pre-wrap">
+            {latestSummary?.output?.trim() ?? (aiLoading ? "" : "Opening note will load automatically.")}
           </p>
-          <div>
-            <button
-              type="button"
-              disabled={aiLoading}
-              onClick={() => void regenerateDailySummary()}
-              className="rounded-lg border border-sky-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-sky-50 disabled:opacity-50"
-            >
-              Regenerate summary
-            </button>
-          </div>
+          {latestSummary?.output?.trim() && !aiLoading ? (
+            <>
+              {(latestSummary.coachChat?.length ?? 0) > 0 ? (
+                <div className="grid max-h-52 gap-2 overflow-y-auto rounded-lg border border-sky-100/90 bg-white/70 p-2">
+                  {(latestSummary.coachChat ?? []).map((turn, idx) => (
+                    <div key={`${turn.at}-${idx}`} className={`flex ${turn.role === "user" ? "justify-end" : "justify-start"}`}>
+                      <div
+                        className={`max-w-[min(100%,22rem)] rounded-lg px-2.5 py-2 text-xs leading-relaxed whitespace-pre-wrap ${
+                          turn.role === "user"
+                            ? "bg-zinc-200 text-zinc-900"
+                            : "border border-sky-200/80 bg-sky-50 text-zinc-800"
+                        }`}
+                      >
+                        {turn.content}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+              {coachError ? <p className="text-sm text-red-700">{coachError}</p> : null}
+              <div className="grid gap-2">
+                <label className="grid gap-1 text-xs font-medium text-sky-800/80">
+                  Reply to your coach
+                  <textarea
+                    value={coachInput}
+                    onChange={(e) => setCoachInput(e.target.value)}
+                    placeholder="Push back, ask for a fix, or admit where you blew it…"
+                    rows={2}
+                    disabled={coachSending}
+                    className="w-full resize-y rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80 disabled:opacity-50"
+                  />
+                </label>
+                <button
+                  type="button"
+                  disabled={coachSending || !coachInput.trim()}
+                  onClick={() => void sendCoachMessage()}
+                  className="w-fit rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700 disabled:opacity-40"
+                >
+                  {coachSending ? "Sending…" : "Send"}
+                </button>
+              </div>
+            </>
+          ) : null}
         </div>
       </SectionCard>
 

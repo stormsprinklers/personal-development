@@ -385,21 +385,21 @@ export default function TodosPage() {
         </div>
 
         {listMenuOpen ? (
-          <div className="mb-4 grid min-w-0 gap-2 rounded-lg border border-sky-200/80 bg-sky-50/40 p-3">
-            <div className="grid min-w-0 gap-3">
+          <div className="mb-4 grid min-w-0 max-w-full gap-2 overflow-x-hidden rounded-lg border border-sky-200/80 bg-sky-50/40 p-3">
+            <div className="grid min-w-0 max-w-full gap-3">
               {sortedTodoLists.map((list) => (
-                <div key={list.id} className="grid min-w-0 gap-2 rounded-lg border border-sky-200/60 bg-white/80 p-2">
-                  <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                <div key={list.id} className="grid min-w-0 max-w-full gap-2 rounded-lg border border-sky-200/60 bg-white/80 p-2">
+                  <div className="grid min-w-0 max-w-full gap-2">
                     {renameListId === list.id ? (
                       <>
                         <input
                           value={renameValue}
                           onChange={(event) => setRenameValue(event.target.value)}
-                          className="min-w-0 flex-1 rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+                          className="min-w-0 w-full max-w-full rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
                         />
                         <button
                           onClick={saveRenameList}
-                          className="w-full rounded-lg bg-sky-600 px-3 py-2 text-xs font-medium text-white hover:bg-sky-700 sm:w-auto"
+                          className="w-full rounded-lg bg-sky-600 px-3 py-2 text-xs font-medium text-white hover:bg-sky-700 sm:w-auto sm:justify-self-start"
                         >
                           Save
                         </button>
@@ -411,55 +411,57 @@ export default function TodosPage() {
                             setSelectedListId(list.id);
                             setListMenuOpen(false);
                           }}
-                          className={`min-w-0 flex-1 break-words rounded-lg px-3 py-2 text-left text-sm ${
+                          className={`w-full min-w-0 max-w-full rounded-lg px-3 py-2 text-left text-sm break-words [overflow-wrap:anywhere] ${
                             activeListId === list.id ? "bg-sky-600 text-white" : "bg-white text-zinc-700 hover:bg-sky-50"
                           }`}
                         >
                           {list.isMain ? `${list.name} (main)` : list.name}
                           {list.goalId ? (
-                            <span className="mt-0.5 block text-xs font-normal opacity-90">
+                            <span className="mt-0.5 block break-words text-xs font-normal opacity-90 [overflow-wrap:anywhere]">
                               Goal: {data.goals.find((g) => g.id === list.goalId)?.title ?? "?"}
                             </span>
                           ) : null}
                         </button>
-                        <button
-                          onClick={() => startRenameList(list.id, list.name)}
-                          className="shrink-0 rounded-lg border border-sky-200 bg-white px-3 py-2 text-xs text-zinc-700 hover:bg-sky-50"
-                        >
-                          Edit
-                        </button>
-                        {!list.isMain ? (
+                        <div className="flex min-w-0 max-w-full flex-wrap gap-2">
                           <button
-                            type="button"
-                            onClick={() => makeMainList(list.id)}
-                            className="shrink-0 rounded-lg border border-sky-200 bg-white px-3 py-2 text-xs font-medium text-sky-800 hover:bg-sky-50"
+                            onClick={() => startRenameList(list.id, list.name)}
+                            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-xs text-zinc-700 hover:bg-sky-50"
                           >
-                            Make main
+                            Edit
                           </button>
-                        ) : null}
-                        {!list.isMain ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (window.confirm(`Delete list "${list.name}" and all its tasks?`)) {
-                                deleteTodoList(list.id);
-                              }
-                            }}
-                            className="shrink-0 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs text-red-700 hover:bg-red-50"
-                          >
-                            Delete
-                          </button>
-                        ) : null}
+                          {!list.isMain ? (
+                            <button
+                              type="button"
+                              onClick={() => makeMainList(list.id)}
+                              className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-xs font-medium text-sky-800 hover:bg-sky-50"
+                            >
+                              Make main
+                            </button>
+                          ) : null}
+                          {!list.isMain ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.confirm(`Delete list "${list.name}" and all its tasks?`)) {
+                                  deleteTodoList(list.id);
+                                }
+                              }}
+                              className="rounded-lg border border-red-200 bg-white px-3 py-2 text-xs text-red-700 hover:bg-red-50"
+                            >
+                              Delete
+                            </button>
+                          ) : null}
+                        </div>
                       </>
                     )}
                   </div>
                   {!list.isMain ? (
-                    <label className="flex flex-wrap items-center gap-2 text-xs text-zinc-600">
+                    <label className="grid min-w-0 max-w-full gap-1 text-xs text-zinc-600 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-2">
                       <span className="shrink-0">Link to goal</span>
                       <select
                         value={list.goalId ?? ""}
                         onChange={(event) => setListGoalLink(list.id, event.target.value)}
-                        className="min-w-0 flex-1 rounded border border-sky-200 bg-white px-2 py-1 text-xs text-zinc-800"
+                        className="min-w-0 w-full max-w-full rounded border border-sky-200 bg-white px-2 py-1 text-xs text-zinc-800"
                       >
                         <option value="">None</option>
                         {goalsForListLink.map((g) => (
@@ -473,12 +475,12 @@ export default function TodosPage() {
                 </div>
               ))}
             </div>
-            <div className="flex min-w-0 flex-wrap gap-2">
+            <div className="grid min-w-0 max-w-full gap-2 sm:flex sm:flex-wrap sm:items-end">
               <input
                 value={newListName}
                 onChange={(event) => setNewListName(event.target.value)}
                 placeholder="New list name"
-                className="min-w-0 flex-1 rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+                className="min-w-0 w-full max-w-full rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80 sm:min-w-0 sm:flex-1"
               />
               <button
                 onClick={addList}

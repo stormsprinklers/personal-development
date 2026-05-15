@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
-import type { CardioType, WorkoutRoutine } from "@/lib/models";
+import type { CardioType, Exercise, ExerciseCategory, WorkoutRoutine } from "@/lib/models";
 import { useAppData } from "@/lib/storage";
 
 const CARDIO_TYPES: CardioType[] = ["run", "bike", "swim"];
@@ -16,6 +16,8 @@ export default function EditWorkoutRoutinePage() {
   const router = useRouter();
   const { ready, data, setData } = useAppData();
   const [addExistingExerciseId, setAddExistingExerciseId] = useState("");
+  const [newExerciseName, setNewExerciseName] = useState("");
+  const [newExerciseCategory, setNewExerciseCategory] = useState<ExerciseCategory>("strength");
 
   const routines = data.workoutRoutines;
   const currentRoutine = routines.find((r) => r.id === routineId);
@@ -67,6 +69,31 @@ export default function EditWorkoutRoutinePage() {
       strengthExerciseIds: [...r.strengthExerciseIds, addExistingExerciseId],
     }));
     setAddExistingExerciseId("");
+  }
+
+  function createExerciseAndAddToRoutine() {
+    const name = newExerciseName.trim();
+    if (!currentRoutine || !name) return;
+    const id = crypto.randomUUID();
+    const exercise: Exercise = {
+      id,
+      name,
+      category: newExerciseCategory,
+      archived: false,
+      createdAt: new Date().toISOString(),
+    };
+    setData((prev) => {
+      const nextExercises = [exercise, ...prev.exercises];
+      const nextRoutines =
+        newExerciseCategory === "strength"
+          ? prev.workoutRoutines.map((r) =>
+              r.id === currentRoutine.id ? { ...r, strengthExerciseIds: [...r.strengthExerciseIds, id] } : r,
+            )
+          : prev.workoutRoutines;
+      return { ...prev, exercises: nextExercises, workoutRoutines: nextRoutines };
+    });
+    setNewExerciseName("");
+    setNewExerciseCategory("strength");
   }
 
   function removeExerciseFromRoutine(exerciseId: string) {
@@ -135,6 +162,39 @@ export default function EditWorkoutRoutinePage() {
             ) : (
               <p className="text-xs text-zinc-500">No exercises yet.</p>
             )}
+          </div>
+
+          <div className="rounded-lg border border-sky-200/80 bg-sky-50/40 p-3">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-sky-800/70">Create new exercise</p>
+            <div className="flex min-w-0 flex-wrap items-end gap-2">
+              <input
+                value={newExerciseName}
+                onChange={(e) => setNewExerciseName(e.target.value)}
+                placeholder="Exercise name"
+                className="min-w-0 flex-1 rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+              />
+              <select
+                value={newExerciseCategory}
+                onChange={(e) => setNewExerciseCategory(e.target.value as ExerciseCategory)}
+                className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-800"
+              >
+                <option value="strength">Strength</option>
+                <option value="run">Run</option>
+                <option value="bike">Bike</option>
+                <option value="swim">Swim</option>
+              </select>
+              <button
+                type="button"
+                onClick={createExerciseAndAddToRoutine}
+                disabled={!newExerciseName.trim()}
+                className="rounded-lg bg-zinc-800 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-40"
+              >
+                Create and add
+              </button>
+            </div>
+            <p className="mt-2 text-[11px] leading-snug text-zinc-500">
+              Strength exercises are added to this routine automatically. Other types are saved to your library only (this routine&apos;s strength list is separate).
+            </p>
           </div>
 
           <div className="flex flex-wrap items-end gap-2">
