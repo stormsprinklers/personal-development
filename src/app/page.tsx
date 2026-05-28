@@ -4,16 +4,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
 import { CompleteExitRow, COMPLETE_EXIT_MS } from "@/components/complete-exit-row";
-import { Sparkline } from "@/components/charts/sparkline";
 import { buildAiContext } from "@/lib/ai/contextBuilder";
 import { DASHBOARD_COACH_SYSTEM_PROMPT, dailyCoachOpeningUserPrompt } from "@/lib/ai/prompts";
-import { bodyWeightTrend, goalsProgressForYear } from "@/lib/metrics/dashboardMetrics";
+import { goalsProgressForYear } from "@/lib/metrics/dashboardMetrics";
 import { strengthSummaryByExercise } from "@/lib/metrics/workoutMetrics";
 import { normalizeMeasurementPreferences, weightUnitAbbr } from "@/lib/units";
-import { effectiveDashboardTodoListIds } from "@/lib/todo-helpers";
+import { effectiveDashboardTodoListIds, mainTodoListId } from "@/lib/todo-helpers";
 import { todayKey, useAppData } from "@/lib/storage";
-
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 function startOfWeekForDateKey(dateKey: string) {
   const d = new Date(`${dateKey}T12:00:00`);
@@ -45,8 +42,9 @@ export default function Home() {
   );
   const today = todayKey();
   const [dashboardDate, setDashboardDate] = useState(today);
-  const [weekOffset, setWeekOffset] = useState(0);
   const [showAllDailyItems, setShowAllDailyItems] = useState(false);
+  const [quickTodoTitle, setQuickTodoTitle] = useState("");
+  const [quickAddListId, setQuickAddListId] = useState("");
   const [exitingDailyKeys, setExitingDailyKeys] = useState<string[]>([]);
   const exitingDailyRef = useRef(new Set<string>());
   const [journalQuickText, setJournalQuickText] = useState("");
@@ -59,20 +57,15 @@ export default function Home() {
   const goalYear = useMemo(() => new Date(`${dashboardDate}T12:00:00`).getFullYear(), [dashboardDate]);
 
   useEffect(() => {
-    setWeekOffset(0);
-  }, [dashboardDate]);
-
-  useEffect(() => {
     setCoachInput("");
     setCoachError(null);
   }, [dashboardDate]);
 
   const weekAnchor = useMemo(() => startOfWeekForDateKey(dashboardDate), [dashboardDate]);
-  const weekStart = useMemo(() => new Date(weekAnchor.getTime() + weekOffset * WEEK_MS), [weekAnchor, weekOffset]);
+  const weekStart = weekAnchor;
   const weekEnd = useMemo(() => new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000), [weekStart]);
   const weekStartKey = toDateKey(weekStart);
   const weekEndKey = toDateKey(weekEnd);
-  const weekLabel = `${weekStart.toLocaleDateString()} - ${weekEnd.toLocaleDateString()}`;
 
   const weeklyWorkouts = useMemo(
     () => data.workoutSessions.filter((session) => session.date >= weekStartKey && session.date <= weekEndKey),
@@ -83,28 +76,6 @@ export default function Home() {
     () => strengthSummaryByExercise(weeklyWorkouts, data.exercises).slice(0, 3),
     [weeklyWorkouts, data.exercises],
   );
-
-  const estimatedOneRm = weeklyStrength[0]?.bestOneRepMax ?? 0;
-  const cardioTotals = useMemo(() => {
-    const totals = { run: 0, bike: 0, swim: 0 };
-    for (const session of weeklyWorkouts) {
-      for (const entry of session.cardioEntries) {
-        if (entry.type === "run") totals.run += entry.timeMinutes;
-        if (entry.type === "bike") totals.bike += entry.timeMinutes;
-        if (entry.type === "swim") totals.swim += entry.timeMinutes;
-      }
-    }
-    return totals;
-  }, [weeklyWorkouts]);
-  const cardioMinutes = cardioTotals.run + cardioTotals.bike + cardioTotals.swim;
-  const cardioModalities = (cardioTotals.run > 0 ? 1 : 0) + (cardioTotals.bike > 0 ? 1 : 0) + (cardioTotals.swim > 0 ? 1 : 0);
-  const cardioHealthScore = Math.min(100, Math.round((cardioMinutes / 150) * 80 + cardioModalities * 10));
-
-  const weightSeries = useMemo(
-    () => bodyWeightTrend(data).filter((point) => point.date >= weekStartKey && point.date <= weekEndKey),
-    [data, weekStartKey, weekEndKey],
-  );
-  const weightValues = useMemo(() => weightSeries.map((w) => w.weight), [weightSeries]);
 
   const weeklyTodoCompletions = useMemo(
     () => data.todoCompletions.filter((completion) => completion.completedAt.slice(0, 10) >= weekStartKey && completion.completedAt.slice(0, 10) <= weekEndKey).length,
@@ -128,6 +99,15 @@ export default function Home() {
 
   const goalProgress = useMemo(() => goalsProgressForYear(data, goalYear), [data, goalYear]);
   const dashboardListIds = useMemo(() => effectiveDashboardTodoListIds(data), [data.todoLists, data.dashboardTodoListIds]);
+
+  useEffect(() => {
+    const fallback = dashboardListIds[0] ?? mainTodoListId(data.todoLists);
+    if (!fallback) return;
+    if (!quickAddListId || !dashboardListIds.includes(quickAddListId)) {
+      setQuickAddListId(fallback);
+    }
+  }, [dashboardListIds, data.todoLists, quickAddListId]);
+
   const todaysTodos = useMemo(
     () => data.todoItems.filter((item) => dashboardListIds.includes(item.listId) && item.active),
     [data.todoItems, dashboardListIds],
@@ -305,6 +285,26 @@ export default function Home() {
     return `${item.kind}-${item.id}`;
   }
 
+  function addQuickTodo() {
+    const title = quickTodoTitle.trim();
+    const listId = quickAddListId || dashboardListIds[0] || mainTodoListId(data.todoLists);
+    if (!title || !listId) return;
+    setData((prev) => ({
+      ...prev,
+      todoItems: [
+        {
+          id: crypto.randomUUID(),
+          listId,
+          title,
+          active: true,
+          createdAt: new Date().toISOString(),
+        },
+        ...prev.todoItems,
+      ],
+    }));
+    setQuickTodoTitle("");
+  }
+
   function completeTodo(todoId: string) {
     const key = `todo-${todoId}`;
     if (exitingDailyRef.current.has(key)) return;
@@ -343,7 +343,7 @@ export default function Home() {
   }
 
   return (
-    <AppShell title="Dashboard" description="Your day, summary, journal, and weekly health at a glance.">
+    <AppShell title="Dashboard" description="Your day, summary, and journal at a glance.">
       <SectionCard title="Day">
         <div className="flex flex-wrap items-center gap-3">
           <label className="relative inline-flex cursor-pointer items-center rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-sky-50">
@@ -375,6 +375,47 @@ export default function Home() {
               </label>
             ))}
           </div>
+        </div>
+        <div className="mb-3 flex min-w-0 flex-wrap items-end gap-2 rounded-lg border border-sky-200/70 bg-white/80 p-3">
+          {dashboardListIds.length > 1 ? (
+            <label className="grid gap-1 text-xs font-medium text-sky-800/80">
+              List
+              <select
+                value={quickAddListId}
+                onChange={(e) => setQuickAddListId(e.target.value)}
+                className="min-w-[8rem] rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-800"
+              >
+                {dashboardListIds.map((id) => {
+                  const list = data.todoLists.find((l) => l.id === id);
+                  return (
+                    <option key={id} value={id}>
+                      {list?.name ?? "List"}
+                    </option>
+                  );
+                })}
+              </select>
+            </label>
+          ) : null}
+          <input
+            value={quickTodoTitle}
+            onChange={(e) => setQuickTodoTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addQuickTodo();
+              }
+            }}
+            placeholder="Add a task…"
+            className="min-w-0 flex-1 rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+          />
+          <button
+            type="button"
+            onClick={addQuickTodo}
+            disabled={!quickTodoTitle.trim() || !(quickAddListId || dashboardListIds[0])}
+            className="rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-40"
+          >
+            Add task
+          </button>
         </div>
         <div className="grid gap-2">
           {dailyVisible.map((item) => (
@@ -507,62 +548,6 @@ export default function Home() {
         >
           Save entry
         </button>
-      </SectionCard>
-
-      <SectionCard title={`Health (${weekLabel})`}>
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={() => setWeekOffset((prev) => prev - 1)}
-            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:bg-sky-50"
-          >
-            Previous week
-          </button>
-          <p className="text-center text-xs text-zinc-500">Week relative to selected day</p>
-          <button
-            type="button"
-            onClick={() => setWeekOffset((prev) => Math.min(prev + 1, 0))}
-            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:bg-sky-50 disabled:opacity-40"
-            disabled={weekOffset === 0}
-          >
-            Next week
-          </button>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
-            <p className="text-xs uppercase tracking-wide text-sky-800/70">Estimated 1RM ({weightAbbr})</p>
-            <p className="mt-1 text-2xl font-semibold">
-              {estimatedOneRm ? `${estimatedOneRm} ${weightAbbr}` : "-"}
-            </p>
-          </div>
-          <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
-            <p className="text-xs uppercase tracking-wide text-sky-800/70">Cardio health score</p>
-            <p className="mt-1 text-2xl font-semibold">{cardioHealthScore}</p>
-            <p className="text-xs text-zinc-600">{cardioMinutes} min total cardio</p>
-          </div>
-          <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
-            <p className="text-xs uppercase tracking-wide text-sky-800/70">Workout sessions</p>
-            <p className="mt-1 text-2xl font-semibold">{weeklyWorkouts.length}</p>
-          </div>
-        </div>
-        <div className="mt-3 rounded-xl border border-sky-200/80 bg-sky-50/50 p-4">
-          <p className="mb-2 text-xs uppercase tracking-wide text-sky-800/70">
-            Weight trend (this week, {weightAbbr})
-          </p>
-          {weightValues.length ? (
-            <div className="flex flex-wrap items-end gap-4">
-              <Sparkline values={weightValues} width={220} height={48} />
-              <p className="text-sm text-zinc-600">
-                Latest:{" "}
-                <span className="font-semibold text-sky-900">
-                  {weightValues[weightValues.length - 1]} {weightAbbr}
-                </span>
-              </p>
-            </div>
-          ) : (
-            <p className="text-sm text-zinc-600">No body-weight entries for this week.</p>
-          )}
-        </div>
       </SectionCard>
 
       <SectionCard title={`Progress toward goals (${goalYear})`}>
