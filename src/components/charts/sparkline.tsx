@@ -7,7 +7,7 @@ type SparklineProps = {
 
 export function Sparkline({ values, width = 160, height = 40, className = "stroke-steel" }: SparklineProps) {
   if (!values.length) {
-    return <p className="text-xs text-slate/70">No data</p>;
+    return <p className="text-xs text-slate/90">No data</p>;
   }
   const min = Math.min(...values);
   const max = Math.max(...values);

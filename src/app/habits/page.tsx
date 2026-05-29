@@ -119,12 +119,12 @@ export default function HabitsPage() {
             value={habitName}
             onChange={(event) => setHabitName(event.target.value)}
             placeholder="Habit name"
-            className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+            className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
           />
           <select
             value={habitType}
             onChange={(event) => setHabitType(event.target.value as "build" | "break")}
-            className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+            className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
           >
             <option value="build">Build</option>
             <option value="break">Break</option>
@@ -132,7 +132,7 @@ export default function HabitsPage() {
           <button
             type="button"
             onClick={addHabit}
-            className="rounded-lg bg-steel px-4 py-2 text-sm text-white shadow-sm shadow-steel/15 hover:bg-steel/90"
+            className="rounded-lg bg-steel px-4 py-2 text-sm text-white shadow-sm shadow-steel/25 hover:bg-steel/90"
           >
             Add Habit
           </button>
@@ -145,19 +145,19 @@ export default function HabitsPage() {
             return (
               <div
                 key={habit.id}
-                className="rounded-lg border border-slate/25 bg-steel/5 px-3 py-2"
+                className="rounded-lg border border-slate/45 bg-steel/10 px-3 py-2"
               >
                 {editingHabitId === habit.id ? (
                   <div className="grid gap-2 sm:grid-cols-3">
                     <input
                       value={editingHabitName}
                       onChange={(event) => setEditingHabitName(event.target.value)}
-                      className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                      className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
                     />
                     <select
                       value={editingHabitType}
                       onChange={(event) => setEditingHabitType(event.target.value as "build" | "break")}
-                      className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                      className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
                     >
                       <option value="build">Build</option>
                       <option value="break">Break</option>
@@ -171,7 +171,7 @@ export default function HabitsPage() {
                       </button>
                       <button
                         onClick={() => setEditingHabitId(null)}
-                        className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-xs font-medium text-slate hover:bg-steel/5"
+                        className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-xs font-medium text-slate hover:bg-steel/10"
                       >
                         Cancel
                       </button>
@@ -190,7 +190,7 @@ export default function HabitsPage() {
                           className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm font-semibold transition-colors ${
                             log?.completed === true
                               ? "border-emerald bg-emerald text-white shadow-sm"
-                              : "border-slate/30 bg-white text-emerald hover:border-emerald/50 hover:bg-emerald/10"
+                              : "border-slate/50 bg-white text-emerald hover:border-emerald/50 hover:bg-emerald/10"
                           }`}
                         >
                           ✓
@@ -204,22 +204,22 @@ export default function HabitsPage() {
                           className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm font-semibold transition-colors ${
                             log && log.completed === false
                               ? "border-copper bg-copper text-white shadow-sm"
-                              : "border-slate/30 bg-white text-copper hover:border-copper/40 hover:bg-copper/10"
+                              : "border-slate/50 bg-white text-copper hover:border-copper/40 hover:bg-copper/10"
                           }`}
                         >
                           ✗
                         </button>
                       </div>
                       <span className="min-w-0 text-sm">
-                        {habit.name} <span className="text-slate/70">({habit.type})</span>
+                        {habit.name} <span className="text-slate/90">({habit.type})</span>
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-slate/70">Streak: {streak}d</span>
+                      <span className="text-xs font-medium text-slate/90">Streak: {streak}d</span>
                       <button
                         type="button"
                         onClick={() => setCalendarHabitId(habit.id)}
-                        className="rounded-md border border-slate/30 bg-white px-2 py-1 text-xs text-slate hover:bg-steel/5"
+                        className="rounded-md border border-slate/50 bg-white px-2 py-1 text-xs text-slate hover:bg-steel/10"
                         aria-label="Open 30-day habit calendar"
                         title="Open 30-day habit calendar"
                       >
@@ -227,7 +227,7 @@ export default function HabitsPage() {
                       </button>
                       <button
                         onClick={() => startEditHabit(habit.id)}
-                        className="rounded-md border border-slate/30 bg-white px-2 py-1 text-xs text-slate hover:bg-steel/5"
+                        className="rounded-md border border-slate/50 bg-white px-2 py-1 text-xs text-slate hover:bg-steel/10"
                         aria-label="Edit habit"
                       >
                         ✎
@@ -251,7 +251,7 @@ export default function HabitsPage() {
 
       {habitCalendarData ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto overscroll-contain bg-black/35 p-3 sm:items-center">
-          <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-xl border border-slate/30 bg-white p-4 shadow-xl">
+          <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-xl border border-slate/50 bg-white p-4 shadow-xl">
             <div className="mb-3 flex items-start justify-between gap-3">
               <div>
                 <h3 className="text-base font-semibold text-charcoal">{habitCalendarData.habit.name}</h3>
@@ -259,18 +259,18 @@ export default function HabitsPage() {
               </div>
               <div className="text-right">
                 <p className="text-sm font-semibold text-charcoal">{habitCalendarData.goodDays}/30</p>
-                <p className="text-xs text-slate/80">days accomplished</p>
+                <p className="text-xs text-slate/95">days accomplished</p>
               </div>
             </div>
 
-            <div className="mb-3 rounded-lg border border-slate/25 bg-steel/5 p-2 text-xs text-slate">
+            <div className="mb-3 rounded-lg border border-slate/45 bg-steel/10 p-2 text-xs text-slate">
               <p className="font-medium text-charcoal">Date range</p>
               <p>
                 {habitCalendarData.firstDate} to {habitCalendarData.lastDate}
               </p>
             </div>
 
-            <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-medium text-slate/80">
+            <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-medium text-slate/95">
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((name) => (
                 <div key={name} className="py-1">
                   {name}
@@ -278,7 +278,7 @@ export default function HabitsPage() {
               ))}
             </div>
 
-            <div className="grid grid-cols-7 gap-1 rounded-lg border border-slate/25 bg-white p-2">
+            <div className="grid grid-cols-7 gap-1 rounded-lg border border-slate/45 bg-white p-2">
               {habitCalendarData.days.map((day) => {
                 const cellClass =
                   day.status === "good"
@@ -305,7 +305,7 @@ export default function HabitsPage() {
               <button
                 type="button"
                 onClick={() => setCalendarHabitId(null)}
-                className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm text-slate hover:bg-steel/5"
+                className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-slate hover:bg-steel/10"
               >
                 Close
               </button>

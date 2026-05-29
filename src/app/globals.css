@@ -1,26 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  --charcoal: #111827;
-  --cream: #faf7ef;
-  --steel: #3b82f6;
-  --emerald: #10b981;
-  --copper: #b45309;
-  --slate: #475569;
+  --charcoal: #030712;
+  --cream: #ebe6da;
+  --steel: #1d4ed8;
+  --emerald: #047857;
+  --copper: #9a3412;
+  --slate: #1e293b;
 
   --background: var(--cream);
   --foreground: var(--charcoal);
-  --accent-muted: color-mix(in srgb, var(--steel) 10%, var(--cream));
-  --border-subtle: color-mix(in srgb, var(--slate) 22%, var(--cream));
+  --accent-muted: color-mix(in srgb, var(--steel) 14%, var(--cream));
+  --border-subtle: color-mix(in srgb, var(--slate) 38%, var(--cream));
 }
 
 @theme inline {
-  --color-charcoal: #111827;
-  --color-cream: #faf7ef;
-  --color-steel: #3b82f6;
-  --color-emerald: #10b981;
-  --color-copper: #b45309;
-  --color-slate: #475569;
+  --color-charcoal: #030712;
+  --color-cream: #ebe6da;
+  --color-steel: #1d4ed8;
+  --color-emerald: #047857;
+  --color-copper: #9a3412;
+  --color-slate: #1e293b;
 
   --color-background: var(--cream);
   --color-foreground: var(--charcoal);
@@ -42,7 +42,7 @@ input[type="checkbox"] {
   height: 1.125rem;
   margin: 0;
   flex-shrink: 0;
-  border: 2px solid color-mix(in srgb, var(--slate) 35%, var(--cream));
+  border: 2px solid color-mix(in srgb, var(--slate) 55%, var(--cream));
   border-radius: 9999px;
   background-color: #ffffff;
   cursor: pointer;
@@ -51,7 +51,7 @@ input[type="checkbox"] {
 }
 
 input[type="checkbox"]:hover {
-  border-color: color-mix(in srgb, var(--steel) 50%, var(--cream));
+  border-color: color-mix(in srgb, var(--steel) 70%, var(--cream));
 }
 
 input[type="checkbox"]:focus-visible {

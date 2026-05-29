@@ -121,12 +121,12 @@ export default function EditWorkoutRoutinePage() {
     <AppShell title="Edit routine" description="">
       <SectionCard title="Routine">
         <div className="mb-4 grid gap-2">
-          <label className="grid gap-1 text-xs font-medium text-slate/80">
+          <label className="grid gap-1 text-xs font-medium text-slate/95">
             Name
             <input
               value={currentRoutine.name}
               onChange={(e) => setRoutineName(e.target.value)}
-              className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm text-charcoal focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+              className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-charcoal focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
             />
           </label>
           {routines.length > 1 ? (
@@ -142,17 +142,17 @@ export default function EditWorkoutRoutinePage() {
           ) : null}
         </div>
 
-        <div className="grid gap-3 rounded-lg border border-slate/30/80 bg-white/80 p-3">
+        <div className="grid gap-3 rounded-lg border border-slate/50 bg-white/80 p-3">
           <div>
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate/80">Strength exercises</p>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate/95">Strength exercises</p>
             {currentRoutine.strengthExerciseIds.length ? (
               <ul className="flex flex-wrap gap-2">
                 {currentRoutine.strengthExerciseIds.map((id) => {
                   const ex = activeExercises.find((e) => e.id === id);
                   return (
-                    <li key={id} className="flex items-center gap-1 rounded-full border border-slate/30 bg-steel/5 px-2 py-1 text-xs text-charcoal">
+                    <li key={id} className="flex items-center gap-1 rounded-full border border-slate/50 bg-steel/10 px-2 py-1 text-xs text-charcoal">
                       <span>{ex?.name ?? id}</span>
-                      <button type="button" onClick={() => removeExerciseFromRoutine(id)} className="text-slate/80 hover:text-copper" aria-label={`Remove ${ex?.name ?? "exercise"}`}>
+                      <button type="button" onClick={() => removeExerciseFromRoutine(id)} className="text-slate/95 hover:text-copper" aria-label={`Remove ${ex?.name ?? "exercise"}`}>
                         ×
                       </button>
                     </li>
@@ -160,23 +160,23 @@ export default function EditWorkoutRoutinePage() {
                 })}
               </ul>
             ) : (
-              <p className="text-xs text-slate/80">No exercises yet.</p>
+              <p className="text-xs text-slate/95">No exercises yet.</p>
             )}
           </div>
 
-          <div className="rounded-lg border border-slate/30/80 bg-steel/5 p-3">
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate/80">Create new exercise</p>
+          <div className="rounded-lg border border-slate/50 bg-steel/10 p-3">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate/95">Create new exercise</p>
             <div className="flex min-w-0 flex-wrap items-end gap-2">
               <input
                 value={newExerciseName}
                 onChange={(e) => setNewExerciseName(e.target.value)}
                 placeholder="Exercise name"
-                className="min-w-0 flex-1 rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                className="min-w-0 flex-1 rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
               />
               <select
                 value={newExerciseCategory}
                 onChange={(e) => setNewExerciseCategory(e.target.value as ExerciseCategory)}
-                className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm text-charcoal"
+                className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-charcoal"
               >
                 <option value="strength">Strength</option>
                 <option value="run">Run</option>
@@ -192,18 +192,18 @@ export default function EditWorkoutRoutinePage() {
                 Create and add
               </button>
             </div>
-            <p className="mt-2 text-[11px] leading-snug text-slate/80">
+            <p className="mt-2 text-[11px] leading-snug text-slate/95">
               Strength exercises are added to this routine automatically. Other types are saved to your library only (this routine&apos;s strength list is separate).
             </p>
           </div>
 
           <div className="flex flex-wrap items-end gap-2">
-            <label className="grid gap-1 text-xs font-medium text-slate/80">
+            <label className="grid gap-1 text-xs font-medium text-slate/95">
               Add strength exercise to routine
               <select
                 value={addExistingExerciseId}
                 onChange={(e) => setAddExistingExerciseId(e.target.value)}
-                className="min-w-[12rem] rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm text-charcoal"
+                className="min-w-[12rem] rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-charcoal"
               >
                 <option value="">Select strength exercise…</option>
                 {exercisesNotInRoutine.map((exercise) => (
@@ -224,7 +224,7 @@ export default function EditWorkoutRoutinePage() {
           </div>
 
           <div>
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate/80">Cardio blocks for this routine</p>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate/95">Cardio blocks for this routine</p>
             <div className="flex flex-wrap gap-3">
               {CARDIO_TYPES.map((type) => (
                 <label key={type} className="flex items-center gap-2 text-sm text-slate">
@@ -236,7 +236,7 @@ export default function EditWorkoutRoutinePage() {
           </div>
         </div>
 
-        <p className="mt-4 text-xs text-slate/80">
+        <p className="mt-4 text-xs text-slate/95">
           Manage the exercise library under{" "}
           <Link href="/workouts/settings" className="font-medium text-steel underline hover:text-charcoal">
             Workout settings

@@ -374,7 +374,7 @@ export default function TodosPage() {
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <button
             onClick={() => setListMenuOpen((prev) => !prev)}
-            className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm text-slate hover:bg-steel/5"
+            className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-slate hover:bg-steel/10"
             aria-label="Open list menu"
           >
             ☰
@@ -385,17 +385,17 @@ export default function TodosPage() {
         </div>
 
         {listMenuOpen ? (
-          <div className="mb-4 grid min-w-0 max-w-full gap-2 overflow-x-hidden rounded-lg border border-slate/25 bg-steel/5 p-3">
+          <div className="mb-4 grid min-w-0 max-w-full gap-2 overflow-x-hidden rounded-lg border border-slate/45 bg-steel/10 p-3">
             <div className="grid min-w-0 max-w-full gap-3">
               {sortedTodoLists.map((list) => (
-                <div key={list.id} className="grid min-w-0 max-w-full gap-2 rounded-lg border border-slate/30/60 bg-white/80 p-2">
+                <div key={list.id} className="grid min-w-0 max-w-full gap-2 rounded-lg border border-slate/50 bg-white/80 p-2">
                   <div className="grid min-w-0 max-w-full gap-2">
                     {renameListId === list.id ? (
                       <>
                         <input
                           value={renameValue}
                           onChange={(event) => setRenameValue(event.target.value)}
-                          className="min-w-0 w-full max-w-full rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                          className="min-w-0 w-full max-w-full rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
                         />
                         <button
                           onClick={saveRenameList}
@@ -412,7 +412,7 @@ export default function TodosPage() {
                             setListMenuOpen(false);
                           }}
                           className={`w-full min-w-0 max-w-full rounded-lg px-3 py-2 text-left text-sm break-words [overflow-wrap:anywhere] ${
-                            activeListId === list.id ? "bg-steel text-white" : "bg-white text-slate hover:bg-steel/5"
+                            activeListId === list.id ? "bg-steel text-white" : "bg-white text-slate hover:bg-steel/10"
                           }`}
                         >
                           {list.isMain ? `${list.name} (main)` : list.name}
@@ -425,7 +425,7 @@ export default function TodosPage() {
                         <div className="flex min-w-0 max-w-full flex-wrap gap-2">
                           <button
                             onClick={() => startRenameList(list.id, list.name)}
-                            className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-xs text-slate hover:bg-steel/5"
+                            className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-xs text-slate hover:bg-steel/10"
                           >
                             Edit
                           </button>
@@ -433,7 +433,7 @@ export default function TodosPage() {
                             <button
                               type="button"
                               onClick={() => makeMainList(list.id)}
-                              className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-xs font-medium text-slate hover:bg-steel/5"
+                              className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-xs font-medium text-slate hover:bg-steel/10"
                             >
                               Make main
                             </button>
@@ -461,7 +461,7 @@ export default function TodosPage() {
                       <select
                         value={list.goalId ?? ""}
                         onChange={(event) => setListGoalLink(list.id, event.target.value)}
-                        className="min-w-0 w-full max-w-full rounded border border-slate/30 bg-white px-2 py-1 text-xs text-charcoal"
+                        className="min-w-0 w-full max-w-full rounded border border-slate/50 bg-white px-2 py-1 text-xs text-charcoal"
                       >
                         <option value="">None</option>
                         {goalsForListLink.map((g) => (
@@ -480,7 +480,7 @@ export default function TodosPage() {
                 value={newListName}
                 onChange={(event) => setNewListName(event.target.value)}
                 placeholder="New list name"
-                className="min-w-0 w-full max-w-full rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25 sm:min-w-0 sm:flex-1"
+                className="min-w-0 w-full max-w-full rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25 sm:min-w-0 sm:flex-1"
               />
               <button
                 onClick={addList}
@@ -493,14 +493,14 @@ export default function TodosPage() {
         ) : null}
 
         {isMainListActive ? (
-          <div className="mb-3 rounded-lg border border-slate/25 bg-steel/5 p-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate/80">Sections (main list)</p>
+          <div className="mb-3 rounded-lg border border-slate/45 bg-steel/10 p-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate/95">Sections (main list)</p>
             <div className="mt-2 flex flex-wrap gap-2">
               <input
                 value={newSectionName}
                 onChange={(event) => setNewSectionName(event.target.value)}
                 placeholder="Section name"
-                className="min-w-0 flex-1 rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                className="min-w-0 flex-1 rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
               />
               <button
                 type="button"
@@ -515,13 +515,13 @@ export default function TodosPage() {
                 {mainSectionsOrdered.map((sec) => (
                   <li
                     key={sec.id}
-                    className="flex items-center gap-1 rounded-full border border-slate/30 bg-white px-2 py-1"
+                    className="flex items-center gap-1 rounded-full border border-slate/50 bg-white px-2 py-1"
                   >
                     <span>{sec.name}</span>
                     <button
                       type="button"
                       onClick={() => deleteTodoSection(sec.id)}
-                      className="text-slate/80 hover:text-copper"
+                      className="text-slate/95 hover:text-copper"
                       aria-label={`Remove section ${sec.name}`}
                     >
                       ×
@@ -537,7 +537,7 @@ export default function TodosPage() {
           <select
             value={activeListId}
             onChange={(event) => setSelectedListId(event.target.value)}
-            className="min-w-0 flex-1 rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+            className="min-w-0 flex-1 rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
           >
             {!data.todoLists.length ? <option value="">No lists yet</option> : null}
             {sortedTodoLists.map((list) => (
@@ -551,7 +551,7 @@ export default function TodosPage() {
             <select
               value={newTaskSectionId}
               onChange={(event) => setNewTaskSectionId(event.target.value)}
-              className="min-w-0 rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25 sm:w-40"
+              className="min-w-0 rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25 sm:w-40"
             >
               <option value="">No section</option>
               {mainSectionsOrdered.map((sec) => (
@@ -565,9 +565,9 @@ export default function TodosPage() {
             value={todoTitle}
             onChange={(event) => setTodoTitle(event.target.value)}
             placeholder="Add task"
-            className="min-w-0 flex-[2] rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+            className="min-w-0 flex-[2] rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
           />
-          <button onClick={addTodo} className="w-full rounded-lg bg-steel px-4 py-2 text-sm text-white shadow-sm shadow-steel/15 hover:bg-steel/90 sm:w-auto">
+          <button onClick={addTodo} className="w-full rounded-lg bg-steel px-4 py-2 text-sm text-white shadow-sm shadow-steel/25 hover:bg-steel/90 sm:w-auto">
             +
           </button>
         </div>
@@ -575,14 +575,14 @@ export default function TodosPage() {
         <div className="grid gap-2">
           {incompleteHabitsToday.map(({ habit }) => (
             <CompleteExitRow key={`habit-${habit.id}`} exiting={fadingHabitIds.includes(habit.id)}>
-              <div className="flex flex-wrap items-center gap-3 rounded-lg border border-slate/25 bg-steel/5 px-3 py-2">
+              <div className="flex flex-wrap items-center gap-3 rounded-lg border border-slate/45 bg-steel/10 px-3 py-2">
                 <div className="flex shrink-0 gap-1.5">
                   <button
                     type="button"
                     title="Done today"
                     aria-label="Log habit as done today"
                     onClick={() => logHabitTodayWithExit(habit.id, true)}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-slate/30 bg-white text-sm font-semibold text-emerald transition-colors hover:border-emerald/50 hover:bg-emerald/10"
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-slate/50 bg-white text-sm font-semibold text-emerald transition-colors hover:border-emerald/50 hover:bg-emerald/10"
                   >
                     ✓
                   </button>
@@ -591,7 +591,7 @@ export default function TodosPage() {
                     title="Missed today"
                     aria-label="Log habit as missed today"
                     onClick={() => logHabitTodayWithExit(habit.id, false)}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-slate/30 bg-white text-sm font-semibold text-copper transition-colors hover:border-copper/40 hover:bg-copper/10"
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-slate/50 bg-white text-sm font-semibold text-copper transition-colors hover:border-copper/40 hover:bg-copper/10"
                   >
                     ✗
                   </button>
@@ -623,14 +623,14 @@ export default function TodosPage() {
                     dropTodoOnSection(block.key === "_uncat" ? "" : block.key);
                   }}
                 >
-                  <h4 className="text-xs font-semibold uppercase tracking-wide text-slate/80">{block.title}</h4>
+                  <h4 className="text-xs font-semibold uppercase tracking-wide text-slate/95">{block.title}</h4>
                   {block.items.length === 0 ? (
-                    <p className="pl-1 text-xs text-slate/80">No tasks in this section.</p>
+                    <p className="pl-1 text-xs text-slate/95">No tasks in this section.</p>
                   ) : (
                     block.items.map((item) => (
                       <CompleteExitRow key={item.id} exiting={fadingTaskIds.includes(item.id)}>
                         <div
-                          className="flex flex-wrap items-center gap-2 rounded-lg border border-slate/25 bg-steel/5 px-3 py-2"
+                          className="flex flex-wrap items-center gap-2 rounded-lg border border-slate/45 bg-steel/10 px-3 py-2"
                           draggable={editingTodoId !== item.id}
                           onDragStart={() => startDraggingTodo(item.id)}
                           onDragEnd={endDraggingTodo}
@@ -644,7 +644,7 @@ export default function TodosPage() {
                                 if (event.key === "Enter") saveTodoEdits();
                                 if (event.key === "Escape") cancelEditTodo();
                               }}
-                              className="min-w-0 flex-1 rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                              className="min-w-0 flex-1 rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
                               autoFocus
                             />
                             <button
@@ -657,7 +657,7 @@ export default function TodosPage() {
                             <button
                               type="button"
                               onClick={cancelEditTodo}
-                              className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-xs font-medium text-slate hover:bg-steel/5"
+                              className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-xs font-medium text-slate hover:bg-steel/10"
                             >
                               Cancel
                             </button>
@@ -672,13 +672,13 @@ export default function TodosPage() {
                               />
                               <span className="break-words text-sm">{item.title}</span>
                             </label>
-                            <span className="rounded border border-slate/30 bg-white px-2 py-1 text-xs text-slate">
+                            <span className="rounded border border-slate/50 bg-white px-2 py-1 text-xs text-slate">
                               Drag to move
                             </span>
                             <button
                               type="button"
                               onClick={() => startEditTodo(item.id, item.title)}
-                              className="shrink-0 rounded-md border border-slate/30 bg-white px-2 py-1 text-xs text-slate hover:bg-steel/5"
+                              className="shrink-0 rounded-md border border-slate/50 bg-white px-2 py-1 text-xs text-slate hover:bg-steel/10"
                               aria-label="Edit task"
                             >
                               ✎
@@ -701,7 +701,7 @@ export default function TodosPage() {
               ))
             : activeItems.map((item) => (
                 <CompleteExitRow key={item.id} exiting={fadingTaskIds.includes(item.id)}>
-                  <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate/25 bg-steel/5 px-3 py-2">
+                  <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate/45 bg-steel/10 px-3 py-2">
                   {editingTodoId === item.id ? (
                     <div className="flex min-w-0 w-full flex-wrap items-center gap-2">
                       <input
@@ -711,7 +711,7 @@ export default function TodosPage() {
                           if (event.key === "Enter") saveTodoEdits();
                           if (event.key === "Escape") cancelEditTodo();
                         }}
-                        className="min-w-0 flex-1 rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                        className="min-w-0 flex-1 rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
                         autoFocus
                       />
                       <button
@@ -724,7 +724,7 @@ export default function TodosPage() {
                       <button
                         type="button"
                         onClick={cancelEditTodo}
-                        className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-xs font-medium text-slate hover:bg-steel/5"
+                        className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-xs font-medium text-slate hover:bg-steel/10"
                       >
                         Cancel
                       </button>
@@ -742,7 +742,7 @@ export default function TodosPage() {
                       <button
                         type="button"
                         onClick={() => startEditTodo(item.id, item.title)}
-                        className="shrink-0 rounded-md border border-slate/30 bg-white px-2 py-1 text-xs text-slate hover:bg-steel/5"
+                        className="shrink-0 rounded-md border border-slate/50 bg-white px-2 py-1 text-xs text-slate hover:bg-steel/10"
                         aria-label="Edit task"
                       >
                         ✎
@@ -768,7 +768,7 @@ export default function TodosPage() {
         <div className="mt-3">
           <button
             onClick={() => setShowCompleted((prev) => !prev)}
-            className="text-sm font-medium text-slate/80 underline"
+            className="text-sm font-medium text-slate/95 underline"
           >
             {showCompleted ? "Hide completed" : `Show completed (${completedItems.length})`}
           </button>
@@ -777,7 +777,7 @@ export default function TodosPage() {
               {completedItems.map(({ completion, todo }) => (
                 <div
                   key={completion.id}
-                  className="flex flex-wrap items-center gap-2 rounded-lg border border-slate/25 bg-steel/5 px-3 py-2 text-sm text-slate"
+                  className="flex flex-wrap items-center gap-2 rounded-lg border border-slate/45 bg-steel/10 px-3 py-2 text-sm text-slate"
                 >
                   {todo && editingTodoId === todo.id ? (
                     <div className="flex min-w-0 w-full flex-wrap items-center gap-2">
@@ -788,7 +788,7 @@ export default function TodosPage() {
                           if (event.key === "Enter") saveTodoEdits();
                           if (event.key === "Escape") cancelEditTodo();
                         }}
-                        className="min-w-0 flex-1 rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm text-charcoal focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                        className="min-w-0 flex-1 rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-charcoal focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
                         autoFocus
                       />
                       <button
@@ -801,7 +801,7 @@ export default function TodosPage() {
                       <button
                         type="button"
                         onClick={cancelEditTodo}
-                        className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-xs font-medium text-slate hover:bg-steel/5"
+                        className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-xs font-medium text-slate hover:bg-steel/10"
                       >
                         Cancel
                       </button>
@@ -814,7 +814,7 @@ export default function TodosPage() {
                           <button
                             type="button"
                             onClick={() => startEditTodo(todo.id, todo.title)}
-                            className="rounded-md border border-slate/30 bg-white px-2 py-1 text-xs text-slate hover:bg-steel/5"
+                            className="rounded-md border border-slate/50 bg-white px-2 py-1 text-xs text-slate hover:bg-steel/10"
                             aria-label="Edit completed task"
                           >
                             ✎

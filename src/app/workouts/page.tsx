@@ -284,7 +284,7 @@ export default function WorkoutsPage() {
     <AppShell title="Workouts" description="">
       <SectionCard title={formattedDate}>
         <div className="flex flex-wrap items-center gap-3">
-          <label className="relative inline-flex cursor-pointer items-center rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm text-slate hover:bg-steel/5">
+          <label className="relative inline-flex cursor-pointer items-center rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-slate hover:bg-steel/10">
             {formattedDate}
             <input
               type="date"
@@ -304,7 +304,7 @@ export default function WorkoutsPage() {
               onChange={(e) => setBodyWeightDraft(e.target.value)}
               onBlur={commitBodyWeight}
               placeholder="?"
-              className="min-w-0 flex-1 rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25 sm:w-28 sm:flex-none"
+              className="min-w-0 flex-1 rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25 sm:w-28 sm:flex-none"
             />
           </label>
         </div>
@@ -312,12 +312,12 @@ export default function WorkoutsPage() {
 
       <SectionCard title={currentRoutine ? `${currentRoutine.name} ? log` : "Log workout"}>
         <div className="mb-4 flex flex-wrap items-end gap-2">
-          <label className="grid min-w-0 flex-1 gap-1 text-xs font-medium text-slate/80">
+          <label className="grid min-w-0 flex-1 gap-1 text-xs font-medium text-slate/95">
             Routine for today
             <select
               value={selectedRoutineId}
               onChange={(e) => onRoutineSelectChange(e.target.value)}
-              className="w-full rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm text-charcoal focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+              className="w-full rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-charcoal focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
             >
               {routines.map((r) => (
                 <option key={r.id} value={r.id}>
@@ -330,7 +330,7 @@ export default function WorkoutsPage() {
           {currentRoutine ? (
             <Link
               href={`/workouts/routines/${currentRoutine.id}`}
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate/30 bg-white text-base text-slate shadow-sm hover:border-steel/40 hover:bg-steel/5"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate/50 bg-white text-base text-slate shadow-sm hover:border-steel/40 hover:bg-steel/10"
               aria-label="Edit exercises and cardio for this routine"
               title="Edit routine"
             >
@@ -341,7 +341,7 @@ export default function WorkoutsPage() {
 
         <div className="grid gap-4 text-sm text-slate">
           {!anyPriorExerciseLog && strengthBlocks.length ? (
-            <p className="text-xs text-slate/80">
+            <p className="text-xs text-slate/95">
               After you log an exercise once, your last sets and weights for that exercise will show here?even if it was on a different day or routine.
             </p>
           ) : null}
@@ -372,10 +372,10 @@ export default function WorkoutsPage() {
               lastPriorSet;
 
             return (
-              <div key={exercise.id} className="overflow-hidden rounded-lg border border-slate/25">
-                <div className="border-b border-slate/25 bg-steel/5 px-3 py-2 font-medium text-charcoal">{exercise.name}</div>
+              <div key={exercise.id} className="overflow-hidden rounded-lg border border-slate/45">
+                <div className="border-b border-slate/45 bg-steel/10 px-3 py-2 font-medium text-charcoal">{exercise.name}</div>
                 {lastExerciseSession && lastSessionLabel ? (
-                  <p className="border-b border-slate/20 bg-white/70 px-3 py-2 text-xs leading-relaxed text-slate">
+                  <p className="border-b border-slate/40 bg-white/70 px-3 py-2 text-xs leading-relaxed text-slate">
                     <span className="font-medium text-charcoal">Last time ({lastSessionLabel}):</span>{" "}
                     {lastSets.length ? (
                       <>
@@ -396,7 +396,7 @@ export default function WorkoutsPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[320px] table-fixed text-xs sm:text-sm">
                     <thead>
-                      <tr className="border-b border-slate/20 text-slate/80">
+                      <tr className="border-b border-slate/40 text-slate/95">
                         <th className="px-2 py-2 text-left">Set</th>
                         <th className="px-2 py-2 text-left">Weight ({weightAbbr})</th>
                         <th className="px-2 py-2 text-left">Reps</th>
@@ -405,7 +405,7 @@ export default function WorkoutsPage() {
                     </thead>
                     <tbody>
                       {sets.map((set, index) => (
-                        <tr key={set.id} className="border-b border-slate/20">
+                        <tr key={set.id} className="border-b border-slate/40">
                           <td className="px-2 py-2">Set {index + 1}</td>
                           <td className="px-2 py-2">{set.weight} {weightAbbr}</td>
                           <td className="px-2 py-2">{set.reps}</td>
@@ -414,7 +414,7 @@ export default function WorkoutsPage() {
                               <button
                                 type="button"
                                 onClick={() => duplicateStrengthSet(exercise.id, set.weight, set.reps)}
-                                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate/30 bg-white text-slate hover:border-steel/40 hover:bg-steel/5"
+                                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate/50 bg-white text-slate hover:border-steel/40 hover:bg-steel/10"
                                 aria-label={`Duplicate set ${index + 1}`}
                                 title="Duplicate set"
                               >
@@ -423,7 +423,7 @@ export default function WorkoutsPage() {
                               <button
                                 type="button"
                                 onClick={() => removeStrengthSet(set.id)}
-                                className="text-xs text-slate/80 underline hover:text-charcoal"
+                                className="text-xs text-slate/95 underline hover:text-charcoal"
                               >
                                 Remove
                               </button>
@@ -432,14 +432,14 @@ export default function WorkoutsPage() {
                         </tr>
                       ))}
                       <tr>
-                        <td className="px-2 py-2 text-slate/80">New</td>
+                        <td className="px-2 py-2 text-slate/95">New</td>
                         <td className="px-2 py-2">
                           <input
                             type="number"
                             value={draft.weight}
                             onChange={(event) => setSetDrafts((prev) => ({ ...prev, [exercise.id]: { ...draft, weight: event.target.value } }))}
                             placeholder={`Weight (${weightAbbr})`}
-                            className="w-full rounded border border-slate/30 bg-white px-2 py-1 text-xs sm:text-sm"
+                            className="w-full rounded border border-slate/50 bg-white px-2 py-1 text-xs sm:text-sm"
                           />
                         </td>
                         <td className="px-2 py-2">
@@ -448,7 +448,7 @@ export default function WorkoutsPage() {
                             value={draft.reps}
                             onChange={(event) => setSetDrafts((prev) => ({ ...prev, [exercise.id]: { ...draft, reps: event.target.value } }))}
                             placeholder="Reps"
-                            className="w-full rounded border border-slate/30 bg-white px-2 py-1 text-xs sm:text-sm"
+                            className="w-full rounded border border-slate/50 bg-white px-2 py-1 text-xs sm:text-sm"
                           />
                         </td>
                         <td className="px-2 py-2 text-right">
@@ -460,7 +460,7 @@ export default function WorkoutsPage() {
                                 if (!duplicateSource) return;
                                 duplicateStrengthSet(exercise.id, duplicateSource.weight, duplicateSource.reps);
                               }}
-                              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate/30 bg-white text-slate hover:border-steel/40 hover:bg-steel/5 disabled:cursor-not-allowed disabled:opacity-40"
+                              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate/50 bg-white text-slate hover:border-steel/40 hover:bg-steel/10 disabled:cursor-not-allowed disabled:opacity-40"
                               aria-label="Duplicate last set"
                               title="Duplicate last set"
                             >
@@ -479,15 +479,15 @@ export default function WorkoutsPage() {
                     </tbody>
                   </table>
                 </div>
-                <div className="border-t border-slate/20 bg-steel/5 px-3 py-2">
+                <div className="border-t border-slate/40 bg-steel/10 px-3 py-2">
                   <label className="grid gap-1">
-                    <span className="text-xs font-medium text-slate/80">Notes (optional)</span>
+                    <span className="text-xs font-medium text-slate/95">Notes (optional)</span>
                     <textarea
                       value={exerciseNote}
                       onChange={(event) => setStrengthExerciseNote(exercise.id, event.target.value)}
                       placeholder="Form cues, how it felt, next target?"
                       rows={2}
-                      className="w-full resize-y rounded-md border border-slate/30 bg-white px-2 py-1.5 text-xs text-charcoal placeholder:text-slate/60 focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25 sm:text-sm"
+                      className="w-full resize-y rounded-md border border-slate/50 bg-white px-2 py-1.5 text-xs text-charcoal placeholder:text-slate/60 focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25 sm:text-sm"
                     />
                   </label>
                 </div>
@@ -503,12 +503,12 @@ export default function WorkoutsPage() {
             const title = cardioType === "swim" ? "Swim" : cardioType === "run" ? "Run" : "Bike";
 
             return (
-              <div key={cardioType} className="overflow-hidden rounded-lg border border-slate/25">
-                <div className="border-b border-slate/25 bg-steel/5 px-3 py-2 font-medium text-charcoal">{title}</div>
+              <div key={cardioType} className="overflow-hidden rounded-lg border border-slate/45">
+                <div className="border-b border-slate/45 bg-steel/10 px-3 py-2 font-medium text-charcoal">{title}</div>
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[320px] table-fixed text-xs sm:text-sm">
                     <thead>
-                      <tr className="border-b border-slate/20 text-slate/80">
+                      <tr className="border-b border-slate/40 text-slate/95">
                         <th className="px-2 py-2 text-left">{nameHeader}</th>
                         <th className="px-2 py-2 text-left">{metricHeader}</th>
                         <th className="px-2 py-2 text-left">Time (min)</th>
@@ -517,12 +517,12 @@ export default function WorkoutsPage() {
                     </thead>
                     <tbody>
                       {entries.map((entry) => (
-                        <tr key={entry.id} className="border-b border-slate/20">
+                        <tr key={entry.id} className="border-b border-slate/40">
                           <td className="px-2 py-2">{cardioType === "swim" ? draft.label : cardioType.toUpperCase()}</td>
                           <td className="px-2 py-2">{cardioType === "swim" ? entry.laps ?? "-" : entry.distance != null ? `${entry.distance} ${distanceAbbr}` : "-"}</td>
                           <td className="px-2 py-2">{entry.timeMinutes} min</td>
                           <td className="px-2 py-2 text-right">
-                            <button type="button" onClick={() => removeCardioEntry(entry.id)} className="text-xs text-slate/80 underline hover:text-charcoal">Remove</button>
+                            <button type="button" onClick={() => removeCardioEntry(entry.id)} className="text-xs text-slate/95 underline hover:text-charcoal">Remove</button>
                           </td>
                         </tr>
                       ))}
@@ -532,7 +532,7 @@ export default function WorkoutsPage() {
                             value={draft.label}
                             onChange={(event) => setCardioDrafts((prev) => ({ ...prev, [cardioType]: { ...prev[cardioType], label: event.target.value } }))}
                             placeholder={nameHeader}
-                            className="w-full rounded border border-slate/30 bg-white px-2 py-1 text-xs sm:text-sm"
+                            className="w-full rounded border border-slate/50 bg-white px-2 py-1 text-xs sm:text-sm"
                           />
                         </td>
                         <td className="px-2 py-2">
@@ -545,7 +545,7 @@ export default function WorkoutsPage() {
                               }))
                             }
                             placeholder={metricHeader}
-                            className="w-full rounded border border-slate/30 bg-white px-2 py-1 text-xs sm:text-sm"
+                            className="w-full rounded border border-slate/50 bg-white px-2 py-1 text-xs sm:text-sm"
                           />
                         </td>
                         <td className="px-2 py-2">
@@ -553,7 +553,7 @@ export default function WorkoutsPage() {
                             value={draft.time}
                             onChange={(event) => setCardioDrafts((prev) => ({ ...prev, [cardioType]: { ...prev[cardioType], time: event.target.value } }))}
                             placeholder="Time (min)"
-                            className="w-full rounded border border-slate/30 bg-white px-2 py-1 text-xs sm:text-sm"
+                            className="w-full rounded border border-slate/50 bg-white px-2 py-1 text-xs sm:text-sm"
                           />
                         </td>
                         <td className="px-2 py-2 text-right">

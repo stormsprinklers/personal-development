@@ -510,8 +510,8 @@ export default function GoalsPage() {
                   return (
                     <div
                       key={goal.id}
-                      className={`rounded-lg border border-slate/25 px-3 py-2 ${
-                        goal.completed === true ? "bg-emerald/10" : "bg-steel/5"
+                      className={`rounded-lg border border-slate/45 px-3 py-2 ${
+                        goal.completed === true ? "bg-emerald/10" : "bg-steel/10"
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
@@ -524,14 +524,14 @@ export default function GoalsPage() {
                         <button
                           type="button"
                           onClick={() => openGoalEditor(goal.id)}
-                          className="rounded-md border border-slate/30 bg-white px-2 py-1 text-xs text-slate hover:bg-steel/5"
+                          className="rounded-md border border-slate/50 bg-white px-2 py-1 text-xs text-slate hover:bg-steel/10"
                           aria-label="Edit goal"
                         >
                           ✎
                         </button>
                       </div>
                       <div className="mt-1 h-2 rounded bg-steel/10">
-                        <div className="h-2 rounded bg-steel/50" style={{ width: `${progress}%` }} />
+                        <div className="h-2 rounded bg-steel/100" style={{ width: `${progress}%` }} />
                       </div>
                       <p className="mt-1 text-xs text-slate">{progress.toFixed(1)}%</p>
                     </div>
@@ -546,7 +546,7 @@ export default function GoalsPage() {
                     setGoalDraftsBySection((prev) => ({ ...prev, [section.id]: event.target.value }))
                   }
                   placeholder="Goal"
-                  className="w-full rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                  className="w-full rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
                 />
                 <button
                   type="button"
@@ -567,7 +567,7 @@ export default function GoalsPage() {
             value={sectionName}
             onChange={(event) => setSectionName(event.target.value)}
             placeholder="Section"
-            className="w-full rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+            className="w-full rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
           />
           <button
             type="button"
@@ -581,7 +581,7 @@ export default function GoalsPage() {
 
       {openGoalId ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto overscroll-contain bg-black/35 p-3 sm:items-center">
-          <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-xl border border-slate/30 bg-white p-4 shadow-xl">
+          <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-xl border border-slate/50 bg-white p-4 shadow-xl">
             {(() => {
               const goal = data.goals.find((g) => g.id === openGoalId);
               if (!goal) return null;
@@ -640,23 +640,23 @@ export default function GoalsPage() {
                   <input
                     value={goalTitleDraft}
                     onChange={(event) => setGoalTitleDraft(event.target.value)}
-                    className="w-full rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                    className="w-full rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
                   />
 
                   <div>
-                    <p className="mb-1 text-xs uppercase tracking-wide text-slate/80">Goal task list</p>
+                    <p className="mb-1 text-xs uppercase tracking-wide text-slate/95">Goal task list</p>
                     <div className="mb-2 flex flex-wrap gap-2">
                       <input
                         value={goalListNameDraft}
                         onChange={(event) => setGoalListNameDraft(event.target.value)}
                         placeholder="List name"
-                        className="min-w-0 flex-1 rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                        className="min-w-0 flex-1 rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
                       />
                       {hasGoalList ? (
                         <button
                           type="button"
                           onClick={() => saveGoalTaskListName(goal.id)}
-                          className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-xs font-medium text-slate hover:bg-steel/5"
+                          className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-xs font-medium text-slate hover:bg-steel/10"
                         >
                           Save name
                         </button>
@@ -690,7 +690,7 @@ export default function GoalsPage() {
                         value={goalTaskDraft}
                         onChange={(event) => setGoalTaskDraft(event.target.value)}
                         placeholder="Add task"
-                        className="w-full rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                        className="w-full rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
                       />
                       <button
                         type="button"
@@ -703,11 +703,11 @@ export default function GoalsPage() {
                   </div>
 
                   <div>
-                    <p className="mb-1 text-xs uppercase tracking-wide text-slate/80">
+                    <p className="mb-1 text-xs uppercase tracking-wide text-slate/95">
                       Habit association
                     </p>
                     <div className="grid gap-2">
-                      <div className="max-h-40 overflow-y-auto rounded-lg border border-slate/30 bg-white p-2">
+                      <div className="max-h-40 overflow-y-auto rounded-lg border border-slate/50 bg-white p-2">
                         <div className="grid gap-1">
                           {allHabits.map((habit) => (
                             <label key={habit.id} className="flex w-full items-center gap-2 text-sm text-slate">
@@ -719,7 +719,7 @@ export default function GoalsPage() {
                               />
                               <span className="min-w-0 flex-1">{habit.name}</span>
                               {linkedHabitDrafts.includes(habit.id) && habitCompletionsRequired != null ? (
-                                <span className="shrink-0 text-xs font-medium tabular-nums text-slate/80">
+                                <span className="shrink-0 text-xs font-medium tabular-nums text-slate/95">
                                   {habitCompletionsRequired} completions required
                                 </span>
                               ) : null}
@@ -735,21 +735,21 @@ export default function GoalsPage() {
                           min={1}
                           value={habitTargetDraft}
                           onChange={(event) => setHabitTargetDraft(event.target.value)}
-                          className="w-28 rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm text-charcoal focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                          className="w-28 rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-charcoal focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
                         />
                       </label>
                     </div>
                   </div>
 
                   <div>
-                    <p className="mb-1 text-xs uppercase tracking-wide text-slate/80">
+                    <p className="mb-1 text-xs uppercase tracking-wide text-slate/95">
                       Exercise association
                     </p>
                     <div className="grid gap-2">
                       <select
                         value={linkedExerciseDraft}
                         onChange={(event) => setLinkedExerciseDraft(event.target.value)}
-                        className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                        className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
                       >
                         <option value="">No linked exercise</option>
                         {allExercises.map((exercise) => (
@@ -764,14 +764,14 @@ export default function GoalsPage() {
                           value={exerciseStartDraft}
                           onChange={(event) => setExerciseStartDraft(event.target.value)}
                           placeholder={`Start ${exerciseMetricLabel}`}
-                          className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                          className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
                         />
                         <input
                           type="number"
                           value={exerciseTargetDraft}
                           onChange={(event) => setExerciseTargetDraft(event.target.value)}
                           placeholder={`Goal ${exerciseMetricLabel}`}
-                          className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                          className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
                         />
                       </div>
                       {linkedExercise ? (
@@ -783,7 +783,7 @@ export default function GoalsPage() {
                   </div>
 
                   <div>
-                    <p className="mb-1 text-xs uppercase tracking-wide text-slate/80">Manual progress</p>
+                    <p className="mb-1 text-xs uppercase tracking-wide text-slate/95">Manual progress</p>
                     <p className="mb-2 text-xs text-slate">
                       Track any numeric goal without linking habits or workouts (e.g. books read, dollars saved).
                     </p>
@@ -796,7 +796,7 @@ export default function GoalsPage() {
                           value={manualProgressStartDraft}
                           onChange={(event) => setManualProgressStartDraft(event.target.value)}
                           placeholder="0"
-                          className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                          className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
                         />
                       </label>
                       <label className="grid gap-1 text-xs text-slate">
@@ -807,7 +807,7 @@ export default function GoalsPage() {
                           value={manualProgressCurrentDraft}
                           onChange={(event) => setManualProgressCurrentDraft(event.target.value)}
                           placeholder="Now"
-                          className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                          className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
                         />
                       </label>
                       <label className="grid gap-1 text-xs text-slate">
@@ -818,7 +818,7 @@ export default function GoalsPage() {
                           value={manualProgressTargetDraft}
                           onChange={(event) => setManualProgressTargetDraft(event.target.value)}
                           placeholder="Target"
-                          className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                          className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
                         />
                       </label>
                     </div>
@@ -845,7 +845,7 @@ export default function GoalsPage() {
                   </div>
 
                   <div>
-                    <p className="mb-1 text-xs uppercase tracking-wide text-slate/80">Body weight goal</p>
+                    <p className="mb-1 text-xs uppercase tracking-wide text-slate/95">Body weight goal</p>
                     <div className="grid grid-cols-2 gap-2">
                       <input
                         type="number"
@@ -854,7 +854,7 @@ export default function GoalsPage() {
                         value={bodyWeightStartDraft}
                         onChange={(event) => setBodyWeightStartDraft(event.target.value)}
                         placeholder={`Start (${weightAbbr})`}
-                        className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                        className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
                       />
                       <input
                         type="number"
@@ -863,7 +863,7 @@ export default function GoalsPage() {
                         value={bodyWeightTargetDraft}
                         onChange={(event) => setBodyWeightTargetDraft(event.target.value)}
                         placeholder={`Goal (${weightAbbr})`}
-                        className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                        className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
                       />
                     </div>
                     <p className="mt-1 text-xs text-slate">
@@ -874,7 +874,7 @@ export default function GoalsPage() {
 
                   <div>
                     <div className="h-2 rounded bg-steel/10">
-                      <div className="h-2 rounded bg-steel/50" style={{ width: `${progress}%` }} />
+                      <div className="h-2 rounded bg-steel/100" style={{ width: `${progress}%` }} />
                     </div>
                     <p className="mt-1 text-xs text-slate">{progress.toFixed(1)}%</p>
                   </div>
@@ -891,7 +891,7 @@ export default function GoalsPage() {
                       <button
                         type="button"
                         onClick={closeGoalEditor}
-                        className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm text-slate hover:bg-steel/5"
+                        className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-slate hover:bg-steel/10"
                       >
                         Close
                       </button>

@@ -105,17 +105,17 @@ export default function WorkoutSettingsPage() {
       <MeasurementUnitsCard />
 
       <SectionCard title="Exercises">
-        <div className="mb-3 flex flex-wrap items-end gap-2 rounded-lg border border-slate/25 bg-steel/5 p-3">
+        <div className="mb-3 flex flex-wrap items-end gap-2 rounded-lg border border-slate/45 bg-steel/10 p-3">
           <input
             value={newExerciseName}
             onChange={(e) => setNewExerciseName(e.target.value)}
             placeholder="New exercise name"
-            className="min-w-0 flex-1 rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+            className="min-w-0 flex-1 rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
           />
           <select
             value={newExerciseCategory}
             onChange={(e) => setNewExerciseCategory(e.target.value as ExerciseCategory)}
-            className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm text-charcoal"
+            className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-charcoal"
           >
             <option value="strength">Strength</option>
             <option value="run">Run</option>
@@ -134,18 +134,18 @@ export default function WorkoutSettingsPage() {
 
         <div className="grid gap-2">
           {activeExercises.map((exercise) => (
-            <div key={exercise.id} className="rounded-lg border border-slate/25 bg-steel/5 px-3 py-2">
+            <div key={exercise.id} className="rounded-lg border border-slate/45 bg-steel/10 px-3 py-2">
               {editingExerciseId === exercise.id ? (
                 <div className="flex flex-wrap items-center gap-2">
                   <input
                     value={editingExerciseName}
                     onChange={(e) => setEditingExerciseName(e.target.value)}
-                    className="min-w-0 flex-1 rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm"
+                    className="min-w-0 flex-1 rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm"
                   />
                   <select
                     value={editingExerciseCategory}
                     onChange={(e) => setEditingExerciseCategory(e.target.value as ExerciseCategory)}
-                    className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm"
+                    className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm"
                   >
                     <option value="strength">Strength</option>
                     <option value="run">Run</option>
@@ -155,17 +155,17 @@ export default function WorkoutSettingsPage() {
                   <button type="button" onClick={saveExerciseEdits} className="rounded-lg bg-steel px-3 py-2 text-xs font-medium text-white hover:bg-steel/90">
                     Save
                   </button>
-                  <button type="button" onClick={() => setEditingExerciseId(null)} className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-xs font-medium text-slate hover:bg-steel/5">
+                  <button type="button" onClick={() => setEditingExerciseId(null)} className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-xs font-medium text-slate hover:bg-steel/10">
                     Cancel
                   </button>
                 </div>
               ) : (
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm text-charcoal">
-                    {exercise.name} <span className="text-xs text-slate/80">({exercise.category})</span>
+                    {exercise.name} <span className="text-xs text-slate/95">({exercise.category})</span>
                   </p>
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => startEditExercise(exercise.id)} className="rounded-md border border-slate/30 bg-white px-2 py-1 text-xs text-slate hover:bg-steel/5">
+                    <button type="button" onClick={() => startEditExercise(exercise.id)} className="rounded-md border border-slate/50 bg-white px-2 py-1 text-xs text-slate hover:bg-steel/10">
                       Edit
                     </button>
                     <button
