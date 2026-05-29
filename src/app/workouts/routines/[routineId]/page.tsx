@@ -121,12 +121,12 @@ export default function EditWorkoutRoutinePage() {
     <AppShell title="Edit routine" description="">
       <SectionCard title="Routine">
         <div className="mb-4 grid gap-2">
-          <label className="grid gap-1 text-xs font-medium text-sky-800/80">
+          <label className="grid gap-1 text-xs font-medium text-slate/80">
             Name
             <input
               value={currentRoutine.name}
               onChange={(e) => setRoutineName(e.target.value)}
-              className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-800 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+              className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm text-charcoal focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
             />
           </label>
           {routines.length > 1 ? (
@@ -135,24 +135,24 @@ export default function EditWorkoutRoutinePage() {
               onClick={() => {
                 if (window.confirm(`Delete routine “${currentRoutine.name}”?`)) deleteRoutine();
               }}
-              className="w-fit rounded-lg border border-red-200 bg-white px-3 py-2 text-sm text-red-700 hover:bg-red-50"
+              className="w-fit rounded-lg border border-copper/30 bg-white px-3 py-2 text-sm text-copper hover:bg-copper/10"
             >
               Delete routine
             </button>
           ) : null}
         </div>
 
-        <div className="grid gap-3 rounded-lg border border-sky-200/80 bg-white/80 p-3">
+        <div className="grid gap-3 rounded-lg border border-slate/30/80 bg-white/80 p-3">
           <div>
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-sky-800/70">Strength exercises</p>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate/80">Strength exercises</p>
             {currentRoutine.strengthExerciseIds.length ? (
               <ul className="flex flex-wrap gap-2">
                 {currentRoutine.strengthExerciseIds.map((id) => {
                   const ex = activeExercises.find((e) => e.id === id);
                   return (
-                    <li key={id} className="flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50/80 px-2 py-1 text-xs text-zinc-800">
+                    <li key={id} className="flex items-center gap-1 rounded-full border border-slate/30 bg-steel/5 px-2 py-1 text-xs text-charcoal">
                       <span>{ex?.name ?? id}</span>
-                      <button type="button" onClick={() => removeExerciseFromRoutine(id)} className="text-sky-800/80 hover:text-red-700" aria-label={`Remove ${ex?.name ?? "exercise"}`}>
+                      <button type="button" onClick={() => removeExerciseFromRoutine(id)} className="text-slate/80 hover:text-copper" aria-label={`Remove ${ex?.name ?? "exercise"}`}>
                         ×
                       </button>
                     </li>
@@ -160,23 +160,23 @@ export default function EditWorkoutRoutinePage() {
                 })}
               </ul>
             ) : (
-              <p className="text-xs text-zinc-500">No exercises yet.</p>
+              <p className="text-xs text-slate/80">No exercises yet.</p>
             )}
           </div>
 
-          <div className="rounded-lg border border-sky-200/80 bg-sky-50/40 p-3">
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-sky-800/70">Create new exercise</p>
+          <div className="rounded-lg border border-slate/30/80 bg-steel/5 p-3">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate/80">Create new exercise</p>
             <div className="flex min-w-0 flex-wrap items-end gap-2">
               <input
                 value={newExerciseName}
                 onChange={(e) => setNewExerciseName(e.target.value)}
                 placeholder="Exercise name"
-                className="min-w-0 flex-1 rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+                className="min-w-0 flex-1 rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
               />
               <select
                 value={newExerciseCategory}
                 onChange={(e) => setNewExerciseCategory(e.target.value as ExerciseCategory)}
-                className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-800"
+                className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm text-charcoal"
               >
                 <option value="strength">Strength</option>
                 <option value="run">Run</option>
@@ -187,23 +187,23 @@ export default function EditWorkoutRoutinePage() {
                 type="button"
                 onClick={createExerciseAndAddToRoutine}
                 disabled={!newExerciseName.trim()}
-                className="rounded-lg bg-zinc-800 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-40"
+                className="rounded-lg bg-charcoal px-3 py-2 text-sm font-medium text-white hover:bg-charcoal/90 disabled:opacity-40"
               >
                 Create and add
               </button>
             </div>
-            <p className="mt-2 text-[11px] leading-snug text-zinc-500">
+            <p className="mt-2 text-[11px] leading-snug text-slate/80">
               Strength exercises are added to this routine automatically. Other types are saved to your library only (this routine&apos;s strength list is separate).
             </p>
           </div>
 
           <div className="flex flex-wrap items-end gap-2">
-            <label className="grid gap-1 text-xs font-medium text-sky-800/80">
+            <label className="grid gap-1 text-xs font-medium text-slate/80">
               Add strength exercise to routine
               <select
                 value={addExistingExerciseId}
                 onChange={(e) => setAddExistingExerciseId(e.target.value)}
-                className="min-w-[12rem] rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-800"
+                className="min-w-[12rem] rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm text-charcoal"
               >
                 <option value="">Select strength exercise…</option>
                 {exercisesNotInRoutine.map((exercise) => (
@@ -217,17 +217,17 @@ export default function EditWorkoutRoutinePage() {
               type="button"
               onClick={addExistingExerciseToRoutine}
               disabled={!addExistingExerciseId}
-              className="rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-40"
+              className="rounded-lg bg-steel px-3 py-2 text-sm font-medium text-white hover:bg-steel/90 disabled:opacity-40"
             >
               Add to routine
             </button>
           </div>
 
           <div>
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-sky-800/70">Cardio blocks for this routine</p>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate/80">Cardio blocks for this routine</p>
             <div className="flex flex-wrap gap-3">
               {CARDIO_TYPES.map((type) => (
-                <label key={type} className="flex items-center gap-2 text-sm text-zinc-700">
+                <label key={type} className="flex items-center gap-2 text-sm text-slate">
                   <input type="checkbox" checked={currentRoutine.cardioTypes.includes(type)} onChange={() => toggleRoutineCardio(type)} />
                   {type === "run" ? "Run" : type === "bike" ? "Bike" : "Swim"}
                 </label>
@@ -236,9 +236,9 @@ export default function EditWorkoutRoutinePage() {
           </div>
         </div>
 
-        <p className="mt-4 text-xs text-zinc-500">
+        <p className="mt-4 text-xs text-slate/80">
           Manage the exercise library under{" "}
-          <Link href="/workouts/settings" className="font-medium text-sky-800 underline hover:text-sky-950">
+          <Link href="/workouts/settings" className="font-medium text-steel underline hover:text-charcoal">
             Workout settings
           </Link>
           .

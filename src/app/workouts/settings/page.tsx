@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState } from "react";
 import { MeasurementUnitsCard } from "@/components/measurement-units-card";
@@ -96,26 +96,26 @@ export default function WorkoutSettingsPage() {
   return (
     <AppShell title="Workout settings" description="Units and exercise library.">
       <SectionCard title="About">
-        <p className="text-sm text-zinc-600">
+        <p className="text-sm text-slate">
           Configure units and your exercise library here. To change which exercises and cardio blocks belong to a routine, open{" "}
-          <strong>Workouts</strong>, pick the routine, and use the edit (✎) control next to the routine menu.
+          <strong>Workouts</strong>, pick the routine, and use the edit (?) control next to the routine menu.
         </p>
       </SectionCard>
 
       <MeasurementUnitsCard />
 
       <SectionCard title="Exercises">
-        <div className="mb-3 flex flex-wrap items-end gap-2 rounded-lg border border-sky-200/80 bg-sky-50/40 p-3">
+        <div className="mb-3 flex flex-wrap items-end gap-2 rounded-lg border border-slate/25 bg-steel/5 p-3">
           <input
             value={newExerciseName}
             onChange={(e) => setNewExerciseName(e.target.value)}
             placeholder="New exercise name"
-            className="min-w-0 flex-1 rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+            className="min-w-0 flex-1 rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
           />
           <select
             value={newExerciseCategory}
             onChange={(e) => setNewExerciseCategory(e.target.value as ExerciseCategory)}
-            className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-800"
+            className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm text-charcoal"
           >
             <option value="strength">Strength</option>
             <option value="run">Run</option>
@@ -126,7 +126,7 @@ export default function WorkoutSettingsPage() {
             type="button"
             onClick={createExercise}
             disabled={!newExerciseName.trim()}
-            className="rounded-lg bg-zinc-800 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-40"
+            className="rounded-lg bg-charcoal px-3 py-2 text-sm font-medium text-white hover:bg-charcoal/90 disabled:opacity-40"
           >
             Add exercise
           </button>
@@ -134,38 +134,38 @@ export default function WorkoutSettingsPage() {
 
         <div className="grid gap-2">
           {activeExercises.map((exercise) => (
-            <div key={exercise.id} className="rounded-lg border border-sky-200/80 bg-sky-50/30 px-3 py-2">
+            <div key={exercise.id} className="rounded-lg border border-slate/25 bg-steel/5 px-3 py-2">
               {editingExerciseId === exercise.id ? (
                 <div className="flex flex-wrap items-center gap-2">
                   <input
                     value={editingExerciseName}
                     onChange={(e) => setEditingExerciseName(e.target.value)}
-                    className="min-w-0 flex-1 rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm"
+                    className="min-w-0 flex-1 rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm"
                   />
                   <select
                     value={editingExerciseCategory}
                     onChange={(e) => setEditingExerciseCategory(e.target.value as ExerciseCategory)}
-                    className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm"
+                    className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm"
                   >
                     <option value="strength">Strength</option>
                     <option value="run">Run</option>
                     <option value="bike">Bike</option>
                     <option value="swim">Swim</option>
                   </select>
-                  <button type="button" onClick={saveExerciseEdits} className="rounded-lg bg-sky-600 px-3 py-2 text-xs font-medium text-white hover:bg-sky-700">
+                  <button type="button" onClick={saveExerciseEdits} className="rounded-lg bg-steel px-3 py-2 text-xs font-medium text-white hover:bg-steel/90">
                     Save
                   </button>
-                  <button type="button" onClick={() => setEditingExerciseId(null)} className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-sky-50">
+                  <button type="button" onClick={() => setEditingExerciseId(null)} className="rounded-lg border border-slate/30 bg-white px-3 py-2 text-xs font-medium text-slate hover:bg-steel/5">
                     Cancel
                   </button>
                 </div>
               ) : (
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm text-zinc-900">
-                    {exercise.name} <span className="text-xs text-sky-800/70">({exercise.category})</span>
+                  <p className="text-sm text-charcoal">
+                    {exercise.name} <span className="text-xs text-slate/80">({exercise.category})</span>
                   </p>
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => startEditExercise(exercise.id)} className="rounded-md border border-sky-200 bg-white px-2 py-1 text-xs text-zinc-700 hover:bg-sky-50">
+                    <button type="button" onClick={() => startEditExercise(exercise.id)} className="rounded-md border border-slate/30 bg-white px-2 py-1 text-xs text-slate hover:bg-steel/5">
                       Edit
                     </button>
                     <button
@@ -173,7 +173,7 @@ export default function WorkoutSettingsPage() {
                       onClick={() => {
                         if (window.confirm(`Remove exercise "${exercise.name}"?`)) removeExercise(exercise.id);
                       }}
-                      className="rounded-md border border-red-200 bg-white px-2 py-1 text-xs text-red-700 hover:bg-red-50"
+                      className="rounded-md border border-copper/30 bg-white px-2 py-1 text-xs text-copper hover:bg-copper/10"
                     >
                       Remove
                     </button>
@@ -182,7 +182,7 @@ export default function WorkoutSettingsPage() {
               )}
             </div>
           ))}
-          {!activeExercises.length ? <p className="text-sm text-zinc-600">No exercises yet.</p> : null}
+          {!activeExercises.length ? <p className="text-sm text-slate">No exercises yet.</p> : null}
         </div>
       </SectionCard>
     </AppShell>

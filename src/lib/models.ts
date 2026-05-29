@@ -128,6 +128,12 @@ export type Goal = {
   /** Progress from start → target using the latest body weight logged this year on workouts. */
   bodyWeightStart?: number;
   bodyWeightTarget?: number;
+  /** Optional manual tracker: current value toward `manualProgressTarget`. */
+  manualProgressCurrent?: number;
+  /** Target number for manual progress (e.g. books to read, amount to save). */
+  manualProgressTarget?: number;
+  /** Baseline for manual progress; defaults to 0 when omitted. */
+  manualProgressStart?: number;
   completed: boolean;
   createdAt: string;
 };

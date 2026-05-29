@@ -1,34 +1,40 @@
 @import "tailwindcss";
 
 :root {
-  /* Soft cool base so sky accents read as intentional */
-  --background: #f5f9fc;
-  --foreground: #171717;
-  --accent-sky-muted: #e0f2fe;
+  --charcoal: #111827;
+  --cream: #faf7ef;
+  --steel: #3b82f6;
+  --emerald: #10b981;
+  --copper: #b45309;
+  --slate: #475569;
+
+  --background: var(--cream);
+  --foreground: var(--charcoal);
+  --accent-muted: color-mix(in srgb, var(--steel) 10%, var(--cream));
+  --border-subtle: color-mix(in srgb, var(--slate) 22%, var(--cream));
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-charcoal: #111827;
+  --color-cream: #faf7ef;
+  --color-steel: #3b82f6;
+  --color-emerald: #10b981;
+  --color-copper: #b45309;
+  --color-slate: #475569;
+
+  --color-background: var(--cream);
+  --color-foreground: var(--charcoal);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0b1120;
-    --foreground: #ededed;
-    --accent-sky-muted: #172554;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
-/* App-wide round checkboxes (custom replaces native square) */
+/* App-wide round checkboxes */
 input[type="checkbox"] {
   -webkit-appearance: none;
   appearance: none;
@@ -36,26 +42,26 @@ input[type="checkbox"] {
   height: 1.125rem;
   margin: 0;
   flex-shrink: 0;
-  border: 2px solid rgb(186 230 253);
+  border: 2px solid color-mix(in srgb, var(--slate) 35%, var(--cream));
   border-radius: 9999px;
-  background-color: rgb(255 255 255);
+  background-color: #ffffff;
   cursor: pointer;
   vertical-align: middle;
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 input[type="checkbox"]:hover {
-  border-color: rgb(125 211 252);
+  border-color: color-mix(in srgb, var(--steel) 50%, var(--cream));
 }
 
 input[type="checkbox"]:focus-visible {
-  outline: 2px solid rgb(56 189 248);
+  outline: 2px solid var(--steel);
   outline-offset: 2px;
 }
 
 input[type="checkbox"]:checked {
-  border-color: rgb(2 132 199);
-  background-color: rgb(2 132 199);
+  border-color: var(--steel);
+  background-color: var(--steel);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M2.5 6L5 8.5l4.5-5'/%3E%3C/svg%3E");
   background-size: 0.65rem 0.65rem;
   background-position: center;
@@ -65,15 +71,4 @@ input[type="checkbox"]:checked {
 input[type="checkbox"]:disabled {
   opacity: 0.45;
   cursor: not-allowed;
-}
-
-@media (prefers-color-scheme: dark) {
-  input[type="checkbox"] {
-    border-color: rgb(51 65 85);
-    background-color: rgb(15 23 42);
-  }
-
-  input[type="checkbox"]:hover {
-    border-color: rgb(71 85 105);
-  }
 }

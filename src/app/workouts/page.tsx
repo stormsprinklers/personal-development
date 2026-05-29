@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -284,7 +284,7 @@ export default function WorkoutsPage() {
     <AppShell title="Workouts" description="">
       <SectionCard title={formattedDate}>
         <div className="flex flex-wrap items-center gap-3">
-          <label className="relative inline-flex cursor-pointer items-center rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:bg-sky-50">
+          <label className="relative inline-flex cursor-pointer items-center rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm text-slate hover:bg-steel/5">
             {formattedDate}
             <input
               type="date"
@@ -294,7 +294,7 @@ export default function WorkoutsPage() {
               className="absolute inset-0 cursor-pointer opacity-0"
             />
           </label>
-          <label className="flex min-w-0 flex-1 flex-wrap items-center gap-2 text-sm text-zinc-700 sm:flex-initial">
+          <label className="flex min-w-0 flex-1 flex-wrap items-center gap-2 text-sm text-slate sm:flex-initial">
             <span className="shrink-0">Body weight ({weightAbbr})</span>
             <input
               type="number"
@@ -303,46 +303,46 @@ export default function WorkoutsPage() {
               value={bodyWeightDraft}
               onChange={(e) => setBodyWeightDraft(e.target.value)}
               onBlur={commitBodyWeight}
-              placeholder="—"
-              className="min-w-0 flex-1 rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80 sm:w-28 sm:flex-none"
+              placeholder="?"
+              className="min-w-0 flex-1 rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25 sm:w-28 sm:flex-none"
             />
           </label>
         </div>
       </SectionCard>
 
-      <SectionCard title={currentRoutine ? `${currentRoutine.name} — log` : "Log workout"}>
+      <SectionCard title={currentRoutine ? `${currentRoutine.name} ? log` : "Log workout"}>
         <div className="mb-4 flex flex-wrap items-end gap-2">
-          <label className="grid min-w-0 flex-1 gap-1 text-xs font-medium text-sky-800/80">
+          <label className="grid min-w-0 flex-1 gap-1 text-xs font-medium text-slate/80">
             Routine for today
             <select
               value={selectedRoutineId}
               onChange={(e) => onRoutineSelectChange(e.target.value)}
-              className="w-full rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-800 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+              className="w-full rounded-lg border border-slate/30 bg-white px-3 py-2 text-sm text-charcoal focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
             >
               {routines.map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.name}
                 </option>
               ))}
-              <option value={ADD_ROUTINE_OPTION}>+ Add new routine…</option>
+              <option value={ADD_ROUTINE_OPTION}>+ Add new routine?</option>
             </select>
           </label>
           {currentRoutine ? (
             <Link
               href={`/workouts/routines/${currentRoutine.id}`}
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-sky-200 bg-white text-base text-zinc-700 shadow-sm hover:border-sky-300 hover:bg-sky-50/80"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate/30 bg-white text-base text-slate shadow-sm hover:border-steel/40 hover:bg-steel/5"
               aria-label="Edit exercises and cardio for this routine"
               title="Edit routine"
             >
-              ✎
+              ?
             </Link>
           ) : null}
         </div>
 
-        <div className="grid gap-4 text-sm text-zinc-700">
+        <div className="grid gap-4 text-sm text-slate">
           {!anyPriorExerciseLog && strengthBlocks.length ? (
-            <p className="text-xs text-zinc-500">
-              After you log an exercise once, your last sets and weights for that exercise will show here—even if it was on a different day or routine.
+            <p className="text-xs text-slate/80">
+              After you log an exercise once, your last sets and weights for that exercise will show here?even if it was on a different day or routine.
             </p>
           ) : null}
           {strengthBlocks.map((exercise) => {
@@ -372,22 +372,22 @@ export default function WorkoutsPage() {
               lastPriorSet;
 
             return (
-              <div key={exercise.id} className="overflow-hidden rounded-lg border border-sky-200/80">
-                <div className="border-b border-sky-200/80 bg-sky-50/70 px-3 py-2 font-medium text-zinc-900">{exercise.name}</div>
+              <div key={exercise.id} className="overflow-hidden rounded-lg border border-slate/25">
+                <div className="border-b border-slate/25 bg-steel/5 px-3 py-2 font-medium text-charcoal">{exercise.name}</div>
                 {lastExerciseSession && lastSessionLabel ? (
-                  <p className="border-b border-sky-100/80 bg-white/70 px-3 py-2 text-xs leading-relaxed text-zinc-600">
-                    <span className="font-medium text-zinc-800">Last time ({lastSessionLabel}):</span>{" "}
+                  <p className="border-b border-slate/20 bg-white/70 px-3 py-2 text-xs leading-relaxed text-slate">
+                    <span className="font-medium text-charcoal">Last time ({lastSessionLabel}):</span>{" "}
                     {lastSets.length ? (
                       <>
-                        {lastSets.length} set{lastSets.length !== 1 ? "s" : ""} —{" "}
-                        {lastSets.map((s) => `${s.weight} ${weightAbbr} × ${s.reps}`).join(", ")}
+                        {lastSets.length} set{lastSets.length !== 1 ? "s" : ""} ?{" "}
+                        {lastSets.map((s) => `${s.weight} ${weightAbbr} ? ${s.reps}`).join(", ")}
                       </>
                     ) : (
                       <span>No sets logged for this exercise.</span>
                     )}
                     {lastNoteTrim ? (
-                      <span className="mt-1.5 block text-zinc-600">
-                        <span className="font-medium text-zinc-800">Note:</span>{" "}
+                      <span className="mt-1.5 block text-slate">
+                        <span className="font-medium text-charcoal">Note:</span>{" "}
                         <span className="whitespace-pre-wrap">{lastNoteTrim}</span>
                       </span>
                     ) : null}
@@ -396,7 +396,7 @@ export default function WorkoutsPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[320px] table-fixed text-xs sm:text-sm">
                     <thead>
-                      <tr className="border-b border-sky-100 text-sky-800/80">
+                      <tr className="border-b border-slate/20 text-slate/80">
                         <th className="px-2 py-2 text-left">Set</th>
                         <th className="px-2 py-2 text-left">Weight ({weightAbbr})</th>
                         <th className="px-2 py-2 text-left">Reps</th>
@@ -405,7 +405,7 @@ export default function WorkoutsPage() {
                     </thead>
                     <tbody>
                       {sets.map((set, index) => (
-                        <tr key={set.id} className="border-b border-sky-100/80">
+                        <tr key={set.id} className="border-b border-slate/20">
                           <td className="px-2 py-2">Set {index + 1}</td>
                           <td className="px-2 py-2">{set.weight} {weightAbbr}</td>
                           <td className="px-2 py-2">{set.reps}</td>
@@ -414,7 +414,7 @@ export default function WorkoutsPage() {
                               <button
                                 type="button"
                                 onClick={() => duplicateStrengthSet(exercise.id, set.weight, set.reps)}
-                                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-sky-200 bg-white text-sky-800 hover:border-sky-300 hover:bg-sky-50"
+                                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate/30 bg-white text-slate hover:border-steel/40 hover:bg-steel/5"
                                 aria-label={`Duplicate set ${index + 1}`}
                                 title="Duplicate set"
                               >
@@ -423,7 +423,7 @@ export default function WorkoutsPage() {
                               <button
                                 type="button"
                                 onClick={() => removeStrengthSet(set.id)}
-                                className="text-xs text-sky-800/70 underline hover:text-sky-950"
+                                className="text-xs text-slate/80 underline hover:text-charcoal"
                               >
                                 Remove
                               </button>
@@ -432,14 +432,14 @@ export default function WorkoutsPage() {
                         </tr>
                       ))}
                       <tr>
-                        <td className="px-2 py-2 text-zinc-500">New</td>
+                        <td className="px-2 py-2 text-slate/80">New</td>
                         <td className="px-2 py-2">
                           <input
                             type="number"
                             value={draft.weight}
                             onChange={(event) => setSetDrafts((prev) => ({ ...prev, [exercise.id]: { ...draft, weight: event.target.value } }))}
                             placeholder={`Weight (${weightAbbr})`}
-                            className="w-full rounded border border-sky-200 bg-white px-2 py-1 text-xs sm:text-sm"
+                            className="w-full rounded border border-slate/30 bg-white px-2 py-1 text-xs sm:text-sm"
                           />
                         </td>
                         <td className="px-2 py-2">
@@ -448,7 +448,7 @@ export default function WorkoutsPage() {
                             value={draft.reps}
                             onChange={(event) => setSetDrafts((prev) => ({ ...prev, [exercise.id]: { ...draft, reps: event.target.value } }))}
                             placeholder="Reps"
-                            className="w-full rounded border border-sky-200 bg-white px-2 py-1 text-xs sm:text-sm"
+                            className="w-full rounded border border-slate/30 bg-white px-2 py-1 text-xs sm:text-sm"
                           />
                         </td>
                         <td className="px-2 py-2 text-right">
@@ -460,7 +460,7 @@ export default function WorkoutsPage() {
                                 if (!duplicateSource) return;
                                 duplicateStrengthSet(exercise.id, duplicateSource.weight, duplicateSource.reps);
                               }}
-                              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-sky-200 bg-white text-sky-800 hover:border-sky-300 hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-40"
+                              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate/30 bg-white text-slate hover:border-steel/40 hover:bg-steel/5 disabled:cursor-not-allowed disabled:opacity-40"
                               aria-label="Duplicate last set"
                               title="Duplicate last set"
                             >
@@ -469,7 +469,7 @@ export default function WorkoutsPage() {
                             <button
                               type="button"
                               onClick={() => addStrengthSet(exercise.id)}
-                              className="rounded bg-sky-600 px-2 py-1 text-[11px] font-medium text-white hover:bg-sky-700 sm:text-xs"
+                              className="rounded bg-steel px-2 py-1 text-[11px] font-medium text-white hover:bg-steel/90 sm:text-xs"
                             >
                               + Add set
                             </button>
@@ -479,15 +479,15 @@ export default function WorkoutsPage() {
                     </tbody>
                   </table>
                 </div>
-                <div className="border-t border-sky-100/80 bg-sky-50/30 px-3 py-2">
+                <div className="border-t border-slate/20 bg-steel/5 px-3 py-2">
                   <label className="grid gap-1">
-                    <span className="text-xs font-medium text-sky-800/80">Notes (optional)</span>
+                    <span className="text-xs font-medium text-slate/80">Notes (optional)</span>
                     <textarea
                       value={exerciseNote}
                       onChange={(event) => setStrengthExerciseNote(exercise.id, event.target.value)}
-                      placeholder="Form cues, how it felt, next target…"
+                      placeholder="Form cues, how it felt, next target?"
                       rows={2}
-                      className="w-full resize-y rounded-md border border-sky-200 bg-white px-2 py-1.5 text-xs text-zinc-800 placeholder:text-zinc-400 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80 sm:text-sm"
+                      className="w-full resize-y rounded-md border border-slate/30 bg-white px-2 py-1.5 text-xs text-charcoal placeholder:text-slate/60 focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25 sm:text-sm"
                     />
                   </label>
                 </div>
@@ -503,12 +503,12 @@ export default function WorkoutsPage() {
             const title = cardioType === "swim" ? "Swim" : cardioType === "run" ? "Run" : "Bike";
 
             return (
-              <div key={cardioType} className="overflow-hidden rounded-lg border border-sky-200/80">
-                <div className="border-b border-sky-200/80 bg-sky-50/70 px-3 py-2 font-medium text-zinc-900">{title}</div>
+              <div key={cardioType} className="overflow-hidden rounded-lg border border-slate/25">
+                <div className="border-b border-slate/25 bg-steel/5 px-3 py-2 font-medium text-charcoal">{title}</div>
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[320px] table-fixed text-xs sm:text-sm">
                     <thead>
-                      <tr className="border-b border-sky-100 text-sky-800/80">
+                      <tr className="border-b border-slate/20 text-slate/80">
                         <th className="px-2 py-2 text-left">{nameHeader}</th>
                         <th className="px-2 py-2 text-left">{metricHeader}</th>
                         <th className="px-2 py-2 text-left">Time (min)</th>
@@ -517,12 +517,12 @@ export default function WorkoutsPage() {
                     </thead>
                     <tbody>
                       {entries.map((entry) => (
-                        <tr key={entry.id} className="border-b border-sky-100/80">
+                        <tr key={entry.id} className="border-b border-slate/20">
                           <td className="px-2 py-2">{cardioType === "swim" ? draft.label : cardioType.toUpperCase()}</td>
                           <td className="px-2 py-2">{cardioType === "swim" ? entry.laps ?? "-" : entry.distance != null ? `${entry.distance} ${distanceAbbr}` : "-"}</td>
                           <td className="px-2 py-2">{entry.timeMinutes} min</td>
                           <td className="px-2 py-2 text-right">
-                            <button type="button" onClick={() => removeCardioEntry(entry.id)} className="text-xs text-sky-800/70 underline hover:text-sky-950">Remove</button>
+                            <button type="button" onClick={() => removeCardioEntry(entry.id)} className="text-xs text-slate/80 underline hover:text-charcoal">Remove</button>
                           </td>
                         </tr>
                       ))}
@@ -532,7 +532,7 @@ export default function WorkoutsPage() {
                             value={draft.label}
                             onChange={(event) => setCardioDrafts((prev) => ({ ...prev, [cardioType]: { ...prev[cardioType], label: event.target.value } }))}
                             placeholder={nameHeader}
-                            className="w-full rounded border border-sky-200 bg-white px-2 py-1 text-xs sm:text-sm"
+                            className="w-full rounded border border-slate/30 bg-white px-2 py-1 text-xs sm:text-sm"
                           />
                         </td>
                         <td className="px-2 py-2">
@@ -545,7 +545,7 @@ export default function WorkoutsPage() {
                               }))
                             }
                             placeholder={metricHeader}
-                            className="w-full rounded border border-sky-200 bg-white px-2 py-1 text-xs sm:text-sm"
+                            className="w-full rounded border border-slate/30 bg-white px-2 py-1 text-xs sm:text-sm"
                           />
                         </td>
                         <td className="px-2 py-2">
@@ -553,11 +553,11 @@ export default function WorkoutsPage() {
                             value={draft.time}
                             onChange={(event) => setCardioDrafts((prev) => ({ ...prev, [cardioType]: { ...prev[cardioType], time: event.target.value } }))}
                             placeholder="Time (min)"
-                            className="w-full rounded border border-sky-200 bg-white px-2 py-1 text-xs sm:text-sm"
+                            className="w-full rounded border border-slate/30 bg-white px-2 py-1 text-xs sm:text-sm"
                           />
                         </td>
                         <td className="px-2 py-2 text-right">
-                          <button type="button" onClick={() => addCardioEntry(cardioType)} className="rounded bg-sky-600 px-2 py-1 text-[11px] font-medium text-white hover:bg-sky-700 sm:text-xs">+ Add set</button>
+                          <button type="button" onClick={() => addCardioEntry(cardioType)} className="rounded bg-steel px-2 py-1 text-[11px] font-medium text-white hover:bg-steel/90 sm:text-xs">+ Add set</button>
                         </td>
                       </tr>
                     </tbody>

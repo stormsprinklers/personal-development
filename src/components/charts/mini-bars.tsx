@@ -5,7 +5,7 @@ type MiniBarsProps = {
   barClassName?: string;
 };
 
-export function MiniBars({ values, labels, maxHeight = 72, barClassName = "bg-sky-500" }: MiniBarsProps) {
+export function MiniBars({ values, labels, maxHeight = 72, barClassName = "bg-steel/50" }: MiniBarsProps) {
   const max = Math.max(1, ...values);
   return (
     <div className="flex items-end gap-1">
@@ -17,7 +17,7 @@ export function MiniBars({ values, labels, maxHeight = 72, barClassName = "bg-sk
             title={labels?.[i] ?? String(v)}
           />
           {labels?.[i] ? (
-            <span className="max-w-[3rem] break-words text-[10px] text-sky-700/70">{labels[i]}</span>
+            <span className="max-w-[3rem] break-words text-[10px] text-slate/70">{labels[i]}</span>
           ) : null}
         </div>
       ))}
