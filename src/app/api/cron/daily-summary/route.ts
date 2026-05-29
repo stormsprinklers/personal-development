@@ -1,4 +1,4 @@
-import { dailySummaryPrompt } from "@/lib/ai/prompts";
+import { DASHBOARD_COACH_SYSTEM_PROMPT, dailySummaryPrompt } from "@/lib/ai/prompts";
 
 export const runtime = "nodejs";
 
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
       model: "gpt-4.1-mini",
       temperature: 0.4,
       messages: [
-        { role: "system", content: "You write concise daily self-improvement recaps." },
+        { role: "system", content: DASHBOARD_COACH_SYSTEM_PROMPT },
         { role: "user", content: prompt },
       ],
     }),

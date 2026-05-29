@@ -6,7 +6,11 @@ import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
 import type { CardioType, Exercise, StrengthExerciseNote, WorkoutSession, WorkoutRoutine } from "@/lib/models";
-import { findLastSessionForRoutine, formatShortWorkoutDate } from "@/lib/workout-session-helpers";
+import {
+  findLastSessionForExercise,
+  formatShortWorkoutDate,
+  suggestRoutineIdForDate,
+} from "@/lib/workout-session-helpers";
 import { normalizeMeasurementPreferences, runBikeDistanceUnitAbbr, weightUnitAbbr } from "@/lib/units";
 import { todayKey, useAppData } from "@/lib/storage";
 
@@ -21,6 +25,24 @@ function mergeStrengthExerciseNotes(
   const others = (notes ?? []).filter((n) => n.exerciseId !== exerciseId);
   if (!rawNote.trim()) return others.length ? others : undefined;
   return [...others, { exerciseId, note: rawNote }];
+}
+
+function DuplicateSetIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className ?? "h-4 w-4"}
+    >
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+  );
 }
 
 export default function WorkoutsPage() {
@@ -48,10 +70,18 @@ export default function WorkoutsPage() {
     [data.exercises],
   );
 
+  const sessionForDate = data.workoutSessions.find((s) => s.date === workoutDate);
+
   useEffect(() => {
     if (!routines.length) return;
-    setSelectedRoutineId((prev) => (prev && routines.some((r) => r.id === prev) ? prev : routines[0].id));
-  }, [routines]);
+    const saved = sessionForDate?.routineId;
+    if (saved && routines.some((r) => r.id === saved)) {
+      setSelectedRoutineId(saved);
+      return;
+    }
+    const suggested = suggestRoutineIdForDate(data.workoutSessions, routines, workoutDate);
+    setSelectedRoutineId(suggested ?? routines[0].id);
+  }, [workoutDate, sessionForDate?.routineId, data.workoutSessions, routines]);
 
   function addRoutineAndOpenEditor() {
     const id = crypto.randomUUID();
@@ -70,7 +100,21 @@ export default function WorkoutsPage() {
       return { ...prev, workoutRoutines: [...prev.workoutRoutines, next] };
     });
     setSelectedRoutineId(id);
+    persistRoutineForDate(id);
     router.push(`/workouts/routines/${id}`);
+  }
+
+  function persistRoutineForDate(routineId: string) {
+    upsertWorkoutForDate(workoutDate, (existing) => {
+      if (existing) return { ...existing, routineId };
+      return {
+        id: crypto.randomUUID(),
+        date: workoutDate,
+        strengthSets: [],
+        cardioEntries: [],
+        routineId,
+      };
+    });
   }
 
   function onRoutineSelectChange(value: string) {
@@ -79,10 +123,10 @@ export default function WorkoutsPage() {
       return;
     }
     setSelectedRoutineId(value);
+    persistRoutineForDate(value);
   }
 
   const currentRoutine = routines.find((r) => r.id === selectedRoutineId) ?? routines[0];
-  const sessionForDate = data.workoutSessions.find((s) => s.date === workoutDate);
   const [bodyWeightDraft, setBodyWeightDraft] = useState("");
 
   useEffect(() => {
@@ -106,17 +150,16 @@ export default function WorkoutsPage() {
     day: "numeric",
   });
 
-  const lastRoutineSession = useMemo(() => {
-    if (!currentRoutine) return undefined;
-    return findLastSessionForRoutine(
-      data.workoutSessions,
-      currentRoutine.id,
-      currentRoutine.strengthExerciseIds,
-      workoutDate,
-    );
-  }, [data.workoutSessions, currentRoutine, workoutDate]);
+  const lastSessionByExerciseId = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof findLastSessionForExercise>>();
+    for (const exercise of strengthBlocks) {
+      const session = findLastSessionForExercise(data.workoutSessions, exercise.id, workoutDate);
+      if (session) map.set(exercise.id, session);
+    }
+    return map;
+  }, [data.workoutSessions, strengthBlocks, workoutDate]);
 
-  const lastSessionLabel = lastRoutineSession ? formatShortWorkoutDate(lastRoutineSession.date) : null;
+  const anyPriorExerciseLog = lastSessionByExerciseId.size > 0;
 
   function tagRoutine(s: WorkoutSession): WorkoutSession {
     return currentRoutine ? { ...s, routineId: currentRoutine.id } : s;
@@ -139,12 +182,7 @@ export default function WorkoutsPage() {
     });
   }
 
-  function addStrengthSet(exerciseId: string) {
-    const draft = setDrafts[exerciseId] ?? { weight: "", reps: "" };
-    const weight = Number(draft.weight);
-    const reps = Number(draft.reps);
-    if (!Number.isFinite(weight) || !Number.isFinite(reps) || weight <= 0 || reps <= 0) return;
-
+  function appendStrengthSet(exerciseId: string, weight: number, reps: number) {
     upsertWorkoutForDate(workoutDate, (existing) => {
       const base = existing ?? emptySession();
       return tagRoutine({
@@ -152,7 +190,21 @@ export default function WorkoutsPage() {
         strengthSets: [...base.strengthSets, { id: crypto.randomUUID(), exerciseId, reps, weight }],
       });
     });
+  }
+
+  function addStrengthSet(exerciseId: string) {
+    const draft = setDrafts[exerciseId] ?? { weight: "", reps: "" };
+    const weight = Number(draft.weight);
+    const reps = Number(draft.reps);
+    if (!Number.isFinite(weight) || !Number.isFinite(reps) || weight <= 0 || reps <= 0) return;
+
+    appendStrengthSet(exerciseId, weight, reps);
     setSetDrafts((prev) => ({ ...prev, [exerciseId]: { weight: "", reps: "" } }));
+  }
+
+  function duplicateStrengthSet(exerciseId: string, weight: number, reps: number) {
+    if (!Number.isFinite(weight) || !Number.isFinite(reps) || weight <= 0 || reps <= 0) return;
+    appendStrengthSet(exerciseId, weight, reps);
   }
 
   function removeStrengthSet(setId: string) {
@@ -288,27 +340,41 @@ export default function WorkoutsPage() {
         </div>
 
         <div className="grid gap-4 text-sm text-zinc-700">
-          {!lastRoutineSession && strengthBlocks.length ? (
+          {!anyPriorExerciseLog && strengthBlocks.length ? (
             <p className="text-xs text-zinc-500">
-              After you log this routine once, the previous workout’s sets and weights will show under each exercise.
+              After you log an exercise once, your last sets and weights for that exercise will show here—even if it was on a different day or routine.
             </p>
           ) : null}
           {strengthBlocks.map((exercise) => {
             const sets = (sessionForDate?.strengthSets ?? []).filter((set) => set.exerciseId === exercise.id);
             const draft = setDrafts[exercise.id] ?? { weight: "", reps: "" };
-            const lastSets = lastRoutineSession
-              ? lastRoutineSession.strengthSets.filter((set) => set.exerciseId === exercise.id)
+            const lastExerciseSession = lastSessionByExerciseId.get(exercise.id);
+            const lastSessionLabel = lastExerciseSession
+              ? formatShortWorkoutDate(lastExerciseSession.date)
+              : null;
+            const lastSets = lastExerciseSession
+              ? lastExerciseSession.strengthSets.filter((set) => set.exerciseId === exercise.id)
               : [];
             const lastNoteRaw =
-              lastRoutineSession?.strengthExerciseNotes?.find((n) => n.exerciseId === exercise.id)?.note ?? "";
+              lastExerciseSession?.strengthExerciseNotes?.find((n) => n.exerciseId === exercise.id)?.note ?? "";
             const lastNoteTrim = lastNoteRaw.trim();
             const exerciseNote =
               sessionForDate?.strengthExerciseNotes?.find((n) => n.exerciseId === exercise.id)?.note ?? "";
+            const lastTodaySet = sets[sets.length - 1];
+            const lastPriorSet = lastSets[lastSets.length - 1];
+            const draftWeight = Number(draft.weight);
+            const draftReps = Number(draft.reps);
+            const duplicateSource =
+              lastTodaySet ??
+              (Number.isFinite(draftWeight) && Number.isFinite(draftReps) && draftWeight > 0 && draftReps > 0
+                ? { weight: draftWeight, reps: draftReps }
+                : null) ??
+              lastPriorSet;
 
             return (
               <div key={exercise.id} className="overflow-hidden rounded-lg border border-sky-200/80">
                 <div className="border-b border-sky-200/80 bg-sky-50/70 px-3 py-2 font-medium text-zinc-900">{exercise.name}</div>
-                {lastRoutineSession && lastSessionLabel ? (
+                {lastExerciseSession && lastSessionLabel ? (
                   <p className="border-b border-sky-100/80 bg-white/70 px-3 py-2 text-xs leading-relaxed text-zinc-600">
                     <span className="font-medium text-zinc-800">Last time ({lastSessionLabel}):</span>{" "}
                     {lastSets.length ? (
@@ -344,7 +410,24 @@ export default function WorkoutsPage() {
                           <td className="px-2 py-2">{set.weight} {weightAbbr}</td>
                           <td className="px-2 py-2">{set.reps}</td>
                           <td className="px-2 py-2 text-right">
-                            <button type="button" onClick={() => removeStrengthSet(set.id)} className="text-xs text-sky-800/70 underline hover:text-sky-950">Remove</button>
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                type="button"
+                                onClick={() => duplicateStrengthSet(exercise.id, set.weight, set.reps)}
+                                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-sky-200 bg-white text-sky-800 hover:border-sky-300 hover:bg-sky-50"
+                                aria-label={`Duplicate set ${index + 1}`}
+                                title="Duplicate set"
+                              >
+                                <DuplicateSetIcon />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => removeStrengthSet(set.id)}
+                                className="text-xs text-sky-800/70 underline hover:text-sky-950"
+                              >
+                                Remove
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -369,7 +452,28 @@ export default function WorkoutsPage() {
                           />
                         </td>
                         <td className="px-2 py-2 text-right">
-                          <button type="button" onClick={() => addStrengthSet(exercise.id)} className="rounded bg-sky-600 px-2 py-1 text-[11px] font-medium text-white hover:bg-sky-700 sm:text-xs">+ Add set</button>
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              type="button"
+                              disabled={!duplicateSource}
+                              onClick={() => {
+                                if (!duplicateSource) return;
+                                duplicateStrengthSet(exercise.id, duplicateSource.weight, duplicateSource.reps);
+                              }}
+                              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-sky-200 bg-white text-sky-800 hover:border-sky-300 hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-40"
+                              aria-label="Duplicate last set"
+                              title="Duplicate last set"
+                            >
+                              <DuplicateSetIcon />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => addStrengthSet(exercise.id)}
+                              className="rounded bg-sky-600 px-2 py-1 text-[11px] font-medium text-white hover:bg-sky-700 sm:text-xs"
+                            >
+                              + Add set
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     </tbody>

@@ -34,6 +34,14 @@ function formatDashboardDayLabel(dateKey: string) {
   });
 }
 
+function formatDashboardDayLabelCompact(dateKey: string) {
+  return new Date(`${dateKey}T12:00:00`).toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export default function Home() {
   const { data, setData } = useAppData();
   const weightAbbr = useMemo(
@@ -344,10 +352,12 @@ export default function Home() {
 
   return (
     <AppShell title="Dashboard" description="Your day, summary, and journal at a glance.">
-      <SectionCard title="Day">
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="relative inline-flex cursor-pointer items-center rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-sky-50">
-            {formatDashboardDayLabel(dashboardDate)}
+      <section className="min-w-0 overflow-hidden rounded-2xl border border-sky-200/70 bg-white px-3 py-2.5 shadow-sm shadow-sky-100/40 sm:p-4">
+        <h2 className="text-sm font-semibold text-zinc-900 sm:text-lg">Day</h2>
+        <div className="mt-2 flex flex-wrap items-center gap-2 sm:mt-4 sm:gap-3">
+          <label className="relative inline-flex max-w-full cursor-pointer items-center rounded-md border border-sky-200 bg-white px-2 py-1 text-xs font-medium text-zinc-800 hover:bg-sky-50 sm:rounded-lg sm:px-3 sm:py-2 sm:text-sm">
+            <span className="truncate sm:hidden">{formatDashboardDayLabelCompact(dashboardDate)}</span>
+            <span className="hidden sm:inline">{formatDashboardDayLabel(dashboardDate)}</span>
             <input
               type="date"
               value={dashboardDate}
@@ -356,9 +366,9 @@ export default function Home() {
               className="absolute inset-0 cursor-pointer opacity-0"
             />
           </label>
-          <p className="text-xs text-zinc-500">Tap the date to choose another day.</p>
+          <p className="hidden text-xs text-zinc-500 sm:block">Tap the date to choose another day.</p>
         </div>
-      </SectionCard>
+      </section>
 
       <SectionCard title="Tasks & habits">
         <div className="mb-3 grid gap-2 rounded-lg border border-sky-200/70 bg-sky-50/50 p-3">
@@ -478,78 +488,6 @@ export default function Home() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Daily coach">
-        <div className="grid gap-3">
-          {aiLoading ? <p className="text-sm text-sky-800/80">Pulling your coach&apos;s opening note…</p> : null}
-          {aiError ? <p className="rounded-lg border border-red-200 bg-red-50/80 p-3 text-sm text-red-800">{aiError}</p> : null}
-          <p className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4 text-sm leading-relaxed text-zinc-800 whitespace-pre-wrap">
-            {latestSummary?.output?.trim() ?? (aiLoading ? "" : "Opening note will load automatically.")}
-          </p>
-          {latestSummary?.output?.trim() && !aiLoading ? (
-            <>
-              {(latestSummary.coachChat?.length ?? 0) > 0 ? (
-                <div className="grid max-h-52 gap-2 overflow-y-auto rounded-lg border border-sky-100/90 bg-white/70 p-2">
-                  {(latestSummary.coachChat ?? []).map((turn, idx) => (
-                    <div key={`${turn.at}-${idx}`} className={`flex ${turn.role === "user" ? "justify-end" : "justify-start"}`}>
-                      <div
-                        className={`max-w-[min(100%,22rem)] rounded-lg px-2.5 py-2 text-xs leading-relaxed whitespace-pre-wrap ${
-                          turn.role === "user"
-                            ? "bg-zinc-200 text-zinc-900"
-                            : "border border-sky-200/80 bg-sky-50 text-zinc-800"
-                        }`}
-                      >
-                        {turn.content}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-              {coachError ? <p className="text-sm text-red-700">{coachError}</p> : null}
-              <div className="grid gap-2">
-                <label className="grid gap-1 text-xs font-medium text-sky-800/80">
-                  Reply to your coach
-                  <textarea
-                    value={coachInput}
-                    onChange={(e) => setCoachInput(e.target.value)}
-                    placeholder="Push back, ask for a fix, or admit where you blew it…"
-                    rows={2}
-                    disabled={coachSending}
-                    className="w-full resize-y rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80 disabled:opacity-50"
-                  />
-                </label>
-                <button
-                  type="button"
-                  disabled={coachSending || !coachInput.trim()}
-                  onClick={() => void sendCoachMessage()}
-                  className="w-fit rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700 disabled:opacity-40"
-                >
-                  {coachSending ? "Sending…" : "Send"}
-                </button>
-              </div>
-            </>
-          ) : null}
-        </div>
-      </SectionCard>
-
-      <SectionCard title="Quick journal">
-        <p className="mb-2 text-xs text-zinc-500">Saved for {dashboardDate}. Link goals from the full Journal page.</p>
-        <textarea
-          value={journalQuickText}
-          onChange={(e) => setJournalQuickText(e.target.value)}
-          placeholder="A few lines about your day…"
-          rows={4}
-          className="mb-2 w-full resize-y rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
-        />
-        <button
-          type="button"
-          onClick={saveJournalQuick}
-          disabled={!journalQuickText.trim()}
-          className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700 disabled:opacity-40"
-        >
-          Save entry
-        </button>
-      </SectionCard>
-
       <SectionCard title={`Progress toward goals (${goalYear})`}>
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4">
@@ -586,6 +524,78 @@ export default function Home() {
             <p className="text-sm text-zinc-600">No strength data in this week.</p>
           )}
         </div>
+      </SectionCard>
+
+      <SectionCard title="Daily summary">
+        <div className="grid gap-3">
+          {aiLoading ? <p className="text-sm text-sky-800/80">Summarizing your trends…</p> : null}
+          {aiError ? <p className="rounded-lg border border-red-200 bg-red-50/80 p-3 text-sm text-red-800">{aiError}</p> : null}
+          <p className="rounded-xl border border-sky-200/80 bg-sky-50/70 p-4 text-sm leading-relaxed text-zinc-800 whitespace-pre-wrap">
+            {latestSummary?.output?.trim() ?? (aiLoading ? "" : "Summary will load automatically.")}
+          </p>
+          {latestSummary?.output?.trim() && !aiLoading ? (
+            <>
+              {(latestSummary.coachChat?.length ?? 0) > 0 ? (
+                <div className="grid max-h-52 gap-2 overflow-y-auto rounded-lg border border-sky-100/90 bg-white/70 p-2">
+                  {(latestSummary.coachChat ?? []).map((turn, idx) => (
+                    <div key={`${turn.at}-${idx}`} className={`flex ${turn.role === "user" ? "justify-end" : "justify-start"}`}>
+                      <div
+                        className={`max-w-[min(100%,22rem)] rounded-lg px-2.5 py-2 text-xs leading-relaxed whitespace-pre-wrap ${
+                          turn.role === "user"
+                            ? "bg-zinc-200 text-zinc-900"
+                            : "border border-sky-200/80 bg-sky-50 text-zinc-800"
+                        }`}
+                      >
+                        {turn.content}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+              {coachError ? <p className="text-sm text-red-700">{coachError}</p> : null}
+              <div className="grid gap-2">
+                <label className="grid gap-1 text-xs font-medium text-sky-800/80">
+                  Follow-up question
+                  <textarea
+                    value={coachInput}
+                    onChange={(e) => setCoachInput(e.target.value)}
+                    placeholder="Ask for more detail on a trend or action…"
+                    rows={2}
+                    disabled={coachSending}
+                    className="w-full resize-y rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80 disabled:opacity-50"
+                  />
+                </label>
+                <button
+                  type="button"
+                  disabled={coachSending || !coachInput.trim()}
+                  onClick={() => void sendCoachMessage()}
+                  className="w-fit rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700 disabled:opacity-40"
+                >
+                  {coachSending ? "Sending…" : "Send"}
+                </button>
+              </div>
+            </>
+          ) : null}
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Quick journal">
+        <p className="mb-2 text-xs text-zinc-500">Saved for {dashboardDate}. Link goals from the full Journal page.</p>
+        <textarea
+          value={journalQuickText}
+          onChange={(e) => setJournalQuickText(e.target.value)}
+          placeholder="A few lines about your day…"
+          rows={4}
+          className="mb-2 w-full resize-y rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+        />
+        <button
+          type="button"
+          onClick={saveJournalQuick}
+          disabled={!journalQuickText.trim()}
+          className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm shadow-sky-200/50 hover:bg-sky-700 disabled:opacity-40"
+        >
+          Save entry
+        </button>
       </SectionCard>
     </AppShell>
   );
