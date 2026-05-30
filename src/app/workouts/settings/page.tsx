@@ -98,7 +98,7 @@ export default function WorkoutSettingsPage() {
       <SectionCard title="About">
         <p className="text-sm text-slate">
           Configure units and your exercise library here. To change which exercises and cardio blocks belong to a routine, open{" "}
-          <strong>Workouts</strong>, pick the routine, and use the edit (?) control next to the routine menu.
+          <strong>Workouts</strong>, pick the routine, and use the edit (pencil) control next to the routine menu.
         </p>
       </SectionCard>
 
