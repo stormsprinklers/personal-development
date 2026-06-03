@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
 import { currentHabitStreak } from "@/lib/metrics/habitStreaks";
+import { addDaysToDateKey, dayOfMonthInAppTimezone } from "@/lib/timezone";
 import { todayKey, useAppData } from "@/lib/storage";
 
 export default function HabitsPage() {
@@ -24,14 +25,12 @@ export default function HabitsPage() {
     if (!habit) return null;
 
     const days = Array.from({ length: 30 }, (_, idx) => {
-      const d = new Date(`${today}T12:00:00`);
-      d.setDate(d.getDate() - (29 - idx));
-      const key = d.toISOString().slice(0, 10);
+      const key = addDaysToDateKey(today, -(29 - idx));
       const log = data.habitLogs.find((entry) => entry.habitId === habit.id && entry.date === key);
       const status: "good" | "bad" | "none" = !log ? "none" : log.completed === true ? "good" : "bad";
       return {
         key,
-        dayOfMonth: d.getDate(),
+        dayOfMonth: dayOfMonthInAppTimezone(key),
         status,
       };
     });

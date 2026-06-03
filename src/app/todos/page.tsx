@@ -5,6 +5,7 @@ import { CompleteExitRow, COMPLETE_EXIT_MS } from "@/components/complete-exit-ro
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
 import { mainTodoListId, reassignMainTodoList } from "@/lib/todo-helpers";
+import { yearInAppTimezone } from "@/lib/timezone";
 import { todayKey, useAppData } from "@/lib/storage";
 
 export default function TodosPage() {
@@ -41,7 +42,7 @@ export default function TodosPage() {
   }, [activeListId]);
 
   const goalsForListLink = useMemo(
-    () => data.goals.filter((g) => g.year === new Date().getFullYear()),
+    () => data.goals.filter((g) => g.year === yearInAppTimezone()),
     [data.goals],
   );
 

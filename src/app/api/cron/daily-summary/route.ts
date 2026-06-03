@@ -1,4 +1,5 @@
 import { DASHBOARD_COACH_SYSTEM_PROMPT, dailySummaryPrompt } from "@/lib/ai/prompts";
+import { todayKey } from "@/lib/timezone";
 
 export const runtime = "nodejs";
 
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
   };
 
   return Response.json({
-    date: new Date().toISOString().slice(0, 10),
+    date: todayKey(),
     summary: payload.choices?.[0]?.message?.content?.trim() ?? "",
   });
 }

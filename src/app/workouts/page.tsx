@@ -12,6 +12,7 @@ import {
   suggestRoutineIdForDate,
 } from "@/lib/workout-session-helpers";
 import { normalizeMeasurementPreferences, runBikeDistanceUnitAbbr, weightUnitAbbr } from "@/lib/units";
+import { formatDateKey } from "@/lib/timezone";
 import { todayKey, useAppData } from "@/lib/storage";
 
 const CARDIO_TYPES: CardioType[] = ["run", "bike", "swim"];
@@ -161,12 +162,7 @@ export default function WorkoutsPage() {
 
   const routineCardioTypes = currentRoutine?.cardioTypes?.length ? currentRoutine.cardioTypes : CARDIO_TYPES;
 
-  const formattedDate = new Date(`${workoutDate}T12:00:00`).toLocaleDateString(undefined, {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const formattedDate = formatDateKey(workoutDate);
 
   const lastSessionByExerciseId = useMemo(() => {
     const map = new Map<string, ReturnType<typeof findLastSessionForExercise>>();

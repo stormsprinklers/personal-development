@@ -1,6 +1,5 @@
 import type { AppData } from "@/lib/models";
 import { strengthSummaryByExercise } from "@/lib/metrics/workoutMetrics";
-
 export function buildAiContext(data: AppData, targetDate: string) {
   const sortedWorkouts = [...data.workoutSessions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 21);
   const recentHabits = [...data.habitLogs]
@@ -30,7 +29,7 @@ export function buildAiContext(data: AppData, targetDate: string) {
         .filter(Boolean),
     }));
 
-  const currentYear = new Date().getFullYear();
+  const currentYear = Number(targetDate.slice(0, 4));
   const activeGoals = data.goals.filter((goal) => !goal.completed && goal.year === currentYear);
   const completedGoals = data.goals.filter((goal) => goal.completed && goal.year === currentYear);
 

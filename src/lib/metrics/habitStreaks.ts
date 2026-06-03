@@ -1,13 +1,8 @@
 import type { Habit, HabitLog } from "@/lib/models";
-
-function padDate(d: Date) {
-  return d.toISOString().slice(0, 10);
-}
+import { addDaysToDateKey } from "@/lib/timezone";
 
 function previousDay(dateStr: string) {
-  const d = new Date(`${dateStr}T12:00:00`);
-  d.setDate(d.getDate() - 1);
-  return padDate(d);
+  return addDaysToDateKey(dateStr, -1);
 }
 
 /** Current streak: consecutive days ending at `endDate` where the habit is logged and completed (good day). */

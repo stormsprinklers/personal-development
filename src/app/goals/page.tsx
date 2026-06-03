@@ -7,6 +7,7 @@ import { CompleteExitRow, COMPLETE_EXIT_MS } from "@/components/complete-exit-ro
 import { runBikeDistanceUnitAbbr, weightUnitAbbr, defaultMeasurementPreferences } from "@/lib/units";
 import { manualGoalProgressPercent } from "@/lib/goal-progress";
 import { todoItemsForGoal } from "@/lib/todo-helpers";
+import { yearInAppTimezone } from "@/lib/timezone";
 import { useAppData } from "@/lib/storage";
 
 function latestBodyWeightInYear(data: { workoutSessions: { date: string; bodyWeight?: number }[] }, year: number) {
@@ -35,7 +36,7 @@ function bodyWeightGoalProgress(start: number, target: number, latest: number | 
 
 export default function GoalsPage() {
   const { data, ready, setData } = useAppData();
-  const goalYear = new Date().getFullYear();
+  const goalYear = yearInAppTimezone();
   const [sectionName, setSectionName] = useState("");
   const [goalDraftsBySection, setGoalDraftsBySection] = useState<Record<string, string>>({});
   const [openGoalId, setOpenGoalId] = useState<string | null>(null);

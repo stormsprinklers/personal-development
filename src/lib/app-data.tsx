@@ -5,12 +5,13 @@ import type { AppData, WorkoutSession } from "@/lib/models";
 import { MAIN_TODO_LIST_ID, normalizeTodoListsAndItems } from "@/lib/todo-helpers";
 import { sanitizeWorkoutRoutines } from "@/lib/workout-routines";
 import { normalizeMeasurementPreferences } from "@/lib/units";
+import { APP_TIMEZONE, todayKey, yearInAppTimezone } from "@/lib/timezone";
 
 const STORAGE_KEY = "self-improvement-app-data-v1";
 
 const nowIso = () => new Date().toISOString();
 
-export const todayKey = () => new Date().toISOString().slice(0, 10);
+export { todayKey };
 
 function createDefaultData(): AppData {
   const exercises = [
@@ -22,7 +23,7 @@ function createDefaultData(): AppData {
     { id: "seed-ex-swim", name: "Swimming", category: "swim" as const, archived: false, createdAt: nowIso() },
   ];
   return {
-    userProfile: { name: "Austin", timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+    userProfile: { name: "Austin", timezone: APP_TIMEZONE },
     measurementPreferences: normalizeMeasurementPreferences(),
     exercises,
     workoutRoutines: sanitizeWorkoutRoutines(undefined, exercises),
@@ -62,7 +63,7 @@ function parseStoredData(raw: string | null): AppData {
     const goalsRaw = parsed.goals ?? [];
     const goals = goalsRaw.map((g) => ({
       ...g,
-      year: typeof g.year === "number" ? g.year : new Date().getFullYear(),
+      year: typeof g.year === "number" ? g.year : yearInAppTimezone(),
       completed: g.completed === true,
       linkedHabitIds:
         Array.isArray((g as { linkedHabitIds?: string[] }).linkedHabitIds)
@@ -80,7 +81,7 @@ function parseStoredData(raw: string | null): AppData {
     const merged: AppData = {
       ...base,
       ...parsed,
-      userProfile: { ...base.userProfile, ...parsed.userProfile },
+      userProfile: { ...base.userProfile, ...parsed.userProfile, timezone: APP_TIMEZONE },
       measurementPreferences: normalizeMeasurementPreferences(parsed.measurementPreferences),
       goalSections: sections,
       goals,

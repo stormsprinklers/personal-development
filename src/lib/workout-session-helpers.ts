@@ -1,4 +1,5 @@
 import type { WorkoutRoutine, WorkoutSession } from "@/lib/models";
+import { formatDateKey } from "@/lib/timezone";
 
 /**
  * Most recent session strictly before `beforeDate` for this routine: prefers `routineId`,
@@ -76,7 +77,7 @@ export function suggestRoutineIdForDate(
 }
 
 export function formatShortWorkoutDate(dateKey: string) {
-  return new Date(`${dateKey}T12:00:00`).toLocaleDateString(undefined, {
+  return formatDateKey(dateKey, {
     month: "short",
     day: "numeric",
     year: "numeric",

@@ -11,27 +11,17 @@ import { strengthSummaryByExercise } from "@/lib/metrics/workoutMetrics";
 import { normalizeMeasurementPreferences, weightUnitAbbr } from "@/lib/units";
 import { effectiveDashboardTodoListIds, mainTodoListId } from "@/lib/todo-helpers";
 import { todayKey, useAppData } from "@/lib/storage";
-
-function startOfWeekForDateKey(dateKey: string) {
-  const d = new Date(`${dateKey}T12:00:00`);
-  const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function toDateKey(date: Date) {
-  return date.toISOString().slice(0, 10);
-}
+import {
+  addDaysToDateKey,
+  dateKeyFromIsoTimestamp,
+  formatDateKey,
+  instantNoonForDateKey,
+  startOfWeekDateKey,
+  yearInAppTimezone,
+} from "@/lib/timezone";
 
 function formatDashboardDayLabel(dateKey: string) {
-  return new Date(`${dateKey}T12:00:00`).toLocaleDateString(undefined, {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  return formatDateKey(dateKey);
 }
 
 export default function Home() {
@@ -54,18 +44,15 @@ export default function Home() {
   const [coachSending, setCoachSending] = useState(false);
   const [coachError, setCoachError] = useState<string | null>(null);
 
-  const goalYear = useMemo(() => new Date(`${dashboardDate}T12:00:00`).getFullYear(), [dashboardDate]);
+  const goalYear = useMemo(() => yearInAppTimezone(instantNoonForDateKey(dashboardDate)), [dashboardDate]);
 
   useEffect(() => {
     setCoachInput("");
     setCoachError(null);
   }, [dashboardDate]);
 
-  const weekAnchor = useMemo(() => startOfWeekForDateKey(dashboardDate), [dashboardDate]);
-  const weekStart = weekAnchor;
-  const weekEnd = useMemo(() => new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000), [weekStart]);
-  const weekStartKey = toDateKey(weekStart);
-  const weekEndKey = toDateKey(weekEnd);
+  const weekStartKey = useMemo(() => startOfWeekDateKey(dashboardDate), [dashboardDate]);
+  const weekEndKey = useMemo(() => addDaysToDateKey(weekStartKey, 6), [weekStartKey]);
 
   const weeklyWorkouts = useMemo(
     () => data.workoutSessions.filter((session) => session.date >= weekStartKey && session.date <= weekEndKey),
@@ -78,7 +65,11 @@ export default function Home() {
   );
 
   const weeklyTodoCompletions = useMemo(
-    () => data.todoCompletions.filter((completion) => completion.completedAt.slice(0, 10) >= weekStartKey && completion.completedAt.slice(0, 10) <= weekEndKey).length,
+    () =>
+      data.todoCompletions.filter((completion) => {
+        const d = dateKeyFromIsoTimestamp(completion.completedAt);
+        return d >= weekStartKey && d <= weekEndKey;
+      }).length,
     [data.todoCompletions, weekStartKey, weekEndKey],
   );
   const activeHabits = useMemo(() => data.habits.filter((habit) => habit.active), [data.habits]);

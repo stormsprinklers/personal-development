@@ -1,15 +1,11 @@
 import type { AppData } from "@/lib/models";
-
-function padDate(d: Date) {
-  return d.toISOString().slice(0, 10);
-}
+import { addDaysToDateKey, dateKeyFromIsoTimestamp, dateKeyInAppTimezone } from "@/lib/timezone";
 
 export function dateKeysLastNDays(n: number, end = new Date()) {
+  const endKey = dateKeyInAppTimezone(end);
   const keys: string[] = [];
   for (let i = n - 1; i >= 0; i--) {
-    const x = new Date(end);
-    x.setDate(x.getDate() - i);
-    keys.push(padDate(x));
+    keys.push(addDaysToDateKey(endKey, -i));
   }
   return keys;
 }
@@ -18,7 +14,7 @@ export function todoCompletionsByDay(data: AppData, days = 14) {
   const keys = dateKeysLastNDays(days);
   const map = new Map(keys.map((k) => [k, 0]));
   for (const c of data.todoCompletions) {
-    const d = c.completedAt.slice(0, 10);
+    const d = dateKeyFromIsoTimestamp(c.completedAt);
     if (map.has(d)) map.set(d, (map.get(d) ?? 0) + 1);
   }
   return keys.map((date) => ({ date, count: map.get(date) ?? 0 }));
