@@ -1,135 +1,187 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { AppData, WorkoutSession } from "@/lib/models";
-import { MAIN_TODO_LIST_ID, normalizeTodoListsAndItems } from "@/lib/todo-helpers";
-import { sanitizeWorkoutRoutines } from "@/lib/workout-routines";
-import { normalizeMeasurementPreferences } from "@/lib/units";
-import { APP_TIMEZONE, todayKey, yearInAppTimezone } from "@/lib/timezone";
-
-const STORAGE_KEY = "self-improvement-app-data-v1";
-
-const nowIso = () => new Date().toISOString();
+import {
+  LOCAL_STORAGE_KEY,
+  type StorageMode,
+  type SyncStatus,
+  fetchCloudAppData,
+  getClientSyncKey,
+  getStorageMode,
+  saveCloudAppData,
+  setClientSyncKey,
+  setStorageMode,
+} from "@/lib/cloud-sync";
+import { createDefaultAppData, normalizeAppData, parseStoredJson } from "@/lib/normalize-app-data";
+import { todayKey } from "@/lib/timezone";
 
 export { todayKey };
 
-function createDefaultData(): AppData {
-  const exercises = [
-    { id: "seed-ex-back-squat", name: "Back Squat", category: "strength" as const, archived: false, createdAt: nowIso() },
-    { id: "seed-ex-bench", name: "Bench Press", category: "strength" as const, archived: false, createdAt: nowIso() },
-    { id: "seed-ex-deadlift", name: "Deadlift", category: "strength" as const, archived: false, createdAt: nowIso() },
-    { id: "seed-ex-run", name: "Running", category: "run" as const, archived: false, createdAt: nowIso() },
-    { id: "seed-ex-bike", name: "Cycling", category: "bike" as const, archived: false, createdAt: nowIso() },
-    { id: "seed-ex-swim", name: "Swimming", category: "swim" as const, archived: false, createdAt: nowIso() },
-  ];
-  return {
-    userProfile: { name: "Austin", timezone: APP_TIMEZONE },
-    measurementPreferences: normalizeMeasurementPreferences(),
-    exercises,
-    workoutRoutines: sanitizeWorkoutRoutines(undefined, exercises),
-    workoutSessions: [],
-    habits: [],
-    habitLogs: [],
-    todoLists: [
-      {
-        id: MAIN_TODO_LIST_ID,
-        name: "Main",
-        area: "",
-        isMain: true,
-        createdAt: nowIso(),
-      },
-    ],
-    todoItems: [],
-    todoSections: [],
-    todoCompletions: [],
-    goalSections: [
-      { id: "seed-sec-fitness", name: "Health" },
-      { id: "seed-sec-career", name: "Meaning" },
-      { id: "seed-sec-personal", name: "Wealth" },
-    ],
-    goals: [],
-    goalNotes: [],
-    journalEntries: [],
-    aiInsights: [],
-  };
-}
-
-function parseStoredData(raw: string | null): AppData {
-  if (!raw) return createDefaultData();
-
-  try {
-    const parsed = JSON.parse(raw) as Partial<AppData>;
-    const base = createDefaultData();
-    const goalsRaw = parsed.goals ?? [];
-    const goals = goalsRaw.map((g) => ({
-      ...g,
-      year: typeof g.year === "number" ? g.year : yearInAppTimezone(),
-      completed: g.completed === true,
-      linkedHabitIds:
-        Array.isArray((g as { linkedHabitIds?: string[] }).linkedHabitIds)
-          ? (g as { linkedHabitIds?: string[] }).linkedHabitIds
-          : (g as { linkedHabitId?: string }).linkedHabitId
-            ? [(g as { linkedHabitId?: string }).linkedHabitId as string]
-            : undefined,
-    }));
-    const sections = (parsed.goalSections ?? base.goalSections).map((section) => {
-      if (section.id === "seed-sec-fitness") return { ...section, name: "Health" };
-      if (section.id === "seed-sec-career") return { ...section, name: "Meaning" };
-      if (section.id === "seed-sec-personal") return { ...section, name: "Wealth" };
-      return section;
-    });
-    const merged: AppData = {
-      ...base,
-      ...parsed,
-      userProfile: { ...base.userProfile, ...parsed.userProfile, timezone: APP_TIMEZONE },
-      measurementPreferences: normalizeMeasurementPreferences(parsed.measurementPreferences),
-      goalSections: sections,
-      goals,
-      todoLists: parsed.todoLists ?? base.todoLists,
-      todoItems: parsed.todoItems ?? base.todoItems,
-      todoSections: parsed.todoSections ?? base.todoSections,
-      dashboardTodoListIds: parsed.dashboardTodoListIds,
-    };
-    const { todoLists, todoItems } = normalizeTodoListsAndItems(
-      merged.todoLists,
-      merged.todoItems,
-      merged.goals,
-      nowIso,
-    );
-    let dashboardTodoListIds = merged.dashboardTodoListIds?.filter((id) => todoLists.some((l) => l.id === id));
-    if (dashboardTodoListIds?.length === 0) dashboardTodoListIds = undefined;
-    if (dashboardTodoListIds?.length) dashboardTodoListIds = [...new Set(dashboardTodoListIds)];
-    const todoSections = (merged.todoSections ?? []).filter((s) => todoLists.some((l) => l.id === s.listId));
-    const workoutRoutines = sanitizeWorkoutRoutines(merged.workoutRoutines, merged.exercises);
-    return { ...merged, todoLists, todoItems, todoSections, dashboardTodoListIds, workoutRoutines };
-  } catch {
-    return createDefaultData();
-  }
-}
+const CLOUD_SAVE_DEBOUNCE_MS = 900;
 
 type AppDataContextValue = {
   data: AppData;
+  ready: boolean;
+  storageMode: StorageMode;
+  syncStatus: SyncStatus;
   setData: React.Dispatch<React.SetStateAction<AppData>>;
   addWorkoutSession: (session: WorkoutSession) => void;
   upsertWorkoutForDate: (date: string, updater: (existing: WorkoutSession | undefined) => WorkoutSession) => void;
+  enableCloudStorage: (syncKey: string, options?: { uploadCurrent?: boolean }) => Promise<void>;
+  disableCloudStorage: () => void;
+  syncNow: () => Promise<void>;
 };
 
 const AppDataContext = createContext<AppDataContextValue | null>(null);
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<AppData>(() =>
-    parseStoredData(typeof window === "undefined" ? null : window.localStorage.getItem(STORAGE_KEY)),
+  const [data, setData] = useState<AppData>(createDefaultAppData);
+  const [ready, setReady] = useState(false);
+  const [storageMode, setStorageModeState] = useState<StorageMode>("local");
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>({ state: "idle" });
+  const dataRef = useRef(data);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skipNextCloudSaveRef = useRef(false);
+
+  dataRef.current = data;
+
+  const persistLocal = useCallback((next: AppData) => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(next));
+  }, []);
+
+  const pushToCloud = useCallback(async (payload: AppData) => {
+    const syncKey = getClientSyncKey();
+    if (!syncKey) throw new Error("Sync key is missing.");
+    setSyncStatus({ state: "syncing" });
+    const updatedAt = await saveCloudAppData(syncKey, payload);
+    persistLocal(payload);
+    setSyncStatus({ state: "synced", lastSyncedAt: updatedAt });
+  }, [persistLocal]);
+
+  const syncNow = useCallback(async () => {
+    if (getStorageMode() !== "cloud") return;
+    await pushToCloud(dataRef.current);
+  }, [pushToCloud]);
+
+  const enableCloudStorage = useCallback(
+    async (syncKey: string, options?: { uploadCurrent?: boolean }) => {
+      setClientSyncKey(syncKey);
+      setStorageMode("cloud");
+      setStorageModeState("cloud");
+      skipNextCloudSaveRef.current = true;
+
+      if (options?.uploadCurrent) {
+        await pushToCloud(dataRef.current);
+        setReady(true);
+        return;
+      }
+
+      const { data: remote } = await fetchCloudAppData(syncKey);
+      if (remote) {
+        const normalized = normalizeAppData(remote);
+        setData(normalized);
+        persistLocal(normalized);
+      } else {
+        await pushToCloud(dataRef.current);
+      }
+      setReady(true);
+    },
+    [persistLocal, pushToCloud],
   );
 
+  const disableCloudStorage = useCallback(() => {
+    setStorageMode("local");
+    setStorageModeState("local");
+    setSyncStatus({ state: "idle" });
+    persistLocal(dataRef.current);
+  }, [persistLocal]);
+
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }, [data]);
+    let cancelled = false;
+
+    (async () => {
+      const mode = getStorageMode();
+      const syncKey = getClientSyncKey();
+      setStorageModeState(mode);
+
+      if (mode === "cloud" && syncKey) {
+        try {
+          const { data: remote, updatedAt } = await fetchCloudAppData(syncKey);
+          if (cancelled) return;
+          skipNextCloudSaveRef.current = true;
+          if (remote) {
+            const normalized = normalizeAppData(remote);
+            setData(normalized);
+            persistLocal(normalized);
+            setSyncStatus({ state: "synced", lastSyncedAt: updatedAt ?? undefined });
+          } else {
+            const local = parseStoredJson(window.localStorage.getItem(LOCAL_STORAGE_KEY));
+            setData(local);
+            await saveCloudAppData(syncKey, local);
+            persistLocal(local);
+            setSyncStatus({ state: "synced", lastSyncedAt: new Date().toISOString() });
+          }
+        } catch (e) {
+          if (cancelled) return;
+          const local = parseStoredJson(window.localStorage.getItem(LOCAL_STORAGE_KEY));
+          setData(local);
+          setSyncStatus({
+            state: "error",
+            message: e instanceof Error ? e.message : "Could not reach cloud storage.",
+          });
+        }
+      } else {
+        setData(parseStoredJson(window.localStorage.getItem(LOCAL_STORAGE_KEY)));
+      }
+
+      if (!cancelled) setReady(true);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [persistLocal]);
+
+  useEffect(() => {
+    if (!ready) return;
+
+    if (storageMode === "local") {
+      persistLocal(data);
+      return;
+    }
+
+    if (skipNextCloudSaveRef.current) {
+      skipNextCloudSaveRef.current = false;
+      return;
+    }
+
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      void pushToCloud(data).catch((e) => {
+        setSyncStatus({
+          state: "error",
+          message: e instanceof Error ? e.message : "Cloud save failed.",
+        });
+      });
+    }, CLOUD_SAVE_DEBOUNCE_MS);
+
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [data, ready, storageMode, persistLocal, pushToCloud]);
 
   const api = useMemo<AppDataContextValue>(
     () => ({
       data,
+      ready,
+      storageMode,
+      syncStatus,
       setData,
+      enableCloudStorage,
+      disableCloudStorage,
+      syncNow,
       addWorkoutSession(session) {
         setData((prev) => ({
           ...prev,
@@ -145,7 +197,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         });
       },
     }),
-    [data],
+    [data, ready, storageMode, syncStatus, enableCloudStorage, disableCloudStorage, syncNow],
   );
 
   return <AppDataContext.Provider value={api}>{children}</AppDataContext.Provider>;
@@ -156,5 +208,5 @@ export function useAppData() {
   if (!ctx) {
     throw new Error("useAppData must be used within AppDataProvider");
   }
-  return { ...ctx, ready: true as const };
+  return ctx;
 }

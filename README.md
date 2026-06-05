@@ -38,12 +38,21 @@ Routes included:
 - `/goals`
 - `/language`
 
-## Next Steps
+## Cloud storage
 
-- add database models (Prisma/Supabase/Firebase)
-- add authentication
-- replace mock data with persistent APIs
-- build create/edit forms for each module
+By default data lives in this browser only (`localStorage`). You can enable **cloud storage** so the full app snapshot is saved to PostgreSQL and syncs across devices.
+
+1. Create a Postgres database (Neon, Supabase, Vercel Postgres, etc.).
+2. Copy `.env.example` to `.env.local` and set:
+   - `DATABASE_URL` — Postgres connection string
+   - `APP_SYNC_KEY` — a long secret you choose (same on server and in the app)
+3. Apply the schema:
+   ```bash
+   npm run db:push
+   ```
+4. In the app: **Workouts → settings (gear) → Cloud storage**, enter your sync key, and choose **Enable cloud and upload this device**.
+
+Changes auto-save to the cloud when cloud mode is on. Local storage remains as a backup cache.
 
 ## Useful Commands
 
