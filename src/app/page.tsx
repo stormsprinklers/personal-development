@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
-import { CompleteExitRow, COMPLETE_EXIT_MS } from "@/components/complete-exit-row";
+import { COMPLETE_EXIT_MS } from "@/components/complete-exit-row";
 import { DashboardSortableTodos } from "@/components/dashboard-sortable-todos";
 import { GlassButton } from "@/components/ui/glass-button";
 import { GroupedRow } from "@/components/ui/grouped-row";
@@ -12,7 +12,7 @@ import { DASHBOARD_COACH_SYSTEM_PROMPT, dailyCoachOpeningUserPrompt } from "@/li
 import { goalsProgressForYear } from "@/lib/metrics/dashboardMetrics";
 import { strengthSummaryByExercise } from "@/lib/metrics/workoutMetrics";
 import { normalizeMeasurementPreferences, weightUnitAbbr } from "@/lib/units";
-import { effectiveDashboardTodoListIds, mainTodoListId, sortTodosByDashboardOrder } from "@/lib/todo-helpers";
+import { effectiveDashboardTodoListIds, mainTodoListId, sortTodosByDashboardOrder, sortDailyDashboardItems, dashboardDailyItemKey, dashboardTodoOrderFromDailyOrder } from "@/lib/todo-helpers";
 import { todayKey, useAppData } from "@/lib/storage";
 import {
   addDaysToDateKey,
@@ -110,8 +110,6 @@ export default function Home() {
       ),
     [data.todoItems, data.dashboardTodoOrder, dashboardListIds],
   );
-  const allDashboardTodoIds = useMemo(() => todaysTodos.map((todo) => todo.id), [todaysTodos]);
-
   function toggleDashboardList(listId: string, nextChecked: boolean) {
     setData((prev) => {
       const main = prev.todoLists.find((l) => l.isMain)?.id ?? prev.todoLists[0]?.id ?? "";
@@ -156,25 +154,28 @@ export default function Home() {
       }),
     [todaysTodos, data.todoLists, showListSourceOnTodos],
   );
-  const dailyItems = useMemo(
-    () => [...habitDailyItems, ...todoDailyItems],
-    [habitDailyItems, todoDailyItems],
-  );
+  const todoCreatedAtById = useMemo(() => new Map(data.todoItems.map((item) => [item.id, item.createdAt])), [data.todoItems]);
+
+  const dailyItems = useMemo(() => {
+    const raw = [...habitDailyItems, ...todoDailyItems];
+    return sortDailyDashboardItems(raw, data.dashboardDailyOrder, (id) => todoCreatedAtById.get(id) ?? "");
+  }, [habitDailyItems, todoDailyItems, data.dashboardDailyOrder, todoCreatedAtById]);
+
   const dailyVisible = showAllDailyItems ? dailyItems : dailyItems.slice(0, 5);
-  const visibleHabitItems = useMemo(
-    () => dailyVisible.filter((item) => item.kind === "habit"),
+  const visibleDailyItems = useMemo(
+    () =>
+      dailyVisible.map((item) => ({
+        key: dashboardDailyItemKey(item.kind, item.id),
+        kind: item.kind,
+        id: item.id,
+        label: item.label,
+        listLabel: "listLabel" in item ? item.listLabel : undefined,
+      })),
     [dailyVisible],
   );
-  const visibleTodoItems = useMemo(
-    () =>
-      dailyVisible
-        .filter((item) => item.kind === "todo")
-        .map((item) => ({
-          id: item.id,
-          label: item.label,
-          listLabel: "listLabel" in item ? item.listLabel : undefined,
-        })),
-    [dailyVisible],
+  const allDashboardDailyKeys = useMemo(
+    () => dailyItems.map((item) => dashboardDailyItemKey(item.kind, item.id)),
+    [dailyItems],
   );
   const hiddenDailyCount = Math.max(0, dailyItems.length - 5);
 
@@ -306,10 +307,6 @@ export default function Home() {
     setJournalQuickText("");
   }
 
-  function dailyItemKey(item: { kind: "todo" | "habit"; id: string }) {
-    return `${item.kind}-${item.id}`;
-  }
-
   function addQuickTodo() {
     const title = quickTodoTitle.trim();
     const listId = quickAddListId || dashboardListIds[0] || mainTodoListId(data.todoLists);
@@ -328,16 +325,21 @@ export default function Home() {
         ...prev.todoItems,
       ],
       dashboardTodoOrder: [id, ...(prev.dashboardTodoOrder ?? [])],
+      dashboardDailyOrder: [dashboardDailyItemKey("todo", id), ...(prev.dashboardDailyOrder ?? [])],
     }));
     setQuickTodoTitle("");
   }
 
-  function reorderDashboardTodos(orderedIds: string[]) {
-    setData((prev) => ({ ...prev, dashboardTodoOrder: orderedIds }));
+  function reorderDashboardDailyItems(orderedKeys: string[]) {
+    setData((prev) => ({
+      ...prev,
+      dashboardDailyOrder: orderedKeys,
+      dashboardTodoOrder: dashboardTodoOrderFromDailyOrder(orderedKeys) ?? prev.dashboardTodoOrder,
+    }));
   }
 
   function completeTodo(todoId: string) {
-    const key = `todo-${todoId}`;
+    const key = dashboardDailyItemKey("todo", todoId);
     if (exitingDailyRef.current.has(key)) return;
     exitingDailyRef.current.add(key);
     setExitingDailyKeys((prev) => [...prev, key]);
@@ -356,7 +358,7 @@ export default function Home() {
   }
 
   function logHabitTodayWithExit(habitId: string, completed: boolean) {
-    const key = `habit-${habitId}`;
+    const key = dashboardDailyItemKey("habit", habitId);
     if (exitingDailyRef.current.has(key)) return;
     exitingDailyRef.current.add(key);
     setExitingDailyKeys((prev) => [...prev, key]);
@@ -388,7 +390,7 @@ export default function Home() {
         />
       }
     >
-      <SectionCard title="Tasks & habits">
+      <SectionCard title="Tasks & habits" clipInset={false}>
         <GroupedRow hairline>
           <p className="ios-footnote mb-2 font-medium uppercase tracking-wide">Lists on dashboard</p>
           <div className="flex flex-wrap gap-3">
@@ -447,44 +449,13 @@ export default function Home() {
           </div>
         </GroupedRow>
         <div className="-mx-4">
-          {visibleHabitItems.map((item, index) => (
-            <CompleteExitRow key={dailyItemKey(item)} exiting={exitingDailyKeys.includes(dailyItemKey(item))}>
-              <div
-                className={`flex flex-wrap items-center gap-3 bg-ios-surface px-4 py-3 ${
-                  index < visibleHabitItems.length - 1 || visibleTodoItems.length ? "ios-hairline" : ""
-                }`}
-              >
-                <div className="flex shrink-0 gap-1.5">
-                  <button
-                    type="button"
-                    title="Done today"
-                    aria-label="Log habit as done today"
-                    onClick={() => logHabitTodayWithExit(item.id, true)}
-                    className="glass-button flex h-11 w-11 items-center justify-center rounded-full text-sm font-semibold text-emerald"
-                  >
-                    ✓
-                  </button>
-                  <button
-                    type="button"
-                    title="Missed today"
-                    aria-label="Log habit as missed today"
-                    onClick={() => logHabitTodayWithExit(item.id, false)}
-                    className="glass-button flex h-11 w-11 items-center justify-center rounded-full text-sm font-semibold text-copper"
-                  >
-                    ✗
-                  </button>
-                </div>
-                <span className="min-w-0 text-[17px] text-ios-label">{item.label}</span>
-              </div>
-            </CompleteExitRow>
-          ))}
           <DashboardSortableTodos
-            items={visibleTodoItems}
-            allTodoIds={allDashboardTodoIds}
+            items={visibleDailyItems}
+            allItemKeys={allDashboardDailyKeys}
             exitingKeys={exitingDailyKeys}
-            itemKey={(todoId) => dailyItemKey({ kind: "todo", id: todoId })}
-            onComplete={completeTodo}
-            onReorder={reorderDashboardTodos}
+            onCompleteTodo={completeTodo}
+            onLogHabit={logHabitTodayWithExit}
+            onReorder={reorderDashboardDailyItems}
           />
           {!dailyItems.length ? <p className="px-4 py-3 text-sm text-ios-secondary">No open tasks or habits to log for this day.</p> : null}
           {hiddenDailyCount > 0 ? (
@@ -497,26 +468,26 @@ export default function Home() {
         </div>
       </SectionCard>
 
-      <SectionCard title={`Progress toward goals (${goalYear})`}>
+      <SectionCard title={`Progress toward goals (${goalYear})`} inset={false}>
         <div className="grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl bg-ios-fill p-4">
+          <div className="ios-card-muted p-4">
             <p className="ios-footnote font-medium uppercase tracking-wide">Annual goals</p>
             <p className="mt-1 text-2xl font-semibold text-ios-label">{goalProgress.percent}%</p>
             <p className="ios-footnote">
               {goalProgress.done} of {goalProgress.total} completed
             </p>
           </div>
-          <div className="rounded-xl bg-ios-fill p-4">
+          <div className="ios-card-muted p-4">
             <p className="ios-footnote font-medium uppercase tracking-wide">Completed to-dos (week)</p>
             <p className="text-2xl font-semibold text-ios-label">{weeklyTodoCompletions}</p>
           </div>
-          <div className="rounded-xl bg-ios-fill p-4">
+          <div className="ios-card-muted p-4">
             <p className="ios-footnote font-medium uppercase tracking-wide">Habit adherence (week)</p>
             <p className="text-2xl font-semibold text-ios-label">{weeklyHabitAdherence}%</p>
           </div>
         </div>
 
-        <div className="mt-3 rounded-xl bg-ios-fill p-4">
+        <div className="ios-card-muted p-4">
           <p className="ios-footnote mb-2 font-medium uppercase tracking-wide">Top strength lifts (week)</p>
           {weeklyStrength.length ? (
             <div className="grid gap-2">
@@ -535,17 +506,17 @@ export default function Home() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Daily summary">
+      <SectionCard title="Daily summary" inset={false}>
         <div className="grid gap-3">
           {aiLoading ? <p className="text-sm text-ios-secondary">Summarizing your trends…</p> : null}
-          {aiError ? <p className="rounded-xl bg-copper/10 p-3 text-sm text-copper">{aiError}</p> : null}
-          <p className="rounded-xl bg-ios-fill p-4 text-sm leading-relaxed whitespace-pre-wrap text-ios-label">
+          {aiError ? <p className="ios-card rounded-xl bg-copper/10 p-3 text-sm text-copper">{aiError}</p> : null}
+          <p className="ios-card-muted p-4 text-sm leading-relaxed whitespace-pre-wrap text-ios-label">
             {latestSummary?.output?.trim() ?? (aiLoading ? "" : "Summary will load automatically.")}
           </p>
           {latestSummary?.output?.trim() && !aiLoading ? (
             <>
               {(latestSummary.coachChat?.length ?? 0) > 0 ? (
-                <div className="grid max-h-52 gap-2 overflow-y-auto rounded-xl bg-ios-fill p-2">
+                <div className="ios-card-muted grid max-h-52 gap-2 overflow-y-auto p-2">
                   {(latestSummary.coachChat ?? []).map((turn, idx) => (
                     <div key={`${turn.at}-${idx}`} className={`flex ${turn.role === "user" ? "justify-end" : "justify-start"}`}>
                       <div
@@ -585,14 +556,14 @@ export default function Home() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Quick journal">
-        <p className="mb-2 ios-footnote">Saved for {dashboardDate}. Link goals from the full Journal page.</p>
+      <SectionCard title="Quick journal" inset={false}>
+        <p className="ios-footnote">Saved for {dashboardDate}. Link goals from the full Journal page.</p>
         <textarea
           value={journalQuickText}
           onChange={(e) => setJournalQuickText(e.target.value)}
           placeholder="A few lines about your day…"
           rows={4}
-          className="ios-field mb-3 w-full resize-y px-3 py-2.5 text-sm"
+          className="ios-field w-full resize-y px-3 py-2.5 text-sm"
         />
         <GlassButton variant="primary" onClick={saveJournalQuick} disabled={!journalQuickText.trim()}>
           Save entry

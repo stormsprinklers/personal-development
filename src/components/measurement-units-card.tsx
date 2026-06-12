@@ -20,8 +20,8 @@ export function MeasurementUnitsCard() {
   }
 
   return (
-    <SectionCard title="Units">
-      <div className="grid gap-3 sm:grid-cols-2">
+    <SectionCard title="Units" inset={false}>
+      <div className="ios-card grid gap-3 p-4 sm:grid-cols-2">
         <label className="grid gap-1 text-sm text-ios-secondary">
           <span className="text-xs font-medium uppercase tracking-wide">Strength & body weight</span>
           <select

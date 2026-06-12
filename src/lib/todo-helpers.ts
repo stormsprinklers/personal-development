@@ -51,6 +51,78 @@ export function sortTodosByDashboardOrder(items: TodoItem[], order: string[] | u
   });
 }
 
+export function dashboardDailyItemKey(kind: "habit" | "todo", id: string): string {
+  return `${kind}-${id}`;
+}
+
+/** Sort dashboard habits + todos by saved order; unknown keys trail (habits before todos). */
+export function sortDailyDashboardItems<T extends { kind: "habit" | "todo"; id: string }>(
+  items: T[],
+  order: string[] | undefined,
+  todoCreatedAt: (id: string) => string,
+): T[] {
+  const keyOf = (item: T) => dashboardDailyItemKey(item.kind, item.id);
+  if (!order?.length) {
+    const habits = items.filter((item) => item.kind === "habit");
+    const todos = items
+      .filter((item) => item.kind === "todo")
+      .sort((a, b) => todoCreatedAt(b.id).localeCompare(todoCreatedAt(a.id)));
+    return [...habits, ...todos];
+  }
+  const index = new Map(order.map((id, i) => [id, i]));
+  return [...items].sort((a, b) => {
+    const ai = index.get(keyOf(a));
+    const bi = index.get(keyOf(b));
+    if (ai === undefined && bi === undefined) {
+      if (a.kind !== b.kind) return a.kind === "habit" ? -1 : 1;
+      if (a.kind === "todo" && b.kind === "todo") {
+        return todoCreatedAt(b.id).localeCompare(todoCreatedAt(a.id));
+      }
+      return 0;
+    }
+    if (ai === undefined) return 1;
+    if (bi === undefined) return -1;
+    return ai - bi;
+  });
+}
+
+export function sanitizeDashboardDailyOrder(
+  order: string[] | undefined,
+  habits: { id: string; active?: boolean }[],
+  todoItems: TodoItem[],
+): string[] | undefined {
+  if (!order?.length) return undefined;
+  const valid = new Set([
+    ...habits.filter((h) => h.active !== false).map((h) => dashboardDailyItemKey("habit", h.id)),
+    ...todoItems.map((item) => dashboardDailyItemKey("todo", item.id)),
+  ]);
+  const cleaned = order.filter((key) => valid.has(key));
+  return cleaned.length ? cleaned : undefined;
+}
+
+/** Build daily order from legacy todo-only order (habits first, then todos). */
+export function migrateDashboardDailyOrder(
+  dailyOrder: string[] | undefined,
+  todoOrder: string[] | undefined,
+  habitIds: string[],
+  todoIds: string[],
+): string[] | undefined {
+  if (dailyOrder?.length) return dailyOrder;
+  const habitKeys = habitIds.map((id) => dashboardDailyItemKey("habit", id));
+  const todoKeysFromSaved = (todoOrder ?? []).filter((id) => todoIds.includes(id)).map((id) => dashboardDailyItemKey("todo", id));
+  const todoKeysMissing = todoIds
+    .filter((id) => !(todoOrder ?? []).includes(id))
+    .map((id) => dashboardDailyItemKey("todo", id));
+  const merged = [...habitKeys, ...todoKeysFromSaved, ...todoKeysMissing];
+  return merged.length ? merged : undefined;
+}
+
+export function dashboardTodoOrderFromDailyOrder(dailyOrder: string[] | undefined): string[] | undefined {
+  if (!dailyOrder?.length) return undefined;
+  const todoIds = dailyOrder.filter((key) => key.startsWith("todo-")).map((key) => key.slice(5));
+  return todoIds.length ? todoIds : undefined;
+}
+
 export function sanitizeDashboardTodoOrder(
   order: string[] | undefined,
   todoItems: TodoItem[],

@@ -12,7 +12,7 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
 const variantClass: Record<Variant, string> = {
   primary: "glass-button-tint text-white shadow-sm shadow-ios-tint/20",
   secondary: "glass-button text-ios-label",
-  destructive: "glass-button border border-copper/30 bg-copper/10 text-copper",
+  destructive: "glass-button ios-elevated border border-copper/30 bg-copper/10 text-copper",
 };
 
 export function GlassButton({ variant = "secondary", className = "", children, ...props }: Props) {

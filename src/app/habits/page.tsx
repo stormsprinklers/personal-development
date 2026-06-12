@@ -162,12 +162,12 @@ export default function HabitsPage() {
                     <input
                       value={editingHabitName}
                       onChange={(event) => setEditingHabitName(event.target.value)}
-                      className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                      className="ios-field px-3 py-2 text-sm"
                     />
                     <select
                       value={editingHabitType}
                       onChange={(event) => setEditingHabitType(event.target.value as "build" | "break")}
-                      className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                      className="ios-field px-3 py-2 text-sm"
                     >
                       <option value="build">Build</option>
                       <option value="break">Break</option>
@@ -175,13 +175,13 @@ export default function HabitsPage() {
                     <div className="flex gap-2">
                       <button
                         onClick={saveHabitEdits}
-                        className="rounded-lg bg-steel px-3 py-2 text-xs font-medium text-white hover:bg-steel/90"
+                        className="glass-button-tint glass-button-compact rounded-lg px-3 py-2 text-xs font-medium"
                       >
                         Save
                       </button>
                       <button
                         onClick={() => setEditingHabitId(null)}
-                        className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-xs font-medium text-slate hover:bg-steel/10"
+                        className="glass-button glass-button-compact rounded-lg px-3 py-2 text-xs font-medium text-ios-secondary"
                       >
                         Cancel
                       </button>
@@ -200,7 +200,7 @@ export default function HabitsPage() {
                           className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm font-semibold transition-colors ${
                             log?.completed === true
                               ? "border-emerald bg-emerald text-white shadow-sm"
-                              : "border-slate/50 bg-white text-emerald hover:border-emerald/50 hover:bg-emerald/10"
+                              : "glass-button ios-elevated flex h-9 w-9 min-h-0 items-center justify-center rounded-full text-emerald"
                           }`}
                         >
                           ✓
@@ -214,7 +214,7 @@ export default function HabitsPage() {
                           className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm font-semibold transition-colors ${
                             log && log.completed === false
                               ? "border-copper bg-copper text-white shadow-sm"
-                              : "border-slate/50 bg-white text-copper hover:border-copper/40 hover:bg-copper/10"
+                              : "glass-button ios-elevated flex h-9 w-9 min-h-0 items-center justify-center rounded-full text-copper"
                           }`}
                         >
                           ✗
@@ -229,7 +229,7 @@ export default function HabitsPage() {
                       <button
                         type="button"
                         onClick={() => openCalendar(habit.id)}
-                        className="rounded-md border border-slate/50 bg-white px-2 py-1 text-xs text-slate hover:bg-steel/10"
+                        className="glass-button glass-button-compact rounded-md px-2 py-1 text-xs text-ios-secondary"
                         aria-label="Open 30-day habit calendar"
                         title="Open 30-day habit calendar"
                       >
@@ -237,14 +237,14 @@ export default function HabitsPage() {
                       </button>
                       <button
                         onClick={() => startEditHabit(habit.id)}
-                        className="rounded-md border border-slate/50 bg-white px-2 py-1 text-xs text-slate hover:bg-steel/10"
+                        className="glass-button glass-button-compact rounded-md px-2 py-1 text-xs text-ios-secondary"
                         aria-label="Edit habit"
                       >
                         ✎
                       </button>
                       <button
                         onClick={() => deleteHabit(habit.id)}
-                        className="rounded-md border border-copper/30 bg-white px-2 py-1 text-xs text-copper hover:bg-copper/10"
+                        className="glass-button glass-button-compact rounded-md border border-copper/30 bg-copper/10 px-2 py-1 text-xs text-copper"
                         aria-label="Delete habit"
                       >
                         🗑

@@ -25,7 +25,6 @@ export const APP_SECTIONS: AppSection[] = [
   {
     href: "/workouts",
     title: "Workouts",
-    shortTitle: "Train",
     description: "Log strength and cardio sessions with progression metrics.",
   },
   {

@@ -205,6 +205,8 @@ export type AppData = {
   dashboardTodoListIds?: string[];
   /** Display order for dashboard todos (subset of todo item ids). */
   dashboardTodoOrder?: string[];
+  /** Display order for dashboard tasks & habits (`habit-{id}` / `todo-{id}` keys). */
+  dashboardDailyOrder?: string[];
   goalSections: GoalSection[];
   goals: Goal[];
   goalNotes: GoalNote[];

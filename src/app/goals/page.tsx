@@ -496,11 +496,16 @@ export default function GoalsPage() {
 
   return (
     <AppShell title="Goals" description="">
-      <SectionCard title={`Progress: ${overallProgress.toFixed(1)}%`}>
-        <div />
+      <SectionCard title={`Progress: ${overallProgress.toFixed(1)}%`} inset={false}>
+        <div className="ios-card-muted h-2 w-full overflow-hidden rounded-full">
+          <div
+            className="h-full rounded-full bg-ios-tint transition-all"
+            style={{ width: `${Math.min(100, Math.max(0, overallProgress))}%` }}
+          />
+        </div>
       </SectionCard>
 
-      <SectionCard title="Annual Goals">
+      <SectionCard title="Annual Goals" inset={false}>
         <div className="grid gap-6">
           {goalsBySection.map(({ section, goals, sectionProgress }) => (
             <div key={section.id}>
@@ -513,8 +518,8 @@ export default function GoalsPage() {
                   return (
                     <div
                       key={goal.id}
-                      className={`rounded-lg border border-slate/45 px-3 py-2 ${
-                        goal.completed === true ? "bg-emerald/10" : "bg-steel/10"
+                      className={`ios-card-muted px-3 py-2 ${
+                        goal.completed === true ? "ring-1 ring-emerald/30" : ""
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
@@ -527,7 +532,7 @@ export default function GoalsPage() {
                         <button
                           type="button"
                           onClick={() => openGoalEditor(goal.id)}
-                          className="rounded-md border border-slate/50 bg-white px-2 py-1 text-xs text-slate hover:bg-steel/10"
+                          className="glass-button glass-button-compact rounded-md px-2 py-1 text-xs text-ios-secondary"
                           aria-label="Edit goal"
                         >
                           ✎
@@ -549,12 +554,12 @@ export default function GoalsPage() {
                     setGoalDraftsBySection((prev) => ({ ...prev, [section.id]: event.target.value }))
                   }
                   placeholder="Goal"
-                  className="w-full rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                  className="w-full ios-field px-3 py-2 text-sm"
                 />
                 <button
                   type="button"
                   onClick={() => addGoal(section.id)}
-                  className="rounded-lg bg-steel px-3 py-2 text-sm font-medium text-white hover:bg-steel/90"
+                  className="glass-button-tint glass-button-compact rounded-lg px-3 py-2 text-sm font-medium"
                 >
                   + Add Goal
                 </button>
@@ -564,21 +569,17 @@ export default function GoalsPage() {
         </div>
       </SectionCard>
 
-      <SectionCard title="+ Add Section">
-        <div className="flex gap-2">
+      <SectionCard title="+ Add Section" inset={false}>
+        <div className="ios-card flex gap-2 p-4">
           <input
             value={sectionName}
             onChange={(event) => setSectionName(event.target.value)}
             placeholder="Section"
-            className="w-full rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+            className="ios-field min-w-0 flex-1 px-3 py-2 text-sm"
           />
-          <button
-            type="button"
-            onClick={addSection}
-            className="rounded-lg bg-steel px-3 py-2 text-sm font-medium text-white hover:bg-steel/90"
-          >
+          <GlassButton type="button" variant="primary" className="glass-button-compact min-h-0 px-4" onClick={addSection}>
             +
-          </button>
+          </GlassButton>
         </div>
       </SectionCard>
 
@@ -641,12 +642,12 @@ export default function GoalsPage() {
               })();
 
               return (
-                <div className="grid gap-3">
+                <div className="grid min-w-0 gap-3 overflow-x-hidden">
                   <h3 className="text-base font-semibold text-charcoal">Goal Details</h3>
                   <input
                     value={goalTitleDraft}
                     onChange={(event) => setGoalTitleDraft(event.target.value)}
-                    className="w-full rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                    className="w-full ios-field px-3 py-2 text-sm"
                   />
 
                   <div>
@@ -656,13 +657,13 @@ export default function GoalsPage() {
                         value={goalListNameDraft}
                         onChange={(event) => setGoalListNameDraft(event.target.value)}
                         placeholder="List name"
-                        className="min-w-0 flex-1 rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                        className="min-w-0 flex-1 ios-field px-3 py-2 text-sm"
                       />
                       {hasGoalList ? (
                         <button
                           type="button"
                           onClick={() => saveGoalTaskListName(goal.id)}
-                          className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-xs font-medium text-slate hover:bg-steel/10"
+                          className="glass-button glass-button-compact rounded-lg px-3 py-2 text-xs font-medium text-ios-secondary"
                         >
                           Save name
                         </button>
@@ -670,7 +671,7 @@ export default function GoalsPage() {
                         <button
                           type="button"
                           onClick={() => createEmptyGoalTaskList(goal.id)}
-                          className="rounded-lg bg-steel px-3 py-2 text-xs font-medium text-white hover:bg-steel/90"
+                          className="glass-button-tint glass-button-compact rounded-lg px-3 py-2 text-xs font-medium"
                         >
                           Create list
                         </button>
@@ -696,12 +697,12 @@ export default function GoalsPage() {
                         value={goalTaskDraft}
                         onChange={(event) => setGoalTaskDraft(event.target.value)}
                         placeholder="Add task"
-                        className="w-full rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                        className="w-full ios-field px-3 py-2 text-sm"
                       />
                       <button
                         type="button"
                         onClick={() => addGoalTask(goal.id)}
-                        className="rounded-lg bg-steel px-3 py-2 text-sm font-medium text-white hover:bg-steel/90"
+                        className="glass-button-tint glass-button-compact rounded-lg px-3 py-2 text-sm font-medium"
                       >
                         +
                       </button>
@@ -713,7 +714,7 @@ export default function GoalsPage() {
                       Habit association
                     </p>
                     <div className="grid gap-2">
-                      <div className="max-h-40 overflow-y-auto rounded-lg border border-slate/50 bg-white p-2">
+                      <div className="ios-card-muted max-h-40 overflow-y-auto p-2">
                         <div className="grid gap-1">
                           {allHabits.map((habit) => (
                             <label key={habit.id} className="flex w-full items-center gap-2 text-sm text-slate">
@@ -741,7 +742,7 @@ export default function GoalsPage() {
                           min={1}
                           value={habitTargetDraft}
                           onChange={(event) => setHabitTargetDraft(event.target.value)}
-                          className="w-28 rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-charcoal focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                          className="ios-field w-28 px-3 py-2 text-sm text-ios-label"
                         />
                       </label>
                     </div>
@@ -755,7 +756,7 @@ export default function GoalsPage() {
                       <select
                         value={linkedExerciseDraft}
                         onChange={(event) => setLinkedExerciseDraft(event.target.value)}
-                        className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                        className="ios-field px-3 py-2 text-sm"
                       >
                         <option value="">No linked exercise</option>
                         {allExercises.map((exercise) => (
@@ -770,14 +771,14 @@ export default function GoalsPage() {
                           value={exerciseStartDraft}
                           onChange={(event) => setExerciseStartDraft(event.target.value)}
                           placeholder={`Start ${exerciseMetricLabel}`}
-                          className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                          className="ios-field px-3 py-2 text-sm"
                         />
                         <input
                           type="number"
                           value={exerciseTargetDraft}
                           onChange={(event) => setExerciseTargetDraft(event.target.value)}
                           placeholder={`Goal ${exerciseMetricLabel}`}
-                          className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                          className="ios-field px-3 py-2 text-sm"
                         />
                       </div>
                       {linkedExercise ? (
@@ -788,43 +789,49 @@ export default function GoalsPage() {
                     </div>
                   </div>
 
-                  <div>
+                  <div className="min-w-0">
                     <p className="mb-1 text-xs uppercase tracking-wide text-slate/95">Manual progress</p>
                     <p className="mb-2 text-xs text-slate">
                       Track any numeric goal without linking habits or workouts (e.g. books read, dollars saved).
                     </p>
-                    <div className="grid grid-cols-3 gap-2">
-                      <label className="grid gap-1 text-xs text-slate">
-                        <span>Start (optional)</span>
+                    <div className="grid min-w-0 grid-cols-3 gap-1.5">
+                      <label className="grid min-w-0 gap-1 text-xs text-slate">
+                        <span className="truncate" title="Start (optional)">
+                          Start
+                        </span>
                         <input
                           type="number"
+                          inputMode="decimal"
                           step="any"
                           value={manualProgressStartDraft}
                           onChange={(event) => setManualProgressStartDraft(event.target.value)}
                           placeholder="0"
-                          className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                          aria-label="Start (optional)"
+                          className="ios-field min-w-0 w-full px-1.5 py-2 text-center text-sm tabular-nums"
                         />
                       </label>
-                      <label className="grid gap-1 text-xs text-slate">
-                        <span>Current</span>
+                      <label className="grid min-w-0 gap-1 text-xs text-slate">
+                        <span className="truncate">Current</span>
                         <input
                           type="number"
+                          inputMode="decimal"
                           step="any"
                           value={manualProgressCurrentDraft}
                           onChange={(event) => setManualProgressCurrentDraft(event.target.value)}
                           placeholder="Now"
-                          className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                          className="ios-field min-w-0 w-full px-1.5 py-2 text-center text-sm tabular-nums"
                         />
                       </label>
-                      <label className="grid gap-1 text-xs text-slate">
-                        <span>Goal</span>
+                      <label className="grid min-w-0 gap-1 text-xs text-slate">
+                        <span className="truncate">Goal</span>
                         <input
                           type="number"
+                          inputMode="decimal"
                           step="any"
                           value={manualProgressTargetDraft}
                           onChange={(event) => setManualProgressTargetDraft(event.target.value)}
                           placeholder="Target"
-                          className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                          className="ios-field min-w-0 w-full px-1.5 py-2 text-center text-sm tabular-nums"
                         />
                       </label>
                     </div>
@@ -842,7 +849,7 @@ export default function GoalsPage() {
                         return null;
                       }
                       return (
-                        <p className="mt-1 text-xs text-slate">
+                        <p className="mt-1 min-w-0 break-words text-xs text-slate">
                           Manual tracker: {manualProgressCurrentDraft || "—"} / {manualProgressTargetDraft} (
                           {preview.toFixed(0)}%)
                         </p>
@@ -860,7 +867,7 @@ export default function GoalsPage() {
                         value={bodyWeightStartDraft}
                         onChange={(event) => setBodyWeightStartDraft(event.target.value)}
                         placeholder={`Start (${weightAbbr})`}
-                        className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                        className="ios-field px-3 py-2 text-sm"
                       />
                       <input
                         type="number"
@@ -869,7 +876,7 @@ export default function GoalsPage() {
                         value={bodyWeightTargetDraft}
                         onChange={(event) => setBodyWeightTargetDraft(event.target.value)}
                         placeholder={`Goal (${weightAbbr})`}
-                        className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                        className="ios-field px-3 py-2 text-sm"
                       />
                     </div>
                     <p className="mt-1 text-xs text-slate">

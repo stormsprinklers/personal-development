@@ -97,8 +97,8 @@ export default function WorkoutSettingsPage() {
 
   return (
     <AppShell title="Workout settings" description="Units and exercise library.">
-      <SectionCard title="About">
-        <p className="text-sm text-ios-secondary">
+      <SectionCard title="About" inset={false}>
+        <p className="ios-card-muted p-4 text-sm text-ios-secondary">
           Configure units and your exercise library here. To change which exercises and cardio blocks belong to a routine, open{" "}
           <strong>Workouts</strong>, pick the routine, and use the edit (pencil) control next to the routine menu.
         </p>
@@ -108,8 +108,8 @@ export default function WorkoutSettingsPage() {
 
       <CloudStorageCard />
 
-      <SectionCard title="Exercises">
-        <div className="mb-3 flex flex-wrap items-end gap-2 rounded-lg border border-slate/45 bg-steel/10 p-3">
+      <SectionCard title="Exercises" inset={false}>
+        <div className="ios-card flex flex-wrap items-end gap-2 p-4">
           <input
             value={newExerciseName}
             onChange={(e) => setNewExerciseName(e.target.value)}
@@ -119,7 +119,7 @@ export default function WorkoutSettingsPage() {
           <select
             value={newExerciseCategory}
             onChange={(e) => setNewExerciseCategory(e.target.value as ExerciseCategory)}
-            className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-charcoal"
+            className="ios-field px-3 py-2.5 text-sm"
           >
             <option value="strength">Strength</option>
             <option value="run">Run</option>
@@ -131,20 +131,23 @@ export default function WorkoutSettingsPage() {
           </GlassButton>
         </div>
 
-        <div className="grid gap-2">
-          {activeExercises.map((exercise) => (
-            <div key={exercise.id} className="rounded-lg border border-slate/45 bg-steel/10 px-3 py-2">
+        <div className="ios-card overflow-hidden">
+          {activeExercises.map((exercise, index) => (
+            <div
+              key={exercise.id}
+              className={`px-4 py-3 ${index < activeExercises.length - 1 ? "ios-hairline" : ""}`}
+            >
               {editingExerciseId === exercise.id ? (
                 <div className="flex flex-wrap items-center gap-2">
                   <input
                     value={editingExerciseName}
                     onChange={(e) => setEditingExerciseName(e.target.value)}
-                    className="min-w-0 flex-1 rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm"
+                    className="ios-field min-w-0 flex-1 px-3 py-2 text-sm"
                   />
                   <select
                     value={editingExerciseCategory}
                     onChange={(e) => setEditingExerciseCategory(e.target.value as ExerciseCategory)}
-                    className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm"
+                    className="ios-field px-3 py-2 text-sm"
                   >
                     <option value="strength">Strength</option>
                     <option value="run">Run</option>
@@ -154,34 +157,34 @@ export default function WorkoutSettingsPage() {
                   <button type="button" onClick={saveExerciseEdits} className="rounded-lg bg-steel px-3 py-2 text-xs font-medium text-white hover:bg-steel/90">
                     Save
                   </button>
-                  <button type="button" onClick={() => setEditingExerciseId(null)} className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-xs font-medium text-slate hover:bg-steel/10">
+                  <button type="button" onClick={() => setEditingExerciseId(null)} className="glass-button glass-button-compact rounded-lg px-3 py-2 text-xs font-medium text-ios-secondary">
                     Cancel
                   </button>
                 </div>
               ) : (
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm text-charcoal">
-                    {exercise.name} <span className="text-xs text-slate/95">({exercise.category})</span>
+                  <p className="text-sm text-ios-label">
+                    {exercise.name} <span className="text-xs text-ios-secondary">({exercise.category})</span>
                   </p>
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => startEditExercise(exercise.id)} className="rounded-md border border-slate/50 bg-white px-2 py-1 text-xs text-slate hover:bg-steel/10">
+                    <GlassButton variant="secondary" className="min-h-9 px-2 py-1 text-xs" onClick={() => startEditExercise(exercise.id)}>
                       Edit
-                    </button>
-                    <button
-                      type="button"
+                    </GlassButton>
+                    <GlassButton
+                      variant="destructive"
+                      className="min-h-9 px-2 py-1 text-xs"
                       onClick={() => {
                         if (window.confirm(`Remove exercise "${exercise.name}"?`)) removeExercise(exercise.id);
                       }}
-                      className="rounded-md border border-copper/30 bg-white px-2 py-1 text-xs text-copper hover:bg-copper/10"
                     >
                       Remove
-                    </button>
+                    </GlassButton>
                   </div>
                 </div>
               )}
             </div>
           ))}
-          {!activeExercises.length ? <p className="text-sm text-slate">No exercises yet.</p> : null}
+          {!activeExercises.length ? <p className="px-4 py-3 text-sm text-ios-secondary">No exercises yet.</p> : null}
         </div>
       </SectionCard>
     </AppShell>

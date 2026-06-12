@@ -1,5 +1,5 @@
 import type { AppData } from "@/lib/models";
-import { MAIN_TODO_LIST_ID, normalizeTodoListsAndItems, sanitizeDashboardTodoOrder } from "@/lib/todo-helpers";
+import { MAIN_TODO_LIST_ID, normalizeTodoListsAndItems, sanitizeDashboardDailyOrder, sanitizeDashboardTodoOrder, migrateDashboardDailyOrder, dashboardTodoOrderFromDailyOrder } from "@/lib/todo-helpers";
 import { sanitizeWorkoutRoutines } from "@/lib/workout-routines";
 import { normalizeMeasurementPreferences } from "@/lib/units";
 import { APP_TIMEZONE, yearInAppTimezone } from "@/lib/timezone";
@@ -84,6 +84,7 @@ export function normalizeAppData(input: unknown): AppData {
       todoSections: parsed.todoSections ?? base.todoSections,
       dashboardTodoListIds: parsed.dashboardTodoListIds,
       dashboardTodoOrder: parsed.dashboardTodoOrder,
+      dashboardDailyOrder: parsed.dashboardDailyOrder,
     };
     const { todoLists, todoItems } = normalizeTodoListsAndItems(
       merged.todoLists,
@@ -95,9 +96,26 @@ export function normalizeAppData(input: unknown): AppData {
     if (dashboardTodoListIds?.length === 0) dashboardTodoListIds = undefined;
     if (dashboardTodoListIds?.length) dashboardTodoListIds = [...new Set(dashboardTodoListIds)];
     const dashboardTodoOrder = sanitizeDashboardTodoOrder(merged.dashboardTodoOrder, todoItems);
+    const activeHabitIds = (merged.habits ?? []).filter((h) => h.active !== false).map((h) => h.id);
+    const todoItemIds = todoItems.map((item) => item.id);
+    const dashboardDailyOrder = sanitizeDashboardDailyOrder(
+      migrateDashboardDailyOrder(merged.dashboardDailyOrder, dashboardTodoOrder, activeHabitIds, todoItemIds),
+      merged.habits ?? [],
+      todoItems,
+    );
+    const syncedTodoOrder = dashboardTodoOrderFromDailyOrder(dashboardDailyOrder) ?? dashboardTodoOrder;
     const todoSections = (merged.todoSections ?? []).filter((s) => todoLists.some((l) => l.id === s.listId));
     const workoutRoutines = sanitizeWorkoutRoutines(merged.workoutRoutines, merged.exercises);
-    return { ...merged, todoLists, todoItems, todoSections, dashboardTodoListIds, dashboardTodoOrder, workoutRoutines };
+    return {
+      ...merged,
+      todoLists,
+      todoItems,
+      todoSections,
+      dashboardTodoListIds,
+      dashboardTodoOrder: syncedTodoOrder,
+      dashboardDailyOrder,
+      workoutRoutines,
+    };
   } catch {
     return createDefaultAppData();
   }

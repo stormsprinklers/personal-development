@@ -4,8 +4,16 @@ type SectionCardProps = {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
+  /** Use false when section contains multiple separate cards (grey bg visible between them). */
+  inset?: boolean;
+  /** Set false for drag-and-drop lists inside an inset card. */
+  clipInset?: boolean;
 };
 
-export function SectionCard({ title, children }: SectionCardProps) {
-  return <GroupedSection title={title}>{children}</GroupedSection>;
+export function SectionCard({ title, children, inset = true, clipInset = true }: SectionCardProps) {
+  return (
+    <GroupedSection title={title} inset={inset} clipInset={clipInset}>
+      {children}
+    </GroupedSection>
+  );
 }

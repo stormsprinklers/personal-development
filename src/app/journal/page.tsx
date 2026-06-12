@@ -91,7 +91,7 @@ export default function JournalPage() {
       title="Journal"
       description="Write entries, link goals, and run AI analysis."
     >
-      <SectionCard title="New Entry" subtitle="Create unlimited journal entries and link to relevant goals.">
+      <SectionCard title="New Entry" subtitle="Create unlimited journal entries and link to relevant goals." inset={false}>
         <div className="grid gap-3">
           <textarea
             value={entryText}
@@ -102,7 +102,7 @@ export default function JournalPage() {
           />
           <div className="grid gap-2 md:grid-cols-3">
             {data.goals.map((goal) => (
-              <label key={goal.id} className="flex items-center gap-2 rounded-xl bg-ios-fill px-3 py-2.5 text-sm">
+              <label key={goal.id} className="ios-card-muted flex items-center gap-2 px-3 py-2.5 text-sm">
                 <input
                   type="checkbox"
                   checked={selectedGoalIds.includes(goal.id)}
@@ -118,7 +118,7 @@ export default function JournalPage() {
         </div>
       </SectionCard>
 
-      <SectionCard title="AI Analysis + Q&A" subtitle="Analyze your latest entry or ask context-based questions.">
+      <SectionCard title="AI Analysis + Q&A" subtitle="Analyze your latest entry or ask context-based questions." inset={false}>
         <div className="grid gap-3">
           <GlassButton variant="primary" onClick={() => void analyzeLatestEntry()}>
             Analyze Latest Entry
@@ -134,7 +134,7 @@ export default function JournalPage() {
               Ask
             </GlassButton>
           </div>
-          <div className="rounded-xl bg-ios-fill p-3 text-sm whitespace-pre-wrap text-ios-label">
+          <div className="ios-card-muted p-3 text-sm whitespace-pre-wrap text-ios-label">
             {aiOutput || "AI output will appear here."}
           </div>
         </div>

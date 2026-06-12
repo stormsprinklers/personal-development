@@ -22,7 +22,7 @@ export function Sheet({ open, onClose, title, children }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="glass-surface safe-bottom max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-hidden rounded-2xl shadow-2xl shadow-black/20"
+        className="glass-surface ios-card safe-bottom max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-hidden rounded-2xl"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex justify-center pt-2 sm:hidden">
@@ -33,7 +33,7 @@ export function Sheet({ open, onClose, title, children }: Props) {
             <h3 className="ios-headline text-center">{title}</h3>
           </div>
         ) : null}
-        <div className="max-h-[calc(100dvh-6rem)] overflow-y-auto overscroll-contain p-4">{children}</div>
+        <div className="max-h-[calc(100dvh-6rem)] min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain p-4">{children}</div>
       </div>
     </div>
   );

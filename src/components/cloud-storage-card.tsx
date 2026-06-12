@@ -55,7 +55,8 @@ export function CloudStorageCard() {
             : "Saving on this device only";
 
   return (
-    <SectionCard title="Cloud storage">
+    <SectionCard title="Cloud storage" inset={false}>
+      <div className="ios-card p-4">
       <p className="mb-3 text-sm text-ios-secondary">
         Store your full app data in the cloud database instead of only this browser. Use the same sync key on every
         device. Your server needs <code className="text-xs">DATABASE_URL</code> and <code className="text-xs">APP_SYNC_KEY</code>{" "}
@@ -110,6 +111,7 @@ export function CloudStorageCard() {
           Changes auto-save to the cloud after you edit. A local copy is kept as a backup cache.
         </p>
       ) : null}
+      </div>
     </SectionCard>
   );
 }

@@ -124,10 +124,10 @@ export default function EditWorkoutRoutinePage() {
 
   return (
     <AppShell title="Edit routine" description="">
-      <SectionCard title="Routine">
-        <div className="mb-4 grid gap-2">
+      <SectionCard title="Routine" inset={false}>
+        <div className="ios-card grid gap-2 p-4">
           {currentRoutine.archived ? (
-            <p className="rounded-lg border border-slate/50 bg-steel/10 px-3 py-2 text-sm text-slate">
+            <p className="ios-card-muted px-3 py-2 text-sm text-slate">
               This routine is archived. It stays out of your active routine list, but workout history is preserved.
             </p>
           ) : null}
@@ -136,14 +136,14 @@ export default function EditWorkoutRoutinePage() {
             <input
               value={currentRoutine.name}
               onChange={(e) => setRoutineName(e.target.value)}
-              className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-charcoal focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+              className="ios-field px-3 py-2 text-sm text-ios-label"
             />
           </label>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={toggleRoutineArchived}
-              className="w-fit rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-slate hover:bg-steel/10"
+              className="glass-button glass-button-compact w-fit rounded-lg px-3 py-2 text-sm text-ios-secondary"
             >
               {currentRoutine.archived ? "Unarchive routine" : "Archive routine"}
             </button>
@@ -153,7 +153,7 @@ export default function EditWorkoutRoutinePage() {
                 onClick={() => {
                   if (window.confirm(`Delete routine “${currentRoutine.name}”? Workout history for past dates is kept, but this routine definition will be removed.`)) deleteRoutine();
                 }}
-                className="w-fit rounded-lg border border-copper/30 bg-white px-3 py-2 text-sm text-copper hover:bg-copper/10"
+                className="glass-button glass-button-compact w-fit rounded-lg border border-copper/30 bg-copper/10 px-3 py-2 text-sm text-copper"
               >
                 Delete routine
               </button>
@@ -161,7 +161,7 @@ export default function EditWorkoutRoutinePage() {
           </div>
         </div>
 
-        <div className="grid gap-3 rounded-lg border border-slate/50 bg-white/80 p-3">
+        <div className="ios-card grid gap-3 p-4">
           <div>
             <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate/95">Strength exercises</p>
             {currentRoutine.strengthExerciseIds.length ? (
@@ -169,7 +169,7 @@ export default function EditWorkoutRoutinePage() {
                 {currentRoutine.strengthExerciseIds.map((id) => {
                   const ex = activeExercises.find((e) => e.id === id);
                   return (
-                    <li key={id} className="flex items-center gap-1 rounded-full border border-slate/50 bg-steel/10 px-2 py-1 text-xs text-charcoal">
+                    <li key={id} className="ios-card-muted flex items-center gap-1 rounded-full px-2 py-1 text-xs text-charcoal">
                       <span>{ex?.name ?? id}</span>
                       <button type="button" onClick={() => removeExerciseFromRoutine(id)} className="text-slate/95 hover:text-copper" aria-label={`Remove ${ex?.name ?? "exercise"}`}>
                         ×
@@ -183,19 +183,19 @@ export default function EditWorkoutRoutinePage() {
             )}
           </div>
 
-          <div className="rounded-lg border border-slate/50 bg-steel/10 p-3">
+          <div className="ios-card-muted grid gap-2 p-3">
             <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate/95">Create new exercise</p>
             <div className="flex min-w-0 flex-wrap items-end gap-2">
               <input
                 value={newExerciseName}
                 onChange={(e) => setNewExerciseName(e.target.value)}
                 placeholder="Exercise name"
-                className="min-w-0 flex-1 rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+                className="ios-field min-w-0 flex-1 px-3 py-2 text-sm"
               />
               <select
                 value={newExerciseCategory}
                 onChange={(e) => setNewExerciseCategory(e.target.value as ExerciseCategory)}
-                className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-charcoal"
+                className="ios-field px-3 py-2 text-sm text-ios-label"
               >
                 <option value="strength">Strength</option>
                 <option value="run">Run</option>
@@ -206,7 +206,7 @@ export default function EditWorkoutRoutinePage() {
                 type="button"
                 onClick={createExerciseAndAddToRoutine}
                 disabled={!newExerciseName.trim()}
-                className="rounded-lg bg-charcoal px-3 py-2 text-sm font-medium text-white hover:bg-charcoal/90 disabled:opacity-40"
+                className="glass-button-tint glass-button-compact rounded-lg px-3 py-2 text-sm font-medium disabled:opacity-40"
               >
                 Create and add
               </button>
@@ -222,7 +222,7 @@ export default function EditWorkoutRoutinePage() {
               <select
                 value={addExistingExerciseId}
                 onChange={(e) => setAddExistingExerciseId(e.target.value)}
-                className="min-w-[12rem] rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-charcoal"
+                className="ios-field min-w-[12rem] px-3 py-2 text-sm text-ios-label"
               >
                 <option value="">Select strength exercise…</option>
                 {exercisesNotInRoutine.map((exercise) => (
@@ -236,7 +236,7 @@ export default function EditWorkoutRoutinePage() {
               type="button"
               onClick={addExistingExerciseToRoutine}
               disabled={!addExistingExerciseId}
-              className="rounded-lg bg-steel px-3 py-2 text-sm font-medium text-white hover:bg-steel/90 disabled:opacity-40"
+              className="glass-button-tint glass-button-compact rounded-lg px-3 py-2 text-sm font-medium disabled:opacity-40"
             >
               Add to routine
             </button>
@@ -255,7 +255,7 @@ export default function EditWorkoutRoutinePage() {
           </div>
         </div>
 
-        <p className="mt-4 text-xs text-slate/95">
+        <p className="ios-footnote px-1">
           Manage the exercise library under{" "}
           <Link href="/workouts/settings" className="font-medium text-steel underline hover:text-charcoal">
             Workout settings
