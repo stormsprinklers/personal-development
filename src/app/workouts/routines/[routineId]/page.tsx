@@ -49,7 +49,15 @@ export default function EditWorkoutRoutinePage() {
 
   function setRoutineName(name: string) {
     if (!currentRoutine) return;
-    updateRoutine((r) => ({ ...r, name: name.trim() || r.name }));
+    updateRoutine((r) => ({ ...r, name }));
+  }
+
+  function commitRoutineName() {
+    if (!currentRoutine) return;
+    updateRoutine((r) => {
+      const trimmed = r.name.trim();
+      return { ...r, name: trimmed || "Untitled routine" };
+    });
   }
 
   function toggleRoutineArchived() {
@@ -136,6 +144,7 @@ export default function EditWorkoutRoutinePage() {
             <input
               value={currentRoutine.name}
               onChange={(e) => setRoutineName(e.target.value)}
+              onBlur={commitRoutineName}
               className="ios-field px-3 py-2 text-sm text-ios-label"
             />
           </label>

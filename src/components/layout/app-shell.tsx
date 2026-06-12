@@ -66,15 +66,15 @@ export function AppShell({ title, description: _description, children, header, a
   return (
     <div className="min-h-dvh bg-ios-bg text-ios-label">
       <div
-        className="ios-nav-glass fixed inset-x-0 top-0 z-40"
+        className="fixed inset-x-0 top-0 z-40 bg-transparent"
         style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
       >
-        <div className="mx-auto w-full max-w-xl min-w-0 px-4 py-2">
+        <div className="mx-auto w-full max-w-xl min-w-0 px-4 pb-1 pt-2">
           <ScrollTabBar sections={APP_SECTIONS} activePath={pathname} />
         </div>
       </div>
 
-      <div className="safe-bottom mx-auto flex w-full max-w-xl min-w-0 flex-col overflow-x-hidden px-4 pb-4 pt-[calc(3.5rem+env(safe-area-inset-top,0px))]">
+      <div className="safe-bottom mx-auto flex w-full max-w-xl min-w-0 flex-col overflow-x-hidden px-4 pb-4 pt-[calc(3.75rem+env(safe-area-inset-top,0px))]">
         {title ? (
           <header className="mb-3 min-w-0">
             <h1 className="ios-large-title">{title}</h1>

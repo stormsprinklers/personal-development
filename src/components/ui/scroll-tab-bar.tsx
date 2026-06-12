@@ -16,26 +16,26 @@ function isActive(section: AppSection, pathname: string) {
 
 export function ScrollTabBar({ sections, activePath }: Props) {
   return (
-    <nav aria-label="App sections" className="ios-scroll-tabs overflow-x-auto">
-      <div className="flex w-max min-w-full snap-x snap-mandatory gap-2">
-        {sections.map((section) => {
-          const active = isActive(section, activePath);
-          const label = section.shortTitle ?? section.title;
-          return (
-            <Link
-              key={section.href}
-              href={section.href}
-              className={`glass-button snap-start whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-semibold transition-colors ${
-                active
-                  ? "glass-button-tint shadow-sm shadow-ios-tint/20"
-                  : "text-ios-secondary hover:text-ios-label"
-              }`}
-              aria-current={active ? "page" : undefined}
-            >
-              {label}
-            </Link>
-          );
-        })}
+    <nav aria-label="App sections" className="min-w-0">
+      <div className="ios-scroll-tabs overflow-x-auto pb-3 pt-0.5">
+        <div className="flex w-max min-w-full snap-x snap-mandatory gap-2">
+          {sections.map((section) => {
+            const active = isActive(section, activePath);
+            const label = section.shortTitle ?? section.title;
+            return (
+              <Link
+                key={section.href}
+                href={section.href}
+                className={`glass-button inline-flex snap-start items-center whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-semibold transition-colors ${
+                  active ? "glass-button-tint text-white" : "text-ios-label"
+                }`}
+                aria-current={active ? "page" : undefined}
+              >
+                {label}
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </nav>
   );

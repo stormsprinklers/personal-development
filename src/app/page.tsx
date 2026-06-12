@@ -470,24 +470,24 @@ export default function Home() {
 
       <SectionCard title={`Progress toward goals (${goalYear})`} inset={false}>
         <div className="grid gap-3 sm:grid-cols-3">
-          <div className="ios-card-muted p-4">
+          <div className="ios-card p-4">
             <p className="ios-footnote font-medium uppercase tracking-wide">Annual goals</p>
             <p className="mt-1 text-2xl font-semibold text-ios-label">{goalProgress.percent}%</p>
             <p className="ios-footnote">
               {goalProgress.done} of {goalProgress.total} completed
             </p>
           </div>
-          <div className="ios-card-muted p-4">
+          <div className="ios-card p-4">
             <p className="ios-footnote font-medium uppercase tracking-wide">Completed to-dos (week)</p>
             <p className="text-2xl font-semibold text-ios-label">{weeklyTodoCompletions}</p>
           </div>
-          <div className="ios-card-muted p-4">
+          <div className="ios-card p-4">
             <p className="ios-footnote font-medium uppercase tracking-wide">Habit adherence (week)</p>
             <p className="text-2xl font-semibold text-ios-label">{weeklyHabitAdherence}%</p>
           </div>
         </div>
 
-        <div className="ios-card-muted p-4">
+        <div className="ios-card p-4">
           <p className="ios-footnote mb-2 font-medium uppercase tracking-wide">Top strength lifts (week)</p>
           {weeklyStrength.length ? (
             <div className="grid gap-2">
@@ -510,13 +510,13 @@ export default function Home() {
         <div className="grid gap-3">
           {aiLoading ? <p className="text-sm text-ios-secondary">Summarizing your trends…</p> : null}
           {aiError ? <p className="ios-card rounded-xl bg-copper/10 p-3 text-sm text-copper">{aiError}</p> : null}
-          <p className="ios-card-muted p-4 text-sm leading-relaxed whitespace-pre-wrap text-ios-label">
+          <div className="ios-card p-4 text-sm leading-relaxed whitespace-pre-wrap text-ios-label">
             {latestSummary?.output?.trim() ?? (aiLoading ? "" : "Summary will load automatically.")}
-          </p>
+          </div>
           {latestSummary?.output?.trim() && !aiLoading ? (
             <>
               {(latestSummary.coachChat?.length ?? 0) > 0 ? (
-                <div className="ios-card-muted grid max-h-52 gap-2 overflow-y-auto p-2">
+                <div className="ios-card grid max-h-52 gap-2 overflow-y-auto p-2">
                   {(latestSummary.coachChat ?? []).map((turn, idx) => (
                     <div key={`${turn.at}-${idx}`} className={`flex ${turn.role === "user" ? "justify-end" : "justify-start"}`}>
                       <div
@@ -557,17 +557,19 @@ export default function Home() {
       </SectionCard>
 
       <SectionCard title="Quick journal" inset={false}>
-        <p className="ios-footnote">Saved for {dashboardDate}. Link goals from the full Journal page.</p>
-        <textarea
-          value={journalQuickText}
-          onChange={(e) => setJournalQuickText(e.target.value)}
-          placeholder="A few lines about your day…"
-          rows={4}
-          className="ios-field w-full resize-y px-3 py-2.5 text-sm"
-        />
-        <GlassButton variant="primary" onClick={saveJournalQuick} disabled={!journalQuickText.trim()}>
-          Save entry
-        </GlassButton>
+        <div className="ios-card grid gap-3 p-4">
+          <p className="ios-footnote">Saved for {dashboardDate}. Link goals from the full Journal page.</p>
+          <textarea
+            value={journalQuickText}
+            onChange={(e) => setJournalQuickText(e.target.value)}
+            placeholder="A few lines about your day…"
+            rows={4}
+            className="ios-field w-full resize-y px-3 py-2.5 text-sm"
+          />
+          <GlassButton variant="primary" onClick={saveJournalQuick} disabled={!journalQuickText.trim()}>
+            Save entry
+          </GlassButton>
+        </div>
       </SectionCard>
     </AppShell>
   );
