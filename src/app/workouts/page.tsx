@@ -469,7 +469,7 @@ export default function WorkoutsPage() {
             return (
               <div key={exercise.id} className="ios-card overflow-hidden">
                 <div className="flex items-center justify-between gap-2 ios-hairline bg-ios-fill/50 px-3 py-2.5">
-                  <span className="min-w-0 font-medium text-charcoal">{exercise.name}</span>
+                  <span className="min-w-0 text-base font-bold text-ios-label">{exercise.name}</span>
                   {canReorder ? (
                     <div className="flex shrink-0 items-center gap-0.5">
                       <button
@@ -625,7 +625,7 @@ export default function WorkoutsPage() {
 
             return (
               <div key={cardioType} className="ios-card overflow-hidden">
-                <div className="ios-hairline bg-ios-fill/50 px-3 py-2.5 font-medium text-ios-label">{title}</div>
+                <div className="ios-hairline bg-ios-fill/50 px-3 py-2.5 text-base font-bold text-ios-label">{title}</div>
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[320px] table-fixed text-xs sm:text-sm">
                     <thead>

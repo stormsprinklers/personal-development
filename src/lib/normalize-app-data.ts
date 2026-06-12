@@ -6,6 +6,24 @@ import { APP_TIMEZONE, yearInAppTimezone } from "@/lib/timezone";
 
 const nowIso = () => new Date().toISOString();
 
+function normalizeHabits(raw: unknown): AppData["habits"] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") return null;
+      const h = entry as { id?: string; name?: string; active?: boolean; createdAt?: string };
+      const name = typeof h.name === "string" ? h.name.trim() : "";
+      if (!name) return null;
+      return {
+        id: typeof h.id === "string" && h.id ? h.id : crypto.randomUUID(),
+        name,
+        active: h.active !== false,
+        createdAt: typeof h.createdAt === "string" ? h.createdAt : nowIso(),
+      };
+    })
+    .filter((h): h is AppData["habits"][number] => h !== null);
+}
+
 export function createDefaultAppData(): AppData {
   const exercises = [
     { id: "seed-ex-back-squat", name: "Back Squat", category: "strength" as const, archived: false, createdAt: nowIso() },
@@ -106,6 +124,7 @@ export function normalizeAppData(input: unknown): AppData {
     const syncedTodoOrder = dashboardTodoOrderFromDailyOrder(dashboardDailyOrder) ?? dashboardTodoOrder;
     const todoSections = (merged.todoSections ?? []).filter((s) => todoLists.some((l) => l.id === s.listId));
     const workoutRoutines = sanitizeWorkoutRoutines(merged.workoutRoutines, merged.exercises);
+    const habits = normalizeHabits(merged.habits);
     return {
       ...merged,
       todoLists,
@@ -115,6 +134,7 @@ export function normalizeAppData(input: unknown): AppData {
       dashboardTodoOrder: syncedTodoOrder,
       dashboardDailyOrder,
       workoutRoutines,
+      habits,
     };
   } catch {
     return createDefaultAppData();

@@ -448,7 +448,7 @@ export default function Home() {
             </GlassButton>
           </div>
         </GroupedRow>
-        <div className="-mx-4">
+        <div className="min-w-0">
           <DashboardSortableTodos
             items={visibleDailyItems}
             allItemKeys={allDashboardDailyKeys}

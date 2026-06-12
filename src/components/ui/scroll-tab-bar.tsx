@@ -16,8 +16,8 @@ function isActive(section: AppSection, pathname: string) {
 
 export function ScrollTabBar({ sections, activePath }: Props) {
   return (
-    <nav aria-label="App sections" className="ios-scroll-tabs -mx-4 mb-4 overflow-x-auto px-4">
-      <div className="flex w-max min-w-full snap-x snap-mandatory gap-2 pb-1">
+    <nav aria-label="App sections" className="ios-scroll-tabs overflow-x-auto">
+      <div className="flex w-max min-w-full snap-x snap-mandatory gap-2">
         {sections.map((section) => {
           const active = isActive(section, activePath);
           const label = section.shortTitle ?? section.title;

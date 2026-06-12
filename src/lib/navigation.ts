@@ -20,7 +20,7 @@ export const APP_SECTIONS: AppSection[] = [
   {
     href: "/habits",
     title: "Habits",
-    description: "Track build and break habits with daily consistency history.",
+    description: "Track daily habits with check-ins and history.",
   },
   {
     href: "/workouts",

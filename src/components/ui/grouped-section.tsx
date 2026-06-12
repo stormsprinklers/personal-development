@@ -16,7 +16,7 @@ export function GroupedSection({ title, footer, children, className = "", inset 
     <section className={`min-w-0 ${className}`}>
       {title ? <h2 className="ios-headline mb-2 px-1">{title}</h2> : null}
       {inset ? (
-        <div className={`ios-card ${clipInset ? "overflow-hidden" : "overflow-visible"}`}>{children}</div>
+        <div className={`ios-card min-w-0 ${clipInset ? "overflow-hidden" : "overflow-x-hidden"}`}>{children}</div>
       ) : (
         <div className="flex flex-col gap-3">{children}</div>
       )}

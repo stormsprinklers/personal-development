@@ -13,10 +13,8 @@ import { todayKey, useAppData } from "@/lib/storage";
 export default function HabitsPage() {
   const { data, ready, setData } = useAppData();
   const [habitName, setHabitName] = useState("");
-  const [habitType, setHabitType] = useState<"build" | "break">("build");
   const [editingHabitId, setEditingHabitId] = useState<string | null>(null);
   const [editingHabitName, setEditingHabitName] = useState("");
-  const [editingHabitType, setEditingHabitType] = useState<"build" | "break">("build");
   const [calendarHabitId, setCalendarHabitId] = useState<string | null>(null);
   const [calendarDayPicker, setCalendarDayPicker] = useState<string | null>(null);
   const today = todayKey();
@@ -54,7 +52,6 @@ export default function HabitsPage() {
         {
           id: crypto.randomUUID(),
           name: habitName.trim(),
-          type: habitType,
           active: true,
           createdAt: new Date().toISOString(),
         },
@@ -69,7 +66,6 @@ export default function HabitsPage() {
     if (!habit) return;
     setEditingHabitId(habit.id);
     setEditingHabitName(habit.name);
-    setEditingHabitType(habit.type);
   }
 
   function saveHabitEdits() {
@@ -77,9 +73,7 @@ export default function HabitsPage() {
     setData((prev) => ({
       ...prev,
       habits: prev.habits.map((habit) =>
-        habit.id === editingHabitId
-          ? { ...habit, name: editingHabitName.trim(), type: editingHabitType }
-          : habit,
+        habit.id === editingHabitId ? { ...habit, name: editingHabitName.trim() } : habit,
       ),
     }));
     setEditingHabitId(null);
@@ -124,54 +118,44 @@ export default function HabitsPage() {
   return (
     <AppShell
       title="Habits"
-      description="Track daily build/break habits with history."
+      description="Track daily habits with check-ins and history."
     >
       <SectionCard title="Habits">
         <GroupedRow hairline>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="flex min-w-0 flex-wrap items-end gap-2">
             <input
               value={habitName}
               onChange={(event) => setHabitName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  addHabit();
+                }
+              }}
               placeholder="Habit name"
-              className="ios-field px-3 py-2.5 text-sm"
+              className="ios-field min-w-0 flex-1 px-3 py-2.5 text-sm"
             />
-            <select
-              value={habitType}
-              onChange={(event) => setHabitType(event.target.value as "build" | "break")}
-              className="ios-field px-3 py-2.5 text-sm"
-            >
-              <option value="build">Build</option>
-              <option value="break">Break</option>
-            </select>
             <GlassButton variant="primary" onClick={addHabit}>
               Add Habit
             </GlassButton>
           </div>
         </GroupedRow>
-        <div className="-mx-4">
+        <div className="min-w-0">
           {data.habits.filter((habit) => habit.active).map((habit, index, arr) => {
             const log = todayLogs.find((entry) => entry.habitId === habit.id);
             const streak = currentHabitStreak(habit, data.habitLogs, today);
             return (
               <div
                 key={habit.id}
-                className={`bg-ios-surface px-4 py-3 ${index < arr.length - 1 ? "ios-hairline" : ""}`}
+                className={`bg-ios-surface px-5 py-4 ${index < arr.length - 1 ? "ios-hairline" : ""}`}
               >
                 {editingHabitId === habit.id ? (
-                  <div className="grid gap-2 sm:grid-cols-3">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
                     <input
                       value={editingHabitName}
                       onChange={(event) => setEditingHabitName(event.target.value)}
-                      className="ios-field px-3 py-2 text-sm"
+                      className="ios-field min-w-0 flex-1 px-3 py-2 text-sm"
                     />
-                    <select
-                      value={editingHabitType}
-                      onChange={(event) => setEditingHabitType(event.target.value as "build" | "break")}
-                      className="ios-field px-3 py-2 text-sm"
-                    >
-                      <option value="build">Build</option>
-                      <option value="break">Break</option>
-                    </select>
                     <div className="flex gap-2">
                       <button
                         onClick={saveHabitEdits}
@@ -188,44 +172,40 @@ export default function HabitsPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex min-w-0 flex-1 items-center gap-3">
-                      <div className="flex shrink-0 gap-1.5">
-                        <button
-                          type="button"
-                          title="Done today"
-                          aria-label="Log habit as done today"
-                          aria-pressed={log?.completed === true}
-                          onClick={() => setTodayHabitLog(habit.id, true)}
-                          className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm font-semibold transition-colors ${
-                            log?.completed === true
-                              ? "border-emerald bg-emerald text-white shadow-sm"
-                              : "glass-button ios-elevated flex h-9 w-9 min-h-0 items-center justify-center rounded-full text-emerald"
-                          }`}
-                        >
-                          ✓
-                        </button>
-                        <button
-                          type="button"
-                          title="Missed today"
-                          aria-label="Log habit as missed today"
-                          aria-pressed={log?.completed === false}
-                          onClick={() => setTodayHabitLog(habit.id, false)}
-                          className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm font-semibold transition-colors ${
-                            log && log.completed === false
-                              ? "border-copper bg-copper text-white shadow-sm"
-                              : "glass-button ios-elevated flex h-9 w-9 min-h-0 items-center justify-center rounded-full text-copper"
-                          }`}
-                        >
-                          ✗
-                        </button>
-                      </div>
-                      <span className="min-w-0 text-sm">
-                        {habit.name} <span className="text-slate/90">({habit.type})</span>
-                      </span>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex shrink-0 gap-1.5">
+                      <button
+                        type="button"
+                        title="Done today"
+                        aria-label="Log habit as done today"
+                        aria-pressed={log?.completed === true}
+                        onClick={() => setTodayHabitLog(habit.id, true)}
+                        className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm font-semibold transition-colors ${
+                          log?.completed === true
+                            ? "border-emerald bg-emerald text-white shadow-sm"
+                            : "glass-button ios-elevated flex h-9 w-9 min-h-0 items-center justify-center rounded-full text-emerald"
+                        }`}
+                      >
+                        ✓
+                      </button>
+                      <button
+                        type="button"
+                        title="Missed today"
+                        aria-label="Log habit as missed today"
+                        aria-pressed={log?.completed === false}
+                        onClick={() => setTodayHabitLog(habit.id, false)}
+                        className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm font-semibold transition-colors ${
+                          log && log.completed === false
+                            ? "border-copper bg-copper text-white shadow-sm"
+                            : "glass-button ios-elevated flex h-9 w-9 min-h-0 items-center justify-center rounded-full text-copper"
+                        }`}
+                      >
+                        ✗
+                      </button>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-slate/90">Streak: {streak}d</span>
+                    <span className="min-w-0 flex-1 text-sm leading-snug">{habit.name}</span>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <span className="shrink-0 text-xs font-medium text-slate/90">Streak: {streak}d</span>
                       <button
                         type="button"
                         onClick={() => openCalendar(habit.id)}
@@ -255,7 +235,7 @@ export default function HabitsPage() {
               </div>
             );
           })}
-          {!data.habits.length ? <p className="px-4 py-3 text-sm text-ios-secondary">No habits yet.</p> : null}
+          {!data.habits.length ? <p className="px-5 py-4 text-sm text-ios-secondary">No habits yet.</p> : null}
         </div>
       </SectionCard>
 

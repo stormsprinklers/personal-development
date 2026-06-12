@@ -88,8 +88,8 @@ function DailyRowSurface({
 }) {
   return (
     <div
-      className={`flex items-center gap-2 bg-ios-surface px-4 py-3 ${hairline ? "ios-hairline" : ""} ${
-        elevated ? "shadow-lg shadow-black/10 ring-2 ring-ios-tint/25" : ""
+      className={`flex min-w-0 items-center gap-2 bg-ios-surface px-4 py-3 ${hairline ? "ios-hairline" : ""} ${
+        elevated ? "shadow-lg shadow-black/10 ring-2 ring-inset ring-ios-tint/25" : ""
       }`}
     >
       <button
@@ -161,7 +161,7 @@ function SortableDailyRow({
   };
 
   const row = (
-    <div ref={setNodeRef} style={style}>
+    <div ref={setNodeRef} style={style} className="min-w-0">
       <DailyRowSurface
         item={item}
         exiting={exiting}
@@ -213,7 +213,7 @@ export function DashboardSortableTodos({
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <SortableContext items={items.map((item) => item.key)} strategy={verticalListSortingStrategy}>
-        <div className="overflow-visible">
+        <div className="min-w-0">
           {items.map((item, index) => (
             <SortableDailyRow
               key={item.key}

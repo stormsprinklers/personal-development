@@ -64,8 +64,17 @@ export function AppShell({ title, description: _description, children, header, a
   const topRight = actions ?? workoutTopActions;
 
   return (
-    <div className="min-h-dvh overflow-x-hidden bg-ios-bg text-ios-label">
-      <div className="safe-top safe-bottom mx-auto flex w-full max-w-xl min-w-0 flex-col px-4 py-4">
+    <div className="min-h-dvh bg-ios-bg text-ios-label">
+      <div
+        className="fixed inset-x-0 top-0 z-40 border-b border-ios-separator/70 bg-ios-bg/90 shadow-sm backdrop-blur-md"
+        style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+      >
+        <div className="mx-auto w-full max-w-xl min-w-0 px-4 py-2">
+          <ScrollTabBar sections={APP_SECTIONS} activePath={pathname} />
+        </div>
+      </div>
+
+      <div className="safe-bottom mx-auto flex w-full max-w-xl min-w-0 flex-col overflow-x-hidden px-4 pb-4 pt-[calc(3.5rem+env(safe-area-inset-top,0px))]">
         {title ? (
           <header className="mb-3 min-w-0">
             <h1 className="ios-large-title">{title}</h1>
@@ -73,7 +82,6 @@ export function AppShell({ title, description: _description, children, header, a
         ) : null}
         {header ? <div className="mb-3 min-w-0">{header}</div> : null}
         {topRight ? <div className="mb-2 flex justify-end gap-2">{topRight}</div> : null}
-        <ScrollTabBar sections={APP_SECTIONS} activePath={pathname} />
         <main className="grid min-w-0 gap-5">{children}</main>
       </div>
     </div>

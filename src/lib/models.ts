@@ -56,12 +56,9 @@ export type WorkoutRoutine = {
   archived: boolean;
 };
 
-export type HabitType = "build" | "break";
-
 export type Habit = {
   id: string;
   name: string;
-  type: HabitType;
   active: boolean;
   createdAt: string;
 };
