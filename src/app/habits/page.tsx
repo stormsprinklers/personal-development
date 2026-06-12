@@ -3,6 +3,9 @@
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
+import { GlassButton } from "@/components/ui/glass-button";
+import { GroupedRow } from "@/components/ui/grouped-row";
+import { Sheet } from "@/components/ui/sheet";
 import { currentHabitStreak } from "@/lib/metrics/habitStreaks";
 import { addDaysToDateKey, dayOfMonthInAppTimezone } from "@/lib/timezone";
 import { todayKey, useAppData } from "@/lib/storage";
@@ -124,38 +127,35 @@ export default function HabitsPage() {
       description="Track daily build/break habits with history."
     >
       <SectionCard title="Habits">
-        <div className="mb-3 grid gap-3 sm:grid-cols-3">
-          <input
-            value={habitName}
-            onChange={(event) => setHabitName(event.target.value)}
-            placeholder="Habit name"
-            className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
-          />
-          <select
-            value={habitType}
-            onChange={(event) => setHabitType(event.target.value as "build" | "break")}
-            className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
-          >
-            <option value="build">Build</option>
-            <option value="break">Break</option>
-          </select>
-          <button
-            type="button"
-            onClick={addHabit}
-            className="rounded-lg bg-steel px-4 py-2 text-sm text-white shadow-sm shadow-steel/25 hover:bg-steel/90"
-          >
-            Add Habit
-          </button>
-        </div>
-
-        <div className="grid gap-2">
-          {data.habits.filter((habit) => habit.active).map((habit) => {
+        <GroupedRow hairline>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <input
+              value={habitName}
+              onChange={(event) => setHabitName(event.target.value)}
+              placeholder="Habit name"
+              className="ios-field px-3 py-2.5 text-sm"
+            />
+            <select
+              value={habitType}
+              onChange={(event) => setHabitType(event.target.value as "build" | "break")}
+              className="ios-field px-3 py-2.5 text-sm"
+            >
+              <option value="build">Build</option>
+              <option value="break">Break</option>
+            </select>
+            <GlassButton variant="primary" onClick={addHabit}>
+              Add Habit
+            </GlassButton>
+          </div>
+        </GroupedRow>
+        <div className="-mx-4">
+          {data.habits.filter((habit) => habit.active).map((habit, index, arr) => {
             const log = todayLogs.find((entry) => entry.habitId === habit.id);
             const streak = currentHabitStreak(habit, data.habitLogs, today);
             return (
               <div
                 key={habit.id}
-                className="rounded-lg border border-slate/45 bg-steel/10 px-3 py-2"
+                className={`bg-ios-surface px-4 py-3 ${index < arr.length - 1 ? "ios-hairline" : ""}`}
               >
                 {editingHabitId === habit.id ? (
                   <div className="grid gap-2 sm:grid-cols-3">
@@ -255,41 +255,36 @@ export default function HabitsPage() {
               </div>
             );
           })}
-          {!data.habits.length && <p className="text-sm text-slate">No habits yet.</p>}
+          {!data.habits.length ? <p className="px-4 py-3 text-sm text-ios-secondary">No habits yet.</p> : null}
         </div>
       </SectionCard>
 
-      {habitCalendarData ? (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto overscroll-contain bg-black/35 p-3 sm:items-center"
-          onClick={() => {
-            setCalendarHabitId(null);
-            setCalendarDayPicker(null);
-          }}
-        >
-          <div
-            className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-xl border border-slate/50 bg-white p-4 shadow-xl"
-            onClick={(event) => event.stopPropagation()}
-          >
+      <Sheet
+        open={Boolean(habitCalendarData)}
+        onClose={() => {
+          setCalendarHabitId(null);
+          setCalendarDayPicker(null);
+        }}
+        title={habitCalendarData?.habit.name}
+      >
+        {habitCalendarData ? (
+          <>
             <div className="mb-3 flex items-start justify-between gap-3">
-              <div>
-                <h3 className="text-base font-semibold text-charcoal">{habitCalendarData.habit.name}</h3>
-                <p className="text-xs text-slate">Last 30 days calendar</p>
-              </div>
+              <p className="ios-footnote">Last 30 days calendar</p>
               <div className="text-right">
-                <p className="text-sm font-semibold text-charcoal">{habitCalendarData.goodDays}/30</p>
-                <p className="text-xs text-slate/95">days accomplished</p>
+                <p className="text-sm font-semibold text-ios-label">{habitCalendarData.goodDays}/30</p>
+                <p className="ios-footnote">days accomplished</p>
               </div>
             </div>
 
-            <div className="mb-3 rounded-lg border border-slate/45 bg-steel/10 p-2 text-xs text-slate">
-              <p className="font-medium text-charcoal">Date range</p>
+            <div className="mb-3 rounded-xl bg-ios-fill p-3 text-xs text-ios-secondary">
+              <p className="font-medium text-ios-label">Date range</p>
               <p>
                 {habitCalendarData.firstDate} to {habitCalendarData.lastDate}
               </p>
             </div>
 
-            <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-medium text-slate/95">
+            <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-medium text-ios-secondary">
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((name) => (
                 <div key={name} className="py-1">
                   {name}
@@ -297,16 +292,16 @@ export default function HabitsPage() {
               ))}
             </div>
 
-            <p className="mb-2 text-[11px] text-slate/95">Tap a day to mark success or failure.</p>
+            <p className="mb-2 text-[11px] text-ios-secondary">Tap a day to mark success or failure.</p>
 
-            <div className="grid grid-cols-7 gap-1 rounded-lg border border-slate/45 bg-white p-2">
+            <div className="grid grid-cols-7 gap-1 rounded-xl bg-ios-surface p-2">
               {habitCalendarData.days.map((day, dayIndex) => {
                 const cellClass =
                   day.status === "good"
                     ? "bg-emerald/15 text-emerald"
                     : day.status === "bad"
                       ? "bg-copper/15 text-copper"
-                      : "bg-slate/10 text-slate ring-1 ring-inset ring-slate/20";
+                      : "bg-ios-fill text-ios-secondary";
                 const label =
                   day.status === "good" ? "Accomplished" : day.status === "bad" ? "Missed (marked ✗)" : "Unmarked";
                 const pickerOpen = calendarDayPicker === day.key;
@@ -321,7 +316,7 @@ export default function HabitsPage() {
                         }`}
                       >
                         <div
-                          className="flex items-center gap-1 rounded-lg border border-slate/50 bg-white p-1 shadow-lg"
+                          className="glass-surface flex items-center gap-1 rounded-lg p-1 shadow-lg"
                           role="menu"
                           aria-label={`Log ${day.key}`}
                         >
@@ -330,7 +325,7 @@ export default function HabitsPage() {
                             role="menuitem"
                             aria-label="Mark as success"
                             onClick={() => setHabitLog(habitCalendarData.habit.id, day.key, true)}
-                            className="flex h-8 w-8 items-center justify-center rounded-md border border-emerald/40 bg-emerald/10 text-sm font-semibold text-emerald hover:bg-emerald hover:text-white"
+                            className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald/15 text-sm font-semibold text-emerald"
                           >
                             ✓
                           </button>
@@ -339,26 +334,18 @@ export default function HabitsPage() {
                             role="menuitem"
                             aria-label="Mark as failure"
                             onClick={() => setHabitLog(habitCalendarData.habit.id, day.key, false)}
-                            className="flex h-8 w-8 items-center justify-center rounded-md border border-copper/40 bg-copper/10 text-sm font-semibold text-copper hover:bg-copper hover:text-white"
+                            className="flex h-8 w-8 items-center justify-center rounded-md bg-copper/15 text-sm font-semibold text-copper"
                           >
                             ✗
                           </button>
                         </div>
-                        <div
-                          aria-hidden
-                          className={`absolute left-1/2 h-0 w-0 -translate-x-1/2 border-x-[6px] border-x-transparent ${
-                            bubbleAbove
-                              ? "top-full border-t-[6px] border-t-white drop-shadow-sm"
-                              : "bottom-full border-b-[6px] border-b-white drop-shadow-sm"
-                          }`}
-                        />
                       </div>
                     ) : null}
                     <button
                       type="button"
                       onClick={() => setCalendarDayPicker((current) => (current === day.key ? null : day.key))}
-                      className={`w-full rounded-md px-1 py-2 text-center text-xs font-medium transition-shadow ${cellClass} ${
-                        pickerOpen ? "ring-2 ring-steel/50" : "hover:ring-2 hover:ring-steel/30"
+                      className={`w-full rounded-lg px-1 py-2 text-center text-xs font-medium transition-shadow ${cellClass} ${
+                        pickerOpen ? "ring-2 ring-ios-tint/40" : "hover:ring-2 hover:ring-ios-tint/20"
                       }`}
                       title={`${day.key}: ${label}. Tap to log.`}
                       aria-expanded={pickerOpen}
@@ -372,21 +359,20 @@ export default function HabitsPage() {
               })}
             </div>
 
-            <div className="mt-3 flex justify-end">
-              <button
-                type="button"
+            <div className="mt-4 flex justify-end">
+              <GlassButton
+                variant="secondary"
                 onClick={() => {
                   setCalendarHabitId(null);
                   setCalendarDayPicker(null);
                 }}
-                className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-slate hover:bg-steel/10"
               >
                 Close
-              </button>
+              </GlassButton>
             </div>
-          </div>
-        </div>
-      ) : null}
+          </>
+        ) : null}
+      </Sheet>
     </AppShell>
   );
 }

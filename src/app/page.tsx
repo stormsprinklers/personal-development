@@ -5,6 +5,8 @@ import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
 import { CompleteExitRow, COMPLETE_EXIT_MS } from "@/components/complete-exit-row";
 import { DashboardSortableTodos } from "@/components/dashboard-sortable-todos";
+import { GlassButton } from "@/components/ui/glass-button";
+import { GroupedRow } from "@/components/ui/grouped-row";
 import { buildAiContext } from "@/lib/ai/contextBuilder";
 import { DASHBOARD_COACH_SYSTEM_PROMPT, dailyCoachOpeningUserPrompt } from "@/lib/ai/prompts";
 import { goalsProgressForYear } from "@/lib/metrics/dashboardMetrics";
@@ -382,16 +384,16 @@ export default function Home() {
           max={today}
           onChange={(e) => setDashboardDate(e.target.value)}
           aria-label={`Dashboard day, ${formatDashboardDayLabel(dashboardDate)}`}
-          className="w-full max-w-[11rem] rounded-md border border-slate/50 bg-white px-2 py-1.5 text-sm font-medium text-charcoal focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+          className="ios-field w-full max-w-[11rem] px-3 py-2 text-sm font-medium"
         />
       }
     >
       <SectionCard title="Tasks & habits">
-        <div className="mb-3 grid gap-2 rounded-lg border border-slate/45 bg-steel/10 p-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate/95">Lists on dashboard</p>
+        <GroupedRow hairline>
+          <p className="ios-footnote mb-2 font-medium uppercase tracking-wide">Lists on dashboard</p>
           <div className="flex flex-wrap gap-3">
             {data.todoLists.map((list) => (
-              <label key={list.id} className="flex items-center gap-2 text-sm text-slate">
+              <label key={list.id} className="flex items-center gap-2 text-sm text-ios-secondary">
                 <input
                   type="checkbox"
                   checked={dashboardListIds.includes(list.id)}
@@ -401,59 +403,64 @@ export default function Home() {
               </label>
             ))}
           </div>
-        </div>
-        <div className="mb-3 flex min-w-0 flex-wrap items-end gap-2 rounded-lg border border-slate/45 bg-white/80 p-3">
-          {dashboardListIds.length > 1 ? (
-            <label className="grid gap-1 text-xs font-medium text-slate/95">
-              List
-              <select
-                value={quickAddListId}
-                onChange={(e) => setQuickAddListId(e.target.value)}
-                className="min-w-[8rem] rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-charcoal"
-              >
-                {dashboardListIds.map((id) => {
-                  const list = data.todoLists.find((l) => l.id === id);
-                  return (
-                    <option key={id} value={id}>
-                      {list?.name ?? "List"}
-                    </option>
-                  );
-                })}
-              </select>
-            </label>
-          ) : null}
-          <input
-            value={quickTodoTitle}
-            onChange={(e) => setQuickTodoTitle(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                addQuickTodo();
-              }
-            }}
-            placeholder="Add a task…"
-            className="min-w-0 flex-1 rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
-          />
-          <button
-            type="button"
-            onClick={addQuickTodo}
-            disabled={!quickTodoTitle.trim() || !(quickAddListId || dashboardListIds[0])}
-            className="rounded-lg bg-steel px-3 py-2 text-sm font-medium text-white hover:bg-steel/90 disabled:opacity-40"
-          >
-            Add task
-          </button>
-        </div>
-        <div className="grid gap-2">
-          {visibleHabitItems.map((item) => (
+        </GroupedRow>
+        <GroupedRow hairline={false}>
+          <div className="flex min-w-0 flex-wrap items-end gap-2">
+            {dashboardListIds.length > 1 ? (
+              <label className="grid gap-1 text-xs font-medium text-ios-secondary">
+                List
+                <select
+                  value={quickAddListId}
+                  onChange={(e) => setQuickAddListId(e.target.value)}
+                  className="ios-field min-w-[8rem] px-3 py-2.5 text-sm"
+                >
+                  {dashboardListIds.map((id) => {
+                    const list = data.todoLists.find((l) => l.id === id);
+                    return (
+                      <option key={id} value={id}>
+                        {list?.name ?? "List"}
+                      </option>
+                    );
+                  })}
+                </select>
+              </label>
+            ) : null}
+            <input
+              value={quickTodoTitle}
+              onChange={(e) => setQuickTodoTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addQuickTodo();
+                }
+              }}
+              placeholder="Add a task…"
+              className="ios-field min-w-0 flex-1 px-3 py-2.5 text-sm"
+            />
+            <GlassButton
+              variant="primary"
+              onClick={addQuickTodo}
+              disabled={!quickTodoTitle.trim() || !(quickAddListId || dashboardListIds[0])}
+            >
+              Add task
+            </GlassButton>
+          </div>
+        </GroupedRow>
+        <div className="-mx-4">
+          {visibleHabitItems.map((item, index) => (
             <CompleteExitRow key={dailyItemKey(item)} exiting={exitingDailyKeys.includes(dailyItemKey(item))}>
-              <div className="flex flex-wrap items-center gap-3 rounded-lg border border-slate/45 bg-steel/10 px-3 py-2">
+              <div
+                className={`flex flex-wrap items-center gap-3 bg-ios-surface px-4 py-3 ${
+                  index < visibleHabitItems.length - 1 || visibleTodoItems.length ? "ios-hairline" : ""
+                }`}
+              >
                 <div className="flex shrink-0 gap-1.5">
                   <button
                     type="button"
                     title="Done today"
                     aria-label="Log habit as done today"
                     onClick={() => logHabitTodayWithExit(item.id, true)}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-slate/50 bg-white text-sm font-semibold text-emerald transition-colors hover:border-emerald/50 hover:bg-emerald/10"
+                    className="glass-button flex h-11 w-11 items-center justify-center rounded-full text-sm font-semibold text-emerald"
                   >
                     ✓
                   </button>
@@ -462,12 +469,12 @@ export default function Home() {
                     title="Missed today"
                     aria-label="Log habit as missed today"
                     onClick={() => logHabitTodayWithExit(item.id, false)}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-slate/50 bg-white text-sm font-semibold text-copper transition-colors hover:border-copper/40 hover:bg-copper/10"
+                    className="glass-button flex h-11 w-11 items-center justify-center rounded-full text-sm font-semibold text-copper"
                   >
                     ✗
                   </button>
                 </div>
-                <span className="min-w-0 text-sm">{item.label}</span>
+                <span className="min-w-0 text-[17px] text-ios-label">{item.label}</span>
               </div>
             </CompleteExitRow>
           ))}
@@ -479,75 +486,71 @@ export default function Home() {
             onComplete={completeTodo}
             onReorder={reorderDashboardTodos}
           />
-          {!dailyItems.length ? <p className="text-sm text-slate">No open tasks or habits to log for this day.</p> : null}
+          {!dailyItems.length ? <p className="px-4 py-3 text-sm text-ios-secondary">No open tasks or habits to log for this day.</p> : null}
           {hiddenDailyCount > 0 ? (
-            <button
-              type="button"
-              onClick={() => setShowAllDailyItems((prev) => !prev)}
-              className="mt-2 w-full rounded-lg border border-slate/50 bg-white px-4 py-2.5 text-sm font-medium text-slate shadow-sm hover:bg-steel/10"
-            >
-              {showAllDailyItems ? "Show less" : `Show more (${hiddenDailyCount})`}
-            </button>
+            <div className="px-4 pt-2">
+              <GlassButton variant="secondary" className="w-full" onClick={() => setShowAllDailyItems((prev) => !prev)}>
+                {showAllDailyItems ? "Show less" : `Show more (${hiddenDailyCount})`}
+              </GlassButton>
+            </div>
           ) : null}
         </div>
       </SectionCard>
 
       <SectionCard title={`Progress toward goals (${goalYear})`}>
         <div className="grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-slate/45 bg-steel/10 p-4">
-            <p className="text-xs uppercase tracking-wide text-slate/95">Annual goals</p>
-            <p className="mt-1 text-2xl font-semibold text-slate">{goalProgress.percent}%</p>
-            <p className="text-xs text-slate">
+          <div className="rounded-xl bg-ios-fill p-4">
+            <p className="ios-footnote font-medium uppercase tracking-wide">Annual goals</p>
+            <p className="mt-1 text-2xl font-semibold text-ios-label">{goalProgress.percent}%</p>
+            <p className="ios-footnote">
               {goalProgress.done} of {goalProgress.total} completed
             </p>
           </div>
-          <div className="rounded-xl border border-slate/45 bg-steel/10 p-4">
-            <p className="text-xs uppercase text-slate/95">Completed to-dos (week)</p>
-            <p className="text-2xl font-semibold">{weeklyTodoCompletions}</p>
+          <div className="rounded-xl bg-ios-fill p-4">
+            <p className="ios-footnote font-medium uppercase tracking-wide">Completed to-dos (week)</p>
+            <p className="text-2xl font-semibold text-ios-label">{weeklyTodoCompletions}</p>
           </div>
-          <div className="rounded-xl border border-slate/45 bg-steel/10 p-4">
-            <p className="text-xs uppercase text-slate/95">Habit adherence (week)</p>
-            <p className="text-2xl font-semibold">{weeklyHabitAdherence}%</p>
+          <div className="rounded-xl bg-ios-fill p-4">
+            <p className="ios-footnote font-medium uppercase tracking-wide">Habit adherence (week)</p>
+            <p className="text-2xl font-semibold text-ios-label">{weeklyHabitAdherence}%</p>
           </div>
         </div>
 
-        <div className="mt-3 rounded-xl border border-slate/45 bg-steel/10 p-4">
-          <p className="mb-2 text-xs uppercase tracking-wide text-slate/95">Top strength lifts (week)</p>
+        <div className="mt-3 rounded-xl bg-ios-fill p-4">
+          <p className="ios-footnote mb-2 font-medium uppercase tracking-wide">Top strength lifts (week)</p>
           {weeklyStrength.length ? (
             <div className="grid gap-2">
               {weeklyStrength.map((exercise) => (
                 <div key={exercise.exerciseId} className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-charcoal">{exercise.exerciseName}</span>
-                  <span className="text-slate">
+                  <span className="font-medium text-ios-label">{exercise.exerciseName}</span>
+                  <span className="text-ios-secondary">
                     1RM {exercise.bestOneRepMax} {weightAbbr}
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-slate">No strength data in this week.</p>
+            <p className="text-sm text-ios-secondary">No strength data in this week.</p>
           )}
         </div>
       </SectionCard>
 
       <SectionCard title="Daily summary">
         <div className="grid gap-3">
-          {aiLoading ? <p className="text-sm text-slate/95">Summarizing your trends…</p> : null}
-          {aiError ? <p className="rounded-lg border border-copper/30 bg-copper/10 p-3 text-sm text-copper">{aiError}</p> : null}
-          <p className="rounded-xl border border-slate/45 bg-steel/10 p-4 text-sm leading-relaxed text-charcoal whitespace-pre-wrap">
+          {aiLoading ? <p className="text-sm text-ios-secondary">Summarizing your trends…</p> : null}
+          {aiError ? <p className="rounded-xl bg-copper/10 p-3 text-sm text-copper">{aiError}</p> : null}
+          <p className="rounded-xl bg-ios-fill p-4 text-sm leading-relaxed whitespace-pre-wrap text-ios-label">
             {latestSummary?.output?.trim() ?? (aiLoading ? "" : "Summary will load automatically.")}
           </p>
           {latestSummary?.output?.trim() && !aiLoading ? (
             <>
               {(latestSummary.coachChat?.length ?? 0) > 0 ? (
-                <div className="grid max-h-52 gap-2 overflow-y-auto rounded-lg border border-slate/40 bg-white/70 p-2">
+                <div className="grid max-h-52 gap-2 overflow-y-auto rounded-xl bg-ios-fill p-2">
                   {(latestSummary.coachChat ?? []).map((turn, idx) => (
                     <div key={`${turn.at}-${idx}`} className={`flex ${turn.role === "user" ? "justify-end" : "justify-start"}`}>
                       <div
-                        className={`max-w-[min(100%,22rem)] rounded-lg px-2.5 py-2 text-xs leading-relaxed whitespace-pre-wrap ${
-                          turn.role === "user"
-                            ? "bg-slate/15 text-charcoal"
-                            : "border border-slate/45 bg-steel/10 text-charcoal"
+                        className={`max-w-[min(100%,22rem)] rounded-2xl px-3 py-2 text-xs leading-relaxed whitespace-pre-wrap ${
+                          turn.role === "user" ? "bg-ios-tint/15 text-ios-label" : "glass-surface text-ios-label"
                         }`}
                       >
                         {turn.content}
@@ -558,7 +561,7 @@ export default function Home() {
               ) : null}
               {coachError ? <p className="text-sm text-copper">{coachError}</p> : null}
               <div className="grid gap-2">
-                <label className="grid gap-1 text-xs font-medium text-slate/95">
+                <label className="grid gap-1 text-xs font-medium text-ios-secondary">
                   Follow-up question
                   <textarea
                     value={coachInput}
@@ -566,17 +569,16 @@ export default function Home() {
                     placeholder="Ask for more detail on a trend or action…"
                     rows={2}
                     disabled={coachSending}
-                    className="w-full resize-y rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-charcoal placeholder:text-slate/60 focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25 disabled:opacity-50"
+                    className="ios-field w-full resize-y px-3 py-2.5 text-sm disabled:opacity-50"
                   />
                 </label>
-                <button
-                  type="button"
+                <GlassButton
+                  variant="primary"
                   disabled={coachSending || !coachInput.trim()}
                   onClick={() => void sendCoachMessage()}
-                  className="w-fit rounded-lg bg-steel px-4 py-2 text-sm font-medium text-white shadow-sm shadow-steel/25 hover:bg-steel/90 disabled:opacity-40"
                 >
                   {coachSending ? "Sending…" : "Send"}
-                </button>
+                </GlassButton>
               </div>
             </>
           ) : null}
@@ -584,22 +586,17 @@ export default function Home() {
       </SectionCard>
 
       <SectionCard title="Quick journal">
-        <p className="mb-2 text-xs text-slate/95">Saved for {dashboardDate}. Link goals from the full Journal page.</p>
+        <p className="mb-2 ios-footnote">Saved for {dashboardDate}. Link goals from the full Journal page.</p>
         <textarea
           value={journalQuickText}
           onChange={(e) => setJournalQuickText(e.target.value)}
           placeholder="A few lines about your day…"
           rows={4}
-          className="mb-2 w-full resize-y rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-charcoal placeholder:text-slate/60 focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+          className="ios-field mb-3 w-full resize-y px-3 py-2.5 text-sm"
         />
-        <button
-          type="button"
-          onClick={saveJournalQuick}
-          disabled={!journalQuickText.trim()}
-          className="rounded-lg bg-steel px-4 py-2 text-sm font-medium text-white shadow-sm shadow-steel/25 hover:bg-steel/90 disabled:opacity-40"
-        >
+        <GlassButton variant="primary" onClick={saveJournalQuick} disabled={!journalQuickText.trim()}>
           Save entry
-        </button>
+        </GlassButton>
       </SectionCard>
     </AppShell>
   );

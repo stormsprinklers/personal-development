@@ -5,6 +5,7 @@ import { CloudStorageCard } from "@/components/cloud-storage-card";
 import { MeasurementUnitsCard } from "@/components/measurement-units-card";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
+import { GlassButton } from "@/components/ui/glass-button";
 import type { Exercise, ExerciseCategory } from "@/lib/models";
 import { useAppData } from "@/lib/storage";
 
@@ -97,7 +98,7 @@ export default function WorkoutSettingsPage() {
   return (
     <AppShell title="Workout settings" description="Units and exercise library.">
       <SectionCard title="About">
-        <p className="text-sm text-slate">
+        <p className="text-sm text-ios-secondary">
           Configure units and your exercise library here. To change which exercises and cardio blocks belong to a routine, open{" "}
           <strong>Workouts</strong>, pick the routine, and use the edit (pencil) control next to the routine menu.
         </p>
@@ -113,7 +114,7 @@ export default function WorkoutSettingsPage() {
             value={newExerciseName}
             onChange={(e) => setNewExerciseName(e.target.value)}
             placeholder="New exercise name"
-            className="min-w-0 flex-1 rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+            className="ios-field min-w-0 flex-1 px-3 py-2.5 text-sm"
           />
           <select
             value={newExerciseCategory}
@@ -125,14 +126,9 @@ export default function WorkoutSettingsPage() {
             <option value="bike">Bike</option>
             <option value="swim">Swim</option>
           </select>
-          <button
-            type="button"
-            onClick={createExercise}
-            disabled={!newExerciseName.trim()}
-            className="rounded-lg bg-charcoal px-3 py-2 text-sm font-medium text-white hover:bg-charcoal/90 disabled:opacity-40"
-          >
+          <GlassButton variant="primary" onClick={createExercise} disabled={!newExerciseName.trim()}>
             Add exercise
-          </button>
+          </GlassButton>
         </div>
 
         <div className="grid gap-2">

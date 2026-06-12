@@ -353,7 +353,7 @@ export default function WorkoutsPage() {
     <AppShell title="Workouts" description="">
       <SectionCard title={formattedDate}>
         <div className="flex flex-wrap items-center gap-3">
-          <label className="relative inline-flex cursor-pointer items-center rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-slate hover:bg-steel/10">
+          <label className="relative inline-flex cursor-pointer items-center glass-button rounded-xl px-3 py-2.5 text-sm text-ios-secondary">
             {formattedDate}
             <input
               type="date"
@@ -373,7 +373,7 @@ export default function WorkoutsPage() {
               onChange={(e) => setBodyWeightDraft(e.target.value)}
               onBlur={commitBodyWeight}
               placeholder="-"
-              className="min-w-0 flex-1 rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25 sm:w-28 sm:flex-none"
+              className="ios-field min-w-0 flex-1 px-3 py-2.5 text-sm sm:w-28 sm:flex-none"
             />
           </label>
         </div>
@@ -392,7 +392,7 @@ export default function WorkoutsPage() {
             <select
               value={selectedRoutineId}
               onChange={(e) => onRoutineSelectChange(e.target.value)}
-              className="w-full rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-charcoal focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+              className="ios-field w-full px-3 py-2.5 text-sm text-ios-label"
             >
               {activeRoutines.map((routine) => (
                 <option key={routine.id} value={routine.id}>
@@ -466,8 +466,8 @@ export default function WorkoutsPage() {
               lastPriorSet;
 
             return (
-              <div key={exercise.id} className="overflow-hidden rounded-lg border border-slate/45">
-                <div className="flex items-center justify-between gap-2 border-b border-slate/45 bg-steel/10 px-3 py-2">
+              <div key={exercise.id} className="overflow-hidden rounded-xl bg-ios-surface shadow-sm shadow-black/[0.04]">
+                <div className="flex items-center justify-between gap-2 ios-hairline bg-ios-fill/60 px-3 py-2.5">
                   <span className="min-w-0 font-medium text-charcoal">{exercise.name}</span>
                   {canReorder ? (
                     <div className="flex shrink-0 items-center gap-0.5">

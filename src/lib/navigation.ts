@@ -1,6 +1,7 @@
 export type AppSection = {
   href: string;
   title: string;
+  shortTitle?: string;
   description: string;
 };
 
@@ -8,6 +9,7 @@ export const APP_SECTIONS: AppSection[] = [
   {
     href: "/",
     title: "Dashboard",
+    shortTitle: "Home",
     description: "View progress trends, insights, and your daily AI summary.",
   },
   {
@@ -23,11 +25,13 @@ export const APP_SECTIONS: AppSection[] = [
   {
     href: "/workouts",
     title: "Workouts",
+    shortTitle: "Train",
     description: "Log strength and cardio sessions with progression metrics.",
   },
   {
     href: "/todos",
     title: "To-Do Lists",
+    shortTitle: "Tasks",
     description: "Manage area-based lists with hidden completions and history.",
   },
   {

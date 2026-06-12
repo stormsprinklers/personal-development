@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { SectionCard } from "@/components/layout/section-card";
+import { GlassButton } from "@/components/ui/glass-button";
 import { getClientSyncKey, getStorageMode } from "@/lib/cloud-sync";
 import { useAppData } from "@/lib/storage";
 
@@ -55,7 +56,7 @@ export function CloudStorageCard() {
 
   return (
     <SectionCard title="Cloud storage">
-      <p className="mb-3 text-sm text-slate">
+      <p className="mb-3 text-sm text-ios-secondary">
         Store your full app data in the cloud database instead of only this browser. Use the same sync key on every
         device. Your server needs <code className="text-xs">DATABASE_URL</code> and <code className="text-xs">APP_SYNC_KEY</code>{" "}
         configured.
@@ -63,65 +64,49 @@ export function CloudStorageCard() {
 
       {storageMode === "local" ? (
         <div className="grid gap-3">
-          <label className="grid gap-1 text-xs font-medium text-slate/95">
+          <label className="grid gap-1 text-xs font-medium text-ios-secondary">
             Sync key
             <input
               type="password"
               value={syncKeyDraft}
               onChange={(e) => setSyncKeyDraft(e.target.value)}
               placeholder="Same value as APP_SYNC_KEY on server"
-              className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+              className="ios-field px-3 py-2.5 text-sm"
             />
           </label>
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void handleEnable(true)}
-              className="rounded-lg bg-steel px-3 py-2 text-sm font-medium text-white hover:bg-steel/90 disabled:opacity-40"
-            >
-              Enable cloud and upload this device
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void handleEnable(false)}
-              className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-slate hover:bg-steel/10 disabled:opacity-40"
-            >
+            <GlassButton variant="primary" disabled={busy} onClick={() => void handleEnable(true)}>
+              Enable cloud and upload
+            </GlassButton>
+            <GlassButton variant="secondary" disabled={busy} onClick={() => void handleEnable(false)}>
               Enable and load from cloud
-            </button>
+            </GlassButton>
           </div>
         </div>
       ) : (
         <div className="grid gap-3">
-          <p className="text-sm text-charcoal">{statusLabel}</p>
+          <p className="text-sm text-ios-label">{statusLabel}</p>
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void handleSyncNow()}
-              className="rounded-lg bg-steel px-3 py-2 text-sm font-medium text-white hover:bg-steel/90 disabled:opacity-40"
-            >
+            <GlassButton variant="primary" disabled={busy} onClick={() => void handleSyncNow()}>
               Sync now
-            </button>
-            <button
-              type="button"
+            </GlassButton>
+            <GlassButton
+              variant="secondary"
               disabled={busy}
               onClick={() => {
                 disableCloudStorage();
                 setActionError(null);
               }}
-              className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-slate hover:bg-steel/10 disabled:opacity-40"
             >
               Use local storage only
-            </button>
+            </GlassButton>
           </div>
         </div>
       )}
 
       {actionError ? <p className="mt-2 text-sm text-copper">{actionError}</p> : null}
       {getStorageMode() === "cloud" ? (
-        <p className="mt-2 text-xs text-slate/90">
+        <p className="mt-2 text-xs text-ios-secondary">
           Changes auto-save to the cloud after you edit. A local copy is kept as a backup cache.
         </p>
       ) : null}

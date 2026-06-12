@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CompleteExitRow, COMPLETE_EXIT_MS } from "@/components/complete-exit-row";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
+import { GlassButton } from "@/components/ui/glass-button";
 import { mainTodoListId, reassignMainTodoList } from "@/lib/todo-helpers";
 import { yearInAppTimezone } from "@/lib/timezone";
 import { todayKey, useAppData } from "@/lib/storage";
@@ -566,11 +567,11 @@ export default function TodosPage() {
             value={todoTitle}
             onChange={(event) => setTodoTitle(event.target.value)}
             placeholder="Add task"
-            className="min-w-0 flex-[2] rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+            className="ios-field min-w-0 flex-[2] px-3 py-2.5 text-sm"
           />
-          <button onClick={addTodo} className="w-full rounded-lg bg-steel px-4 py-2 text-sm text-white shadow-sm shadow-steel/25 hover:bg-steel/90 sm:w-auto">
+          <GlassButton variant="primary" onClick={addTodo} className="w-full sm:w-auto">
             +
-          </button>
+          </GlassButton>
         </div>
 
         <div className="grid gap-2">

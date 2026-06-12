@@ -36,7 +36,7 @@ type Props = {
 
 function DragHandleIcon() {
   return (
-    <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4 text-slate/70" fill="currentColor">
+    <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4 text-ios-tertiary" fill="currentColor">
       <circle cx="5" cy="4" r="1.2" />
       <circle cx="11" cy="4" r="1.2" />
       <circle cx="5" cy="8" r="1.2" />
@@ -51,10 +51,12 @@ function SortableTodoRow({
   item,
   exiting,
   onComplete,
+  hairline,
 }: {
   item: DashboardTodoItem;
   exiting: boolean;
   onComplete: (todoId: string) => void;
+  hairline: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
@@ -70,32 +72,25 @@ function SortableTodoRow({
       <div
         ref={setNodeRef}
         style={style}
-        className={`flex items-center gap-2 rounded-lg border border-slate/45 bg-steel/10 px-2 py-2 ${
-          isDragging
-            ? "z-10 scale-[1.02] border-steel/50 bg-white shadow-lg shadow-charcoal/15 ring-2 ring-steel/20"
-            : "shadow-sm shadow-transparent"
+        className={`flex items-center gap-2 bg-ios-surface px-4 py-3 ${hairline ? "ios-hairline" : ""} ${
+          isDragging ? "z-10 scale-[1.01] shadow-lg shadow-black/10 ring-2 ring-ios-tint/25" : ""
         }`}
       >
         <button
           type="button"
-          className="flex shrink-0 touch-none cursor-grab items-center justify-center rounded-md p-1 text-slate hover:bg-steel/15 active:cursor-grabbing"
+          className="flex shrink-0 touch-none cursor-grab items-center justify-center rounded-lg p-1.5 text-ios-secondary active:cursor-grabbing"
           aria-label={`Drag to reorder ${item.label}`}
           {...attributes}
           {...listeners}
         >
           <DragHandleIcon />
         </button>
-        <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 py-0.5">
-          <input
-            type="checkbox"
-            checked={exiting}
-            onChange={() => onComplete(item.id)}
-            className="shrink-0"
-          />
-          <span className="text-sm">
+        <label className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3">
+          <input type="checkbox" checked={exiting} onChange={() => onComplete(item.id)} className="shrink-0" />
+          <span className="text-[17px] text-ios-label">
             {item.listLabel ? (
               <>
-                <span className="mr-1 text-xs text-slate/95">[{item.listLabel}]</span>
+                <span className="mr-1 text-xs text-ios-secondary">[{item.listLabel}]</span>
                 {item.label}
               </>
             ) : (
@@ -133,13 +128,14 @@ export function DashboardSortableTodos({ items, allTodoIds, exitingKeys, itemKey
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <SortableContext items={items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
-        <div className="grid gap-2">
-          {items.map((item) => (
+        <div>
+          {items.map((item, index) => (
             <SortableTodoRow
               key={item.id}
               item={item}
               exiting={exitingSet.has(itemKey(item.id))}
               onComplete={onComplete}
+              hairline={index < items.length - 1}
             />
           ))}
         </div>

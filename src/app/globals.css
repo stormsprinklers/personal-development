@@ -1,69 +1,221 @@
 @import "tailwindcss";
 
 :root {
-  --charcoal: #030712;
-  --cream: #ebe6da;
-  --steel: #1d4ed8;
-  --emerald: #047857;
-  --copper: #9a3412;
-  --slate: #1e293b;
+  /* iOS system palette */
+  --ios-bg: #f2f2f7;
+  --ios-surface: rgba(255, 255, 255, 0.92);
+  --ios-surface-solid: #ffffff;
+  --ios-label: rgba(0, 0, 0, 0.85);
+  --ios-secondary: rgba(60, 60, 67, 0.6);
+  --ios-tertiary: rgba(60, 60, 67, 0.3);
+  --ios-tint: #007aff;
+  --ios-separator: rgba(60, 60, 67, 0.12);
+  --ios-fill: rgba(120, 120, 128, 0.16);
 
-  --background: var(--cream);
-  --foreground: var(--charcoal);
-  --accent-muted: color-mix(in srgb, var(--steel) 14%, var(--cream));
-  --border-subtle: color-mix(in srgb, var(--slate) 38%, var(--cream));
+  /* Legacy semantic tokens (mapped for habit/workout meaning) */
+  --charcoal: var(--ios-label);
+  --cream: var(--ios-bg);
+  --steel: var(--ios-tint);
+  --emerald: #34c759;
+  --copper: #ff3b30;
+  --slate: rgba(60, 60, 67, 0.85);
+
+  --background: var(--ios-bg);
+  --foreground: var(--ios-label);
+  --accent-muted: var(--ios-fill);
+  --border-subtle: var(--ios-separator);
+
+  --ios-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
 }
 
 @theme inline {
-  --color-charcoal: #030712;
-  --color-cream: #ebe6da;
-  --color-steel: #1d4ed8;
-  --color-emerald: #047857;
-  --color-copper: #9a3412;
-  --color-slate: #1e293b;
+  --color-ios-bg: #f2f2f7;
+  --color-ios-surface: #ffffff;
+  --color-ios-label: rgba(0, 0, 0, 0.85);
+  --color-ios-secondary: rgba(60, 60, 67, 0.6);
+  --color-ios-tint: #007aff;
+  --color-ios-separator: rgba(60, 60, 67, 0.12);
+  --color-ios-fill: rgba(120, 120, 128, 0.16);
+  --color-ios-tertiary: rgba(60, 60, 67, 0.3);
 
-  --color-background: var(--cream);
-  --color-foreground: var(--charcoal);
-  --font-sans: var(--font-geist-sans);
+  --color-charcoal: var(--ios-label);
+  --color-cream: var(--ios-bg);
+  --color-steel: var(--ios-tint);
+  --color-emerald: #34c759;
+  --color-copper: #ff3b30;
+  --color-slate: rgba(60, 60, 67, 0.85);
+
+  --color-background: var(--ios-bg);
+  --color-foreground: var(--ios-label);
+  --font-sans: var(--font-system);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  background: var(--ios-bg);
+  color: var(--ios-label);
+  font-family: var(--font-system);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Glass materials */
+.glass-surface {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .glass-surface {
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+}
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .glass-surface {
+    background: var(--ios-surface-solid);
+  }
+}
+
+.glass-button {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  transition:
+    transform 150ms var(--ios-ease),
+    opacity 150ms var(--ios-ease),
+    background-color 150ms var(--ios-ease);
+}
+
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .glass-button {
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+}
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .glass-button {
+    background: var(--ios-surface-solid);
+  }
+}
+
+.glass-button:active:not(:disabled) {
+  transform: scale(0.97);
+  opacity: 0.88;
+}
+
+.glass-button-tint {
+  background: rgba(0, 122, 255, 0.88);
+  border: 1px solid rgba(0, 122, 255, 0.35);
+  color: #ffffff;
+}
+
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .glass-button-tint {
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+}
+
+.ios-hairline {
+  border-bottom: 0.5px solid var(--ios-separator);
+}
+
+.ios-hairline-last:last-child {
+  border-bottom: none;
+}
+
+.ios-scroll-tabs {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.ios-scroll-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.ios-large-title {
+  font-size: 2.125rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--ios-label);
+}
+
+.ios-headline {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ios-label);
+}
+
+.ios-footnote {
+  font-size: 0.8125rem;
+  color: var(--ios-secondary);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* iOS-style inputs */
+.ios-field {
+  background: var(--ios-surface-solid);
+  border: none;
+  border-radius: 0.625rem;
+  box-shadow: inset 0 0 0 0.5px var(--ios-separator);
+  color: var(--ios-label);
+  font-size: 1rem;
+  transition: box-shadow 150ms var(--ios-ease);
+}
+
+.ios-field:focus {
+  outline: none;
+  box-shadow:
+    inset 0 0 0 0.5px var(--ios-separator),
+    0 0 0 3px rgba(0, 122, 255, 0.25);
 }
 
 /* App-wide round checkboxes */
 input[type="checkbox"] {
   -webkit-appearance: none;
   appearance: none;
-  width: 1.125rem;
-  height: 1.125rem;
+  width: 1.375rem;
+  height: 1.375rem;
   margin: 0;
   flex-shrink: 0;
-  border: 2px solid color-mix(in srgb, var(--slate) 55%, var(--cream));
+  border: 2px solid var(--ios-tertiary);
   border-radius: 9999px;
-  background-color: #ffffff;
+  background-color: var(--ios-surface-solid);
   cursor: pointer;
   vertical-align: middle;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  transition:
+    border-color 150ms var(--ios-ease),
+    background-color 150ms var(--ios-ease);
 }
 
 input[type="checkbox"]:hover {
-  border-color: color-mix(in srgb, var(--steel) 70%, var(--cream));
+  border-color: var(--ios-tint);
 }
 
 input[type="checkbox"]:focus-visible {
-  outline: 2px solid var(--steel);
+  outline: 2px solid var(--ios-tint);
   outline-offset: 2px;
 }
 
 input[type="checkbox"]:checked {
-  border-color: var(--steel);
-  background-color: var(--steel);
+  border-color: var(--ios-tint);
+  background-color: var(--ios-tint);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M2.5 6L5 8.5l4.5-5'/%3E%3C/svg%3E");
-  background-size: 0.65rem 0.65rem;
+  background-size: 0.7rem 0.7rem;
   background-position: center;
   background-repeat: no-repeat;
 }

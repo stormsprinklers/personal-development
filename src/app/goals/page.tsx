@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
+import { GlassButton } from "@/components/ui/glass-button";
+import { Sheet } from "@/components/ui/sheet";
 import { CompleteExitRow, COMPLETE_EXIT_MS } from "@/components/complete-exit-row";
 import { runBikeDistanceUnitAbbr, weightUnitAbbr, defaultMeasurementPreferences } from "@/lib/units";
 import { manualGoalProgressPercent } from "@/lib/goal-progress";
@@ -580,10 +582,13 @@ export default function GoalsPage() {
         </div>
       </SectionCard>
 
-      {openGoalId ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto overscroll-contain bg-black/35 p-3 sm:items-center">
-          <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-xl border border-slate/50 bg-white p-4 shadow-xl">
-            {(() => {
+      <Sheet
+        open={Boolean(openGoalId)}
+        onClose={closeGoalEditor}
+        title={data.goals.find((g) => g.id === openGoalId)?.title ?? "Goal"}
+      >
+        {openGoalId
+          ? (() => {
               const goal = data.goals.find((g) => g.id === openGoalId);
               if (!goal) return null;
               const goalTasks = todoItemsForGoal(data, goal.id);
@@ -881,44 +886,27 @@ export default function GoalsPage() {
                   </div>
 
                   <div className="flex flex-wrap justify-between gap-2">
-                    <button
-                      type="button"
-                      onClick={() => deleteGoal(goal.id)}
-                      className="rounded-lg border border-copper/30 bg-white px-3 py-2 text-sm text-copper hover:bg-copper/10"
-                    >
+                    <GlassButton type="button" variant="destructive" onClick={() => deleteGoal(goal.id)}>
                       Delete Goal
-                    </button>
+                    </GlassButton>
                     <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={closeGoalEditor}
-                        className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-slate hover:bg-steel/10"
-                      >
+                      <GlassButton type="button" variant="secondary" onClick={closeGoalEditor}>
                         Close
-                      </button>
-                      <button
-                        type="button"
-                        onClick={saveGoalEdits}
-                        className="rounded-lg bg-steel px-3 py-2 text-sm text-white hover:bg-steel/90"
-                      >
+                      </GlassButton>
+                      <GlassButton type="button" variant="primary" onClick={saveGoalEdits}>
                         Save
-                      </button>
+                      </GlassButton>
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => markGoalComplete(goal.id)}
-                    className="rounded-lg bg-charcoal px-3 py-2 text-sm text-white hover:bg-charcoal/90"
-                  >
+                  <GlassButton type="button" variant="primary" className="w-full" onClick={() => markGoalComplete(goal.id)}>
                     Mark Goal Complete
-                  </button>
+                  </GlassButton>
                 </div>
               );
-            })()}
-          </div>
-        </div>
-      ) : null}
+            })()
+          : null}
+      </Sheet>
     </AppShell>
   );
 }

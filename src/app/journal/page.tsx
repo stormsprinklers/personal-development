@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
+import { GlassButton } from "@/components/ui/glass-button";
 import { buildAiContext } from "@/lib/ai/contextBuilder";
 import { journalAnalysisPrompt, qaPrompt } from "@/lib/ai/prompts";
 import { todayKey, useAppData } from "@/lib/storage";
@@ -97,11 +98,11 @@ export default function JournalPage() {
             onChange={(event) => setEntryText(event.target.value)}
             rows={6}
             placeholder="Write your reflection..."
-            className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+            className="ios-field w-full px-3 py-2.5 text-sm"
           />
           <div className="grid gap-2 md:grid-cols-3">
             {data.goals.map((goal) => (
-              <label key={goal.id} className="flex items-center gap-2 rounded-lg border border-slate/45 bg-steel/10 px-3 py-2 text-sm">
+              <label key={goal.id} className="flex items-center gap-2 rounded-xl bg-ios-fill px-3 py-2.5 text-sm">
                 <input
                   type="checkbox"
                   checked={selectedGoalIds.includes(goal.id)}
@@ -111,55 +112,54 @@ export default function JournalPage() {
               </label>
             ))}
           </div>
-          <div>
-            <button onClick={addEntry} className="rounded-lg bg-steel px-4 py-2 text-sm text-white shadow-sm shadow-steel/25 hover:bg-steel/90">
-              Save Entry
-            </button>
-          </div>
+          <GlassButton variant="primary" onClick={addEntry}>
+            Save Entry
+          </GlassButton>
         </div>
       </SectionCard>
 
       <SectionCard title="AI Analysis + Q&A" subtitle="Analyze your latest entry or ask context-based questions.">
         <div className="grid gap-3">
-          <div className="flex gap-2">
-            <button onClick={analyzeLatestEntry} className="rounded-lg bg-steel px-4 py-2 text-sm text-white shadow-sm shadow-steel/25 hover:bg-steel/90">
-              Analyze Latest Entry
-            </button>
-          </div>
+          <GlassButton variant="primary" onClick={() => void analyzeLatestEntry()}>
+            Analyze Latest Entry
+          </GlassButton>
           <div className="grid gap-2 md:grid-cols-[1fr_auto]">
             <input
               value={question}
               onChange={(event) => setQuestion(event.target.value)}
               placeholder="Ask AI about your progress and patterns..."
-              className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
+              className="ios-field px-3 py-2.5 text-sm"
             />
-            <button onClick={askAiQuestion} className="rounded-lg bg-steel px-4 py-2 text-sm text-white shadow-sm shadow-steel/25 hover:bg-steel/90">
+            <GlassButton variant="primary" onClick={() => void askAiQuestion()}>
               Ask
-            </button>
+            </GlassButton>
           </div>
-          <div className="rounded-lg border border-slate/45 bg-steel/10 p-3 text-sm whitespace-pre-wrap">
+          <div className="rounded-xl bg-ios-fill p-3 text-sm whitespace-pre-wrap text-ios-label">
             {aiOutput || "AI output will appear here."}
           </div>
         </div>
       </SectionCard>
 
       <SectionCard title="Recent Entries" subtitle="Most recent journal history and linked goals.">
-        <div className="grid gap-2">
-          {recentEntries.map((entry) => {
+        <div className="-mx-4">
+          {recentEntries.map((entry, index) => {
             const linkedTitles = entry.goalIds
               .map((id) => data.goals.find((g) => g.id === id)?.title)
               .filter((t): t is string => Boolean(t));
             return (
-              <div key={entry.id} className="rounded-lg border border-slate/45 bg-steel/10 p-3 text-sm">
-                <p className="mb-1 text-xs uppercase tracking-wide text-slate/95">{entry.date}</p>
+              <div
+                key={entry.id}
+                className={`bg-ios-surface px-4 py-3 text-sm ${index < recentEntries.length - 1 ? "ios-hairline" : ""}`}
+              >
+                <p className="ios-footnote mb-1 font-medium uppercase tracking-wide">{entry.date}</p>
                 {linkedTitles.length ? (
-                  <p className="mb-2 text-xs text-slate/65">Linked goals: {linkedTitles.join(", ")}</p>
+                  <p className="mb-2 text-xs text-ios-secondary">Linked goals: {linkedTitles.join(", ")}</p>
                 ) : null}
-                <p className="whitespace-pre-wrap">{entry.content}</p>
+                <p className="whitespace-pre-wrap text-ios-label">{entry.content}</p>
               </div>
             );
           })}
-          {!recentEntries.length && <p className="text-sm text-slate">No entries yet.</p>}
+          {!recentEntries.length && <p className="px-4 py-3 text-sm text-ios-secondary">No entries yet.</p>}
         </div>
       </SectionCard>
     </AppShell>
