@@ -62,8 +62,9 @@ export function suggestRoutineIdForDate(
   routines: WorkoutRoutine[],
   date: string,
 ): string | undefined {
-  if (!routines.length) return undefined;
-  const ordered = [...routines].sort((a, b) => a.sortOrder - b.sortOrder);
+  const eligible = routines.filter((routine) => !routine.archived);
+  if (!eligible.length) return undefined;
+  const ordered = [...eligible].sort((a, b) => a.sortOrder - b.sortOrder);
   let oldestDone: { id: string; last: string } | undefined;
 
   for (const routine of ordered) {

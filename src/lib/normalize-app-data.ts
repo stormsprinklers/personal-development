@@ -1,5 +1,5 @@
 import type { AppData } from "@/lib/models";
-import { MAIN_TODO_LIST_ID, normalizeTodoListsAndItems } from "@/lib/todo-helpers";
+import { MAIN_TODO_LIST_ID, normalizeTodoListsAndItems, sanitizeDashboardTodoOrder } from "@/lib/todo-helpers";
 import { sanitizeWorkoutRoutines } from "@/lib/workout-routines";
 import { normalizeMeasurementPreferences } from "@/lib/units";
 import { APP_TIMEZONE, yearInAppTimezone } from "@/lib/timezone";
@@ -83,6 +83,7 @@ export function normalizeAppData(input: unknown): AppData {
       todoItems: parsed.todoItems ?? base.todoItems,
       todoSections: parsed.todoSections ?? base.todoSections,
       dashboardTodoListIds: parsed.dashboardTodoListIds,
+      dashboardTodoOrder: parsed.dashboardTodoOrder,
     };
     const { todoLists, todoItems } = normalizeTodoListsAndItems(
       merged.todoLists,
@@ -93,9 +94,10 @@ export function normalizeAppData(input: unknown): AppData {
     let dashboardTodoListIds = merged.dashboardTodoListIds?.filter((id) => todoLists.some((l) => l.id === id));
     if (dashboardTodoListIds?.length === 0) dashboardTodoListIds = undefined;
     if (dashboardTodoListIds?.length) dashboardTodoListIds = [...new Set(dashboardTodoListIds)];
+    const dashboardTodoOrder = sanitizeDashboardTodoOrder(merged.dashboardTodoOrder, todoItems);
     const todoSections = (merged.todoSections ?? []).filter((s) => todoLists.some((l) => l.id === s.listId));
     const workoutRoutines = sanitizeWorkoutRoutines(merged.workoutRoutines, merged.exercises);
-    return { ...merged, todoLists, todoItems, todoSections, dashboardTodoListIds, workoutRoutines };
+    return { ...merged, todoLists, todoItems, todoSections, dashboardTodoListIds, dashboardTodoOrder, workoutRoutines };
   } catch {
     return createDefaultAppData();
   }

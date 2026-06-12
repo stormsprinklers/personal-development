@@ -4,12 +4,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
 import { CompleteExitRow, COMPLETE_EXIT_MS } from "@/components/complete-exit-row";
+import { DashboardSortableTodos } from "@/components/dashboard-sortable-todos";
 import { buildAiContext } from "@/lib/ai/contextBuilder";
 import { DASHBOARD_COACH_SYSTEM_PROMPT, dailyCoachOpeningUserPrompt } from "@/lib/ai/prompts";
 import { goalsProgressForYear } from "@/lib/metrics/dashboardMetrics";
 import { strengthSummaryByExercise } from "@/lib/metrics/workoutMetrics";
 import { normalizeMeasurementPreferences, weightUnitAbbr } from "@/lib/units";
-import { effectiveDashboardTodoListIds, mainTodoListId } from "@/lib/todo-helpers";
+import { effectiveDashboardTodoListIds, mainTodoListId, sortTodosByDashboardOrder } from "@/lib/todo-helpers";
 import { todayKey, useAppData } from "@/lib/storage";
 import {
   addDaysToDateKey,
@@ -100,9 +101,14 @@ export default function Home() {
   }, [dashboardListIds, data.todoLists, quickAddListId]);
 
   const todaysTodos = useMemo(
-    () => data.todoItems.filter((item) => dashboardListIds.includes(item.listId) && item.active),
-    [data.todoItems, dashboardListIds],
+    () =>
+      sortTodosByDashboardOrder(
+        data.todoItems.filter((item) => dashboardListIds.includes(item.listId) && item.active),
+        data.dashboardTodoOrder,
+      ),
+    [data.todoItems, data.dashboardTodoOrder, dashboardListIds],
   );
+  const allDashboardTodoIds = useMemo(() => todaysTodos.map((todo) => todo.id), [todaysTodos]);
 
   function toggleDashboardList(listId: string, nextChecked: boolean) {
     setData((prev) => {
@@ -126,10 +132,18 @@ export default function Home() {
     [data.habits, data.habitLogs, dashboardDate],
   );
   const showListSourceOnTodos = dashboardListIds.length > 1;
-  const dailyItems = useMemo(
-    () => [
-      ...todaysHabits.map((habit) => ({ kind: "habit" as const, id: habit.id, label: habit.label })),
-      ...todaysTodos.map((todo) => {
+  const habitDailyItems = useMemo(
+    () =>
+      todaysHabits.map((habit) => ({
+        kind: "habit" as const,
+        id: habit.id,
+        label: habit.label,
+      })),
+    [todaysHabits],
+  );
+  const todoDailyItems = useMemo(
+    () =>
+      todaysTodos.map((todo) => {
         const listName = data.todoLists.find((l) => l.id === todo.listId)?.name ?? "";
         return {
           kind: "todo" as const,
@@ -138,10 +152,28 @@ export default function Home() {
           listLabel: showListSourceOnTodos ? listName : undefined,
         };
       }),
-    ],
-    [todaysTodos, todaysHabits, data.todoLists, showListSourceOnTodos],
+    [todaysTodos, data.todoLists, showListSourceOnTodos],
+  );
+  const dailyItems = useMemo(
+    () => [...habitDailyItems, ...todoDailyItems],
+    [habitDailyItems, todoDailyItems],
   );
   const dailyVisible = showAllDailyItems ? dailyItems : dailyItems.slice(0, 5);
+  const visibleHabitItems = useMemo(
+    () => dailyVisible.filter((item) => item.kind === "habit"),
+    [dailyVisible],
+  );
+  const visibleTodoItems = useMemo(
+    () =>
+      dailyVisible
+        .filter((item) => item.kind === "todo")
+        .map((item) => ({
+          id: item.id,
+          label: item.label,
+          listLabel: "listLabel" in item ? item.listLabel : undefined,
+        })),
+    [dailyVisible],
+  );
   const hiddenDailyCount = Math.max(0, dailyItems.length - 5);
 
   const latestSummary = useMemo(
@@ -280,11 +312,12 @@ export default function Home() {
     const title = quickTodoTitle.trim();
     const listId = quickAddListId || dashboardListIds[0] || mainTodoListId(data.todoLists);
     if (!title || !listId) return;
+    const id = crypto.randomUUID();
     setData((prev) => ({
       ...prev,
       todoItems: [
         {
-          id: crypto.randomUUID(),
+          id,
           listId,
           title,
           active: true,
@@ -292,8 +325,13 @@ export default function Home() {
         },
         ...prev.todoItems,
       ],
+      dashboardTodoOrder: [id, ...(prev.dashboardTodoOrder ?? [])],
     }));
     setQuickTodoTitle("");
+  }
+
+  function reorderDashboardTodos(orderedIds: string[]) {
+    setData((prev) => ({ ...prev, dashboardTodoOrder: orderedIds }));
   }
 
   function completeTodo(todoId: string) {
@@ -406,53 +444,41 @@ export default function Home() {
           </button>
         </div>
         <div className="grid gap-2">
-          {dailyVisible.map((item) => (
+          {visibleHabitItems.map((item) => (
             <CompleteExitRow key={dailyItemKey(item)} exiting={exitingDailyKeys.includes(dailyItemKey(item))}>
-              {item.kind === "todo" ? (
-                <label className="flex items-center gap-3 rounded-lg border border-slate/45 bg-steel/10 px-3 py-2">
-                  <input
-                    type="checkbox"
-                    checked={exitingDailyKeys.includes(dailyItemKey(item))}
-                    onChange={() => completeTodo(item.id)}
-                  />
-                  <span className="text-sm">
-                    {"listLabel" in item && item.listLabel ? (
-                      <>
-                        <span className="mr-1 text-xs text-slate/95">[{item.listLabel}]</span>
-                        {item.label}
-                      </>
-                    ) : (
-                      item.label
-                    )}
-                  </span>
-                </label>
-              ) : (
-                <div className="flex flex-wrap items-center gap-3 rounded-lg border border-slate/45 bg-steel/10 px-3 py-2">
-                  <div className="flex shrink-0 gap-1.5">
-                    <button
-                      type="button"
-                      title="Done today"
-                      aria-label="Log habit as done today"
-                      onClick={() => logHabitTodayWithExit(item.id, true)}
-                      className="flex h-9 w-9 items-center justify-center rounded-full border border-slate/50 bg-white text-sm font-semibold text-emerald transition-colors hover:border-emerald/50 hover:bg-emerald/10"
-                    >
-                      ✓
-                    </button>
-                    <button
-                      type="button"
-                      title="Missed today"
-                      aria-label="Log habit as missed today"
-                      onClick={() => logHabitTodayWithExit(item.id, false)}
-                      className="flex h-9 w-9 items-center justify-center rounded-full border border-slate/50 bg-white text-sm font-semibold text-copper transition-colors hover:border-copper/40 hover:bg-copper/10"
-                    >
-                      ✗
-                    </button>
-                  </div>
-                  <span className="min-w-0 text-sm">{item.label}</span>
+              <div className="flex flex-wrap items-center gap-3 rounded-lg border border-slate/45 bg-steel/10 px-3 py-2">
+                <div className="flex shrink-0 gap-1.5">
+                  <button
+                    type="button"
+                    title="Done today"
+                    aria-label="Log habit as done today"
+                    onClick={() => logHabitTodayWithExit(item.id, true)}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-slate/50 bg-white text-sm font-semibold text-emerald transition-colors hover:border-emerald/50 hover:bg-emerald/10"
+                  >
+                    ✓
+                  </button>
+                  <button
+                    type="button"
+                    title="Missed today"
+                    aria-label="Log habit as missed today"
+                    onClick={() => logHabitTodayWithExit(item.id, false)}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-slate/50 bg-white text-sm font-semibold text-copper transition-colors hover:border-copper/40 hover:bg-copper/10"
+                  >
+                    ✗
+                  </button>
                 </div>
-              )}
+                <span className="min-w-0 text-sm">{item.label}</span>
+              </div>
             </CompleteExitRow>
           ))}
+          <DashboardSortableTodos
+            items={visibleTodoItems}
+            allTodoIds={allDashboardTodoIds}
+            exitingKeys={exitingDailyKeys}
+            itemKey={(todoId) => dailyItemKey({ kind: "todo", id: todoId })}
+            onComplete={completeTodo}
+            onReorder={reorderDashboardTodos}
+          />
           {!dailyItems.length ? <p className="text-sm text-slate">No open tasks or habits to log for this day.</p> : null}
           {hiddenDailyCount > 0 ? (
             <button

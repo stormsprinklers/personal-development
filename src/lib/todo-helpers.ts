@@ -35,6 +35,32 @@ export function effectiveDashboardTodoListIds(data: { todoLists: TodoList[]; das
   return main ? [main] : [];
 }
 
+/** Sort dashboard todos by saved order; unknown ids trail by newest first. */
+export function sortTodosByDashboardOrder(items: TodoItem[], order: string[] | undefined): TodoItem[] {
+  if (!order?.length) {
+    return [...items].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+  const index = new Map(order.map((id, i) => [id, i]));
+  return [...items].sort((a, b) => {
+    const ai = index.get(a.id);
+    const bi = index.get(b.id);
+    if (ai === undefined && bi === undefined) return b.createdAt.localeCompare(a.createdAt);
+    if (ai === undefined) return 1;
+    if (bi === undefined) return -1;
+    return ai - bi;
+  });
+}
+
+export function sanitizeDashboardTodoOrder(
+  order: string[] | undefined,
+  todoItems: TodoItem[],
+): string[] | undefined {
+  if (!order?.length) return undefined;
+  const valid = new Set(todoItems.map((item) => item.id));
+  const cleaned = order.filter((id) => valid.has(id));
+  return cleaned.length ? cleaned : undefined;
+}
+
 /** Tasks that count toward a goal: items on the list linked to that goal, or legacy items with goalId. */
 export function todoItemsForGoal(data: AppData, goalId: string): TodoItem[] {
   const listId = data.todoLists.find((l) => l.goalId === goalId)?.id;

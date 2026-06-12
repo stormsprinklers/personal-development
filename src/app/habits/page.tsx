@@ -15,6 +15,7 @@ export default function HabitsPage() {
   const [editingHabitName, setEditingHabitName] = useState("");
   const [editingHabitType, setEditingHabitType] = useState<"build" | "break">("build");
   const [calendarHabitId, setCalendarHabitId] = useState<string | null>(null);
+  const [calendarDayPicker, setCalendarDayPicker] = useState<string | null>(null);
   const today = todayKey();
 
   const todayLogs = useMemo(() => data.habitLogs.filter((log) => log.date === today), [data.habitLogs, today]);
@@ -94,15 +95,25 @@ export default function HabitsPage() {
     }
   }
 
-  function setTodayHabitLog(habitId: string, completed: boolean) {
+  function setHabitLog(habitId: string, date: string, completed: boolean) {
     setData((prev) => {
-      const existing = prev.habitLogs.find((log) => log.habitId === habitId && log.date === today);
+      const existing = prev.habitLogs.find((log) => log.habitId === habitId && log.date === date);
       const nextLogs = existing
         ? prev.habitLogs.map((log) => (log.id === existing.id ? { ...log, completed } : log))
-        : [{ id: crypto.randomUUID(), habitId, date: today, completed }, ...prev.habitLogs];
+        : [{ id: crypto.randomUUID(), habitId, date, completed }, ...prev.habitLogs];
 
       return { ...prev, habitLogs: nextLogs };
     });
+    setCalendarDayPicker(null);
+  }
+
+  function setTodayHabitLog(habitId: string, completed: boolean) {
+    setHabitLog(habitId, today, completed);
+  }
+
+  function openCalendar(habitId: string) {
+    setCalendarHabitId(habitId);
+    setCalendarDayPicker(null);
   }
 
   if (!ready) return <div className="p-6">Loading habits...</div>;
@@ -217,7 +228,7 @@ export default function HabitsPage() {
                       <span className="text-xs font-medium text-slate/90">Streak: {streak}d</span>
                       <button
                         type="button"
-                        onClick={() => setCalendarHabitId(habit.id)}
+                        onClick={() => openCalendar(habit.id)}
                         className="rounded-md border border-slate/50 bg-white px-2 py-1 text-xs text-slate hover:bg-steel/10"
                         aria-label="Open 30-day habit calendar"
                         title="Open 30-day habit calendar"
@@ -249,8 +260,17 @@ export default function HabitsPage() {
       </SectionCard>
 
       {habitCalendarData ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto overscroll-contain bg-black/35 p-3 sm:items-center">
-          <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-xl border border-slate/50 bg-white p-4 shadow-xl">
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto overscroll-contain bg-black/35 p-3 sm:items-center"
+          onClick={() => {
+            setCalendarHabitId(null);
+            setCalendarDayPicker(null);
+          }}
+        >
+          <div
+            className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-xl border border-slate/50 bg-white p-4 shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="mb-3 flex items-start justify-between gap-3">
               <div>
                 <h3 className="text-base font-semibold text-charcoal">{habitCalendarData.habit.name}</h3>
@@ -277,8 +297,10 @@ export default function HabitsPage() {
               ))}
             </div>
 
+            <p className="mb-2 text-[11px] text-slate/95">Tap a day to mark success or failure.</p>
+
             <div className="grid grid-cols-7 gap-1 rounded-lg border border-slate/45 bg-white p-2">
-              {habitCalendarData.days.map((day) => {
+              {habitCalendarData.days.map((day, dayIndex) => {
                 const cellClass =
                   day.status === "good"
                     ? "bg-emerald/15 text-emerald"
@@ -287,14 +309,64 @@ export default function HabitsPage() {
                       : "bg-slate/10 text-slate ring-1 ring-inset ring-slate/20";
                 const label =
                   day.status === "good" ? "Accomplished" : day.status === "bad" ? "Missed (marked ✗)" : "Unmarked";
+                const pickerOpen = calendarDayPicker === day.key;
+                const bubbleAbove = dayIndex >= 7;
+
                 return (
-                  <div
-                    key={day.key}
-                    className={`rounded-md px-1 py-2 text-center text-xs font-medium ${cellClass}`}
-                    title={`${day.key}: ${label}`}
-                  >
-                    <div>{day.dayOfMonth}</div>
-                    <div className="text-[10px] opacity-80">{day.key.slice(5)}</div>
+                  <div key={day.key} className="relative">
+                    {pickerOpen ? (
+                      <div
+                        className={`absolute left-1/2 z-20 -translate-x-1/2 ${
+                          bubbleAbove ? "bottom-full mb-1.5" : "top-full mt-1.5"
+                        }`}
+                      >
+                        <div
+                          className="flex items-center gap-1 rounded-lg border border-slate/50 bg-white p-1 shadow-lg"
+                          role="menu"
+                          aria-label={`Log ${day.key}`}
+                        >
+                          <button
+                            type="button"
+                            role="menuitem"
+                            aria-label="Mark as success"
+                            onClick={() => setHabitLog(habitCalendarData.habit.id, day.key, true)}
+                            className="flex h-8 w-8 items-center justify-center rounded-md border border-emerald/40 bg-emerald/10 text-sm font-semibold text-emerald hover:bg-emerald hover:text-white"
+                          >
+                            ✓
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            aria-label="Mark as failure"
+                            onClick={() => setHabitLog(habitCalendarData.habit.id, day.key, false)}
+                            className="flex h-8 w-8 items-center justify-center rounded-md border border-copper/40 bg-copper/10 text-sm font-semibold text-copper hover:bg-copper hover:text-white"
+                          >
+                            ✗
+                          </button>
+                        </div>
+                        <div
+                          aria-hidden
+                          className={`absolute left-1/2 h-0 w-0 -translate-x-1/2 border-x-[6px] border-x-transparent ${
+                            bubbleAbove
+                              ? "top-full border-t-[6px] border-t-white drop-shadow-sm"
+                              : "bottom-full border-b-[6px] border-b-white drop-shadow-sm"
+                          }`}
+                        />
+                      </div>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => setCalendarDayPicker((current) => (current === day.key ? null : day.key))}
+                      className={`w-full rounded-md px-1 py-2 text-center text-xs font-medium transition-shadow ${cellClass} ${
+                        pickerOpen ? "ring-2 ring-steel/50" : "hover:ring-2 hover:ring-steel/30"
+                      }`}
+                      title={`${day.key}: ${label}. Tap to log.`}
+                      aria-expanded={pickerOpen}
+                      aria-haspopup="menu"
+                    >
+                      <div>{day.dayOfMonth}</div>
+                      <div className="text-[10px] opacity-80">{day.key.slice(5)}</div>
+                    </button>
                   </div>
                 );
               })}
@@ -303,7 +375,10 @@ export default function HabitsPage() {
             <div className="mt-3 flex justify-end">
               <button
                 type="button"
-                onClick={() => setCalendarHabitId(null)}
+                onClick={() => {
+                  setCalendarHabitId(null);
+                  setCalendarDayPicker(null);
+                }}
                 className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-slate hover:bg-steel/10"
               >
                 Close

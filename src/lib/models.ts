@@ -53,6 +53,7 @@ export type WorkoutRoutine = {
   cardioTypes: CardioType[];
   sortOrder: number;
   createdAt: string;
+  archived: boolean;
 };
 
 export type HabitType = "build" | "break";
@@ -202,6 +203,8 @@ export type AppData = {
   todoCompletions: TodoCompletion[];
   /** Which lists feed the dashboard “Today” todo list; defaults to main only when unset/empty. */
   dashboardTodoListIds?: string[];
+  /** Display order for dashboard todos (subset of todo item ids). */
+  dashboardTodoOrder?: string[];
   goalSections: GoalSection[];
   goals: Goal[];
   goalNotes: GoalNote[];

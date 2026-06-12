@@ -13,6 +13,7 @@ import {
 } from "@/lib/workout-session-helpers";
 import { normalizeMeasurementPreferences, runBikeDistanceUnitAbbr, weightUnitAbbr } from "@/lib/units";
 import { formatDateKey } from "@/lib/timezone";
+import { activeWorkoutRoutines } from "@/lib/workout-routines";
 import { todayKey, useAppData } from "@/lib/storage";
 
 const CARDIO_TYPES: CardioType[] = ["run", "bike", "swim"];
@@ -64,6 +65,40 @@ function DuplicateSetIcon({ className }: { className?: string }) {
   );
 }
 
+function ChevronUpIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className ?? "h-4 w-4"}
+    >
+      <path d="m18 15-6-6-6 6" />
+    </svg>
+  );
+}
+
+function ChevronDownIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className ?? "h-4 w-4"}
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
 export default function WorkoutsPage() {
   const { data, ready, upsertWorkoutForDate, setData } = useAppData();
   const router = useRouter();
@@ -84,6 +119,8 @@ export default function WorkoutsPage() {
   });
 
   const routines = data.workoutRoutines;
+  const activeRoutines = useMemo(() => activeWorkoutRoutines(routines), [routines]);
+  const archivedRoutines = useMemo(() => routines.filter((routine) => routine.archived), [routines]);
   const strengthExercises = useMemo(
     () => data.exercises.filter((exercise) => exercise.category === "strength" && !exercise.archived),
     [data.exercises],
@@ -98,9 +135,9 @@ export default function WorkoutsPage() {
       setSelectedRoutineId(saved);
       return;
     }
-    const suggested = suggestRoutineIdForDate(data.workoutSessions, routines, workoutDate);
-    setSelectedRoutineId(suggested ?? routines[0].id);
-  }, [workoutDate, sessionForDate?.routineId, data.workoutSessions, routines]);
+    const suggested = suggestRoutineIdForDate(data.workoutSessions, activeRoutines, workoutDate);
+    setSelectedRoutineId(suggested ?? activeRoutines[0]?.id ?? routines[0]?.id ?? "");
+  }, [workoutDate, sessionForDate?.routineId, data.workoutSessions, routines, activeRoutines]);
 
   function addRoutineAndOpenEditor() {
     const id = crypto.randomUUID();
@@ -115,6 +152,7 @@ export default function WorkoutsPage() {
         cardioTypes: ["run"],
         sortOrder: order,
         createdAt: new Date().toISOString(),
+        archived: false,
       };
       return { ...prev, workoutRoutines: [...prev.workoutRoutines, next] };
     });
@@ -145,7 +183,7 @@ export default function WorkoutsPage() {
     persistRoutineForDate(value);
   }
 
-  const currentRoutine = routines.find((r) => r.id === selectedRoutineId) ?? routines[0];
+  const currentRoutine = routines.find((r) => r.id === selectedRoutineId) ?? activeRoutines[0] ?? routines[0];
   const [bodyWeightDraft, setBodyWeightDraft] = useState("");
 
   useEffect(() => {
@@ -277,6 +315,23 @@ export default function WorkoutsPage() {
     });
   }
 
+  function moveExerciseInRoutine(exerciseId: string, direction: "up" | "down") {
+    if (!currentRoutine) return;
+    setData((prev) => ({
+      ...prev,
+      workoutRoutines: prev.workoutRoutines.map((routine) => {
+        if (routine.id !== currentRoutine.id) return routine;
+        const ids = [...routine.strengthExerciseIds];
+        const index = ids.indexOf(exerciseId);
+        if (index === -1) return routine;
+        const swapWith = direction === "up" ? index - 1 : index + 1;
+        if (swapWith < 0 || swapWith >= ids.length) return routine;
+        [ids[index], ids[swapWith]] = [ids[swapWith], ids[index]];
+        return { ...routine, strengthExerciseIds: ids };
+      }),
+    }));
+  }
+
   function commitBodyWeight() {
     const trimmed = bodyWeightDraft.trim();
     upsertWorkoutForDate(workoutDate, (existing) => {
@@ -324,7 +379,13 @@ export default function WorkoutsPage() {
         </div>
       </SectionCard>
 
-      <SectionCard title={currentRoutine ? `${currentRoutine.name} - log` : "Log workout"}>
+      <SectionCard
+        title={
+          currentRoutine
+            ? `${currentRoutine.name}${currentRoutine.archived ? " (archived)" : ""} - log`
+            : "Log workout"
+        }
+      >
         <div className="mb-4 flex flex-wrap items-end gap-2">
           <label className="grid min-w-0 flex-1 gap-1 text-xs font-medium text-slate/95">
             Routine for today
@@ -333,11 +394,20 @@ export default function WorkoutsPage() {
               onChange={(e) => onRoutineSelectChange(e.target.value)}
               className="w-full rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-charcoal focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
             >
-              {routines.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
+              {activeRoutines.map((routine) => (
+                <option key={routine.id} value={routine.id}>
+                  {routine.name}
                 </option>
               ))}
+              {archivedRoutines.length ? (
+                <optgroup label="Archived">
+                  {archivedRoutines.map((routine) => (
+                    <option key={routine.id} value={routine.id}>
+                      {routine.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ) : null}
               <option value={ADD_ROUTINE_OPTION}>+ Add new routine...</option>
             </select>
           </label>
@@ -353,14 +423,24 @@ export default function WorkoutsPage() {
           ) : null}
         </div>
 
+        {currentRoutine?.archived ? (
+          <p className="mb-4 text-xs text-slate/95">
+            This routine is archived. Past workouts are kept. Unarchive it from the routine editor to use it in your active rotation again.
+          </p>
+        ) : null}
+
         <div className="grid gap-4 text-sm text-slate">
           {!anyPriorExerciseLog && strengthBlocks.length ? (
             <p className="text-xs text-slate/95">
               After you log an exercise once, your last sets and weights for that exercise will show here, even if it was on a different day or routine.
             </p>
           ) : null}
-          {strengthBlocks.map((exercise) => {
+          {strengthBlocks.map((exercise, blockIndex) => {
             const sets = (sessionForDate?.strengthSets ?? []).filter((set) => set.exerciseId === exercise.id);
+            const canReorder =
+              Boolean(currentRoutine) &&
+              currentRoutine.strengthExerciseIds.length > 0 &&
+              currentRoutine.strengthExerciseIds.includes(exercise.id);
             const draft = setDrafts[exercise.id] ?? { weight: "", reps: "" };
             const lastExerciseSession = lastSessionByExerciseId.get(exercise.id);
             const lastSessionLabel = lastExerciseSession
@@ -387,7 +467,33 @@ export default function WorkoutsPage() {
 
             return (
               <div key={exercise.id} className="overflow-hidden rounded-lg border border-slate/45">
-                <div className="border-b border-slate/45 bg-steel/10 px-3 py-2 font-medium text-charcoal">{exercise.name}</div>
+                <div className="flex items-center justify-between gap-2 border-b border-slate/45 bg-steel/10 px-3 py-2">
+                  <span className="min-w-0 font-medium text-charcoal">{exercise.name}</span>
+                  {canReorder ? (
+                    <div className="flex shrink-0 items-center gap-0.5">
+                      <button
+                        type="button"
+                        disabled={blockIndex === 0}
+                        onClick={() => moveExerciseInRoutine(exercise.id, "up")}
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate/50 bg-white text-slate hover:border-steel/40 hover:bg-steel/10 disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label={`Move ${exercise.name} up`}
+                        title="Move up"
+                      >
+                        <ChevronUpIcon />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={blockIndex === strengthBlocks.length - 1}
+                        onClick={() => moveExerciseInRoutine(exercise.id, "down")}
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate/50 bg-white text-slate hover:border-steel/40 hover:bg-steel/10 disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label={`Move ${exercise.name} down`}
+                        title="Move down"
+                      >
+                        <ChevronDownIcon />
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
                 {lastExerciseSession && lastSessionLabel ? (
                   <p className="border-b border-slate/40 bg-white/70 px-3 py-2 text-xs leading-relaxed text-slate">
                     <span className="font-medium text-charcoal">Last time ({lastSessionLabel}):</span>{" "}

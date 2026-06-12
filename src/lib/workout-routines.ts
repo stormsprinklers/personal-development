@@ -26,6 +26,7 @@ export function buildInitialWorkoutRoutines(exercises: Exercise[]): WorkoutRouti
       cardioTypes: [...bp.cardioTypes],
       sortOrder: i,
       createdAt: now,
+      archived: false,
     };
   });
 }
@@ -49,5 +50,10 @@ export function sanitizeWorkoutRoutines(
     ],
     sortOrder: typeof r.sortOrder === "number" ? r.sortOrder : i,
     createdAt: typeof r.createdAt === "string" ? r.createdAt : new Date().toISOString(),
+    archived: Boolean(r.archived),
   }));
+}
+
+export function activeWorkoutRoutines(routines: WorkoutRoutine[]): WorkoutRoutine[] {
+  return routines.filter((routine) => !routine.archived);
 }

@@ -52,6 +52,11 @@ export default function EditWorkoutRoutinePage() {
     updateRoutine((r) => ({ ...r, name: name.trim() || r.name }));
   }
 
+  function toggleRoutineArchived() {
+    if (!currentRoutine) return;
+    updateRoutine((routine) => ({ ...routine, archived: !routine.archived }));
+  }
+
   function deleteRoutine() {
     if (!currentRoutine || data.workoutRoutines.length <= 1) return;
     setData((prev) => ({
@@ -121,6 +126,11 @@ export default function EditWorkoutRoutinePage() {
     <AppShell title="Edit routine" description="">
       <SectionCard title="Routine">
         <div className="mb-4 grid gap-2">
+          {currentRoutine.archived ? (
+            <p className="rounded-lg border border-slate/50 bg-steel/10 px-3 py-2 text-sm text-slate">
+              This routine is archived. It stays out of your active routine list, but workout history is preserved.
+            </p>
+          ) : null}
           <label className="grid gap-1 text-xs font-medium text-slate/95">
             Name
             <input
@@ -129,17 +139,26 @@ export default function EditWorkoutRoutinePage() {
               className="rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-charcoal focus:border-steel focus:outline-none focus:ring-2 focus:ring-steel/25"
             />
           </label>
-          {routines.length > 1 ? (
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => {
-                if (window.confirm(`Delete routine “${currentRoutine.name}”?`)) deleteRoutine();
-              }}
-              className="w-fit rounded-lg border border-copper/30 bg-white px-3 py-2 text-sm text-copper hover:bg-copper/10"
+              onClick={toggleRoutineArchived}
+              className="w-fit rounded-lg border border-slate/50 bg-white px-3 py-2 text-sm text-slate hover:bg-steel/10"
             >
-              Delete routine
+              {currentRoutine.archived ? "Unarchive routine" : "Archive routine"}
             </button>
-          ) : null}
+            {routines.length > 1 ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm(`Delete routine “${currentRoutine.name}”? Workout history for past dates is kept, but this routine definition will be removed.`)) deleteRoutine();
+                }}
+                className="w-fit rounded-lg border border-copper/30 bg-white px-3 py-2 text-sm text-copper hover:bg-copper/10"
+              >
+                Delete routine
+              </button>
+            ) : null}
+          </div>
         </div>
 
         <div className="grid gap-3 rounded-lg border border-slate/50 bg-white/80 p-3">
