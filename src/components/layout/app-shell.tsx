@@ -66,7 +66,7 @@ export function AppShell({ title, description: _description, children, header, a
   return (
     <div className="min-h-dvh bg-ios-bg text-ios-label">
       <div
-        className="fixed inset-x-0 top-0 z-40 border-b border-ios-separator/70 bg-ios-bg/90 shadow-sm backdrop-blur-md"
+        className="ios-nav-glass fixed inset-x-0 top-0 z-40"
         style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
       >
         <div className="mx-auto w-full max-w-xl min-w-0 px-4 py-2">
