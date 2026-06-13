@@ -8,14 +8,15 @@ import {
   adjacentAppSectionHref,
   appSectionIndex,
 } from "@/lib/navigation";
+import { prefetchAdjacentTabRoutes } from "@/lib/tab-prefetch";
 
 type Props = {
   children: ReactNode;
 };
 
-const SWIPE_COMMIT_PX = 72;
-const SWIPE_DIRECTION_LOCK_PX = 12;
-const SWIPE_TRANSITION_MS = 320;
+const SWIPE_COMMIT_PX = 56;
+const SWIPE_DIRECTION_LOCK_PX = 10;
+const SWIPE_SNAP_MS = 180;
 
 function shouldIgnoreSwipe(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false;
@@ -55,27 +56,9 @@ export function SwipeTabContent({ children }: Props) {
   sectionIndexRef.current = sectionIndex;
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const direction = sessionStorage.getItem(TAB_SWIPE_ENTER_KEY) as "next" | "prev" | null;
-    if (!direction) return;
     sessionStorage.removeItem(TAB_SWIPE_ENTER_KEY);
-
-    const width = containerRef.current?.offsetWidth ?? window.innerWidth;
-    widthRef.current = width;
-    const enterX = direction === "next" ? width : -width;
+    setDragX(0);
     setAnimating(false);
-    setDragX(enterX);
-
-    const frame = requestAnimationFrame(() => {
-      setAnimating(true);
-      setDragX(0);
-    });
-    const timer = window.setTimeout(() => setAnimating(false), SWIPE_TRANSITION_MS + 40);
-
-    return () => {
-      cancelAnimationFrame(frame);
-      window.clearTimeout(timer);
-    };
   }, [pathname]);
 
   useEffect(() => {
@@ -95,13 +78,13 @@ export function SwipeTabContent({ children }: Props) {
     function resetDrag() {
       setAnimating(true);
       setDragX(0);
-      window.setTimeout(() => setAnimating(false), SWIPE_TRANSITION_MS);
+      window.setTimeout(() => setAnimating(false), SWIPE_SNAP_MS);
     }
 
     function commitSwipe() {
       const width = widthRef.current || node!.offsetWidth || window.innerWidth;
       const currentDrag = dragXRef.current;
-      const commit = Math.abs(currentDrag) >= SWIPE_COMMIT_PX || Math.abs(currentDrag) >= width * 0.18;
+      const commit = Math.abs(currentDrag) >= SWIPE_COMMIT_PX || Math.abs(currentDrag) >= width * 0.16;
       const direction = currentDrag < 0 ? "next" : "prev";
 
       if (!commit) {
@@ -115,16 +98,10 @@ export function SwipeTabContent({ children }: Props) {
         return;
       }
 
-      const exitX = direction === "next" ? -width : width;
-      setAnimating(true);
-      setDragX(exitX);
       sessionStorage.setItem(TAB_SWIPE_ENTER_KEY, direction);
-
-      window.setTimeout(() => {
-        router.push(href);
-        setAnimating(false);
-        setDragX(0);
-      }, SWIPE_TRANSITION_MS);
+      setDragX(0);
+      setAnimating(false);
+      router.push(href);
     }
 
     function onTouchStart(event: TouchEvent) {
@@ -140,6 +117,12 @@ export function SwipeTabContent({ children }: Props) {
         active: true,
         locked: null,
       };
+
+      prefetchAdjacentTabRoutes(
+        router,
+        adjacentAppSectionHref(pathnameRef.current, "prev"),
+        adjacentAppSectionHref(pathnameRef.current, "next"),
+      );
     }
 
     function onTouchMove(event: TouchEvent) {
@@ -199,8 +182,8 @@ export function SwipeTabContent({ children }: Props) {
       ref={containerRef}
       className="swipe-tab-content min-w-0"
       style={{
-        transform: dragX !== 0 || animating ? `translate3d(${dragX}px, 0, 0)` : undefined,
-        transition: animating ? `transform ${SWIPE_TRANSITION_MS}ms cubic-bezier(0.25, 0.1, 0.25, 1)` : undefined,
+        transform: dragX !== 0 ? `translate3d(${dragX}px, 0, 0)` : undefined,
+        transition: animating ? `transform ${SWIPE_SNAP_MS}ms cubic-bezier(0.25, 0.1, 0.25, 1)` : undefined,
       }}
     >
       {children}
