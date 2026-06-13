@@ -61,15 +61,21 @@ export default function Home() {
   const [coachSending, setCoachSending] = useState(false);
   const [coachError, setCoachError] = useState<string | null>(null);
 
-  const goalYear = useMemo(() => yearInAppTimezone(instantNoonForDateKey(selectedDate)), [selectedDate]);
+  const goalYear = useMemo(
+    () => (selectedDate ? yearInAppTimezone(instantNoonForDateKey(selectedDate)) : yearInAppTimezone()),
+    [selectedDate],
+  );
 
   useEffect(() => {
     setCoachInput("");
     setCoachError(null);
   }, [selectedDate]);
 
-  const weekStartKey = useMemo(() => startOfWeekDateKey(selectedDate), [selectedDate]);
-  const weekEndKey = useMemo(() => addDaysToDateKey(weekStartKey, 6), [weekStartKey]);
+  const weekStartKey = useMemo(() => (selectedDate ? startOfWeekDateKey(selectedDate) : ""), [selectedDate]);
+  const weekEndKey = useMemo(
+    () => (weekStartKey ? addDaysToDateKey(weekStartKey, 6) : ""),
+    [weekStartKey],
+  );
 
   const weeklyWorkouts = useMemo(
     () => data.workoutSessions.filter((session) => session.date >= weekStartKey && session.date <= weekEndKey),
@@ -281,6 +287,8 @@ export default function Home() {
   }
 
   useEffect(() => {
+    if (!selectedDate) return;
+
     const insight = data.aiInsights.find((i) => i.type === "daily_summary" && i.date === selectedDate);
     if (insight?.output?.trim()) {
       setAiLoading(false);
@@ -389,7 +397,13 @@ export default function Home() {
     }, COMPLETE_EXIT_MS);
   }
 
-  if (!selectedDate) return <div className="p-6">Loading...</div>;
+  if (!selectedDate) {
+    return (
+      <AppShell title="Dashboard" description="Your day, summary, and journal at a glance.">
+        <div className="p-6 text-sm text-ios-secondary">Loading…</div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell

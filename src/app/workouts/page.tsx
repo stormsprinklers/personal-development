@@ -205,7 +205,7 @@ export default function WorkoutsPage() {
 
   const routineCardioTypes = currentRoutine?.cardioTypes?.length ? currentRoutine.cardioTypes : CARDIO_TYPES;
 
-  const formattedDate = formatDateKey(workoutDate);
+  const formattedDate = workoutDate ? formatDateKey(workoutDate) : "";
 
   const lastSessionByExerciseId = useMemo(() => {
     const map = new Map<string, ReturnType<typeof findLastSessionForExercise>>();
@@ -352,7 +352,13 @@ export default function WorkoutsPage() {
     });
   }
 
-  if (!ready || !workoutDate) return <div className="p-6">Loading workouts...</div>;
+  if (!ready || !workoutDate) {
+    return (
+      <AppShell title="Workouts" description="">
+        <div className="p-6 text-sm text-ios-secondary">Loading…</div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell title="Workouts" description="">
