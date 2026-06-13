@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CloudStorageCard } from "@/components/cloud-storage-card";
 import { MeasurementUnitsCard } from "@/components/measurement-units-card";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
@@ -105,8 +104,6 @@ export default function WorkoutSettingsPage() {
       </SectionCard>
 
       <MeasurementUnitsCard />
-
-      <CloudStorageCard />
 
       <SectionCard title="Exercises" inset={false}>
         <div className="ios-card flex flex-wrap items-end gap-2 p-4">

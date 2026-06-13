@@ -38,11 +38,17 @@ export const APP_SECTIONS: AppSection[] = [
     shortTitle: "Tasks",
     description: "Manage area-based lists with hidden completions and history.",
   },
+  {
+    href: "/settings",
+    title: "Settings",
+    description: "Cloud sync, accountability partners, and app preferences.",
+  },
 ];
 
 export function isAppSectionActive(section: AppSection, pathname: string): boolean {
   if (section.href === "/") return pathname === "/";
   if (section.href === "/workouts") return pathname.startsWith("/workouts");
+  if (section.href === "/settings") return pathname.startsWith("/settings");
   return pathname === section.href || pathname.startsWith(`${section.href}/`);
 }
 

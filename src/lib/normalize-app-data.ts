@@ -24,6 +24,27 @@ function normalizeHabits(raw: unknown): AppData["habits"] {
     .filter((h): h is AppData["habits"][number] => h !== null);
 }
 
+function normalizeAccountabilityPartners(raw: unknown): AppData["accountabilityPartners"] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") return null;
+      const p = entry as { id?: string; name?: string; email?: string; phone?: string; createdAt?: string };
+      const name = typeof p.name === "string" ? p.name.trim() : "";
+      const email = typeof p.email === "string" ? p.email.trim() : "";
+      const phone = typeof p.phone === "string" ? p.phone.trim() : "";
+      if (!name || !email) return null;
+      return {
+        id: typeof p.id === "string" && p.id ? p.id : crypto.randomUUID(),
+        name,
+        email,
+        phone,
+        createdAt: typeof p.createdAt === "string" ? p.createdAt : nowIso(),
+      };
+    })
+    .filter((p): p is NonNullable<AppData["accountabilityPartners"]>[number] => p !== null);
+}
+
 export function createDefaultAppData(): AppData {
   const exercises = [
     { id: "seed-ex-back-squat", name: "Back Squat", category: "strength" as const, archived: false, createdAt: nowIso() },
@@ -35,6 +56,7 @@ export function createDefaultAppData(): AppData {
   ];
   return {
     userProfile: { name: "Austin", timezone: APP_TIMEZONE },
+    accountabilityPartners: [],
     measurementPreferences: normalizeMeasurementPreferences(),
     exercises,
     workoutRoutines: sanitizeWorkoutRoutines(undefined, exercises),
@@ -125,6 +147,7 @@ export function normalizeAppData(input: unknown): AppData {
     const todoSections = (merged.todoSections ?? []).filter((s) => todoLists.some((l) => l.id === s.listId));
     const workoutRoutines = sanitizeWorkoutRoutines(merged.workoutRoutines, merged.exercises);
     const habits = normalizeHabits(merged.habits);
+    const accountabilityPartners = normalizeAccountabilityPartners(merged.accountabilityPartners);
     return {
       ...merged,
       todoLists,
@@ -135,6 +158,7 @@ export function normalizeAppData(input: unknown): AppData {
       dashboardDailyOrder,
       workoutRoutines,
       habits,
+      accountabilityPartners,
     };
   } catch {
     return createDefaultAppData();

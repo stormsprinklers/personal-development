@@ -19,6 +19,7 @@ export function preloadAppTabChunks() {
   void import("@/app/journal/page");
   void import("@/app/habits/page");
   void import("@/app/todos/page");
+  void import("@/app/settings/page");
 }
 
 export function prefetchAdjacentTabRoutes(
