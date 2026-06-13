@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ScrollTabBar } from "@/components/ui/scroll-tab-bar";
-import { SwipeTabContent } from "@/components/layout/swipe-tab-content";
+import { TabTransitionSurface } from "@/components/layout/tab-transition";
 import { APP_SECTIONS } from "@/lib/navigation";
 
 type AppShellProps = {
@@ -75,7 +75,7 @@ export function AppShell({ title, description: _description, children, header, a
         </div>
       </div>
 
-      <SwipeTabContent>
+      <TabTransitionSurface>
         <div className="safe-bottom mx-auto flex w-full max-w-xl min-w-0 flex-col overflow-x-hidden px-4 pb-4 pt-[calc(3.75rem+env(safe-area-inset-top,0px))]">
           {title ? (
             <header className="mb-3 min-w-0">
@@ -86,7 +86,7 @@ export function AppShell({ title, description: _description, children, header, a
           {topRight ? <div className="mb-2 flex justify-end gap-2">{topRight}</div> : null}
           <main className="grid min-w-0 gap-5">{children}</main>
         </div>
-      </SwipeTabContent>
+      </TabTransitionSurface>
     </div>
   );
 }

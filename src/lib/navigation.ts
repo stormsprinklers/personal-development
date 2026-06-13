@@ -59,4 +59,11 @@ export function adjacentAppSectionHref(pathname: string, direction: "next" | "pr
   return APP_SECTIONS[nextIndex].href;
 }
 
+export function tabTransitionDirection(fromPathname: string, toHref: string): "next" | "prev" | null {
+  const fromIndex = appSectionIndex(fromPathname);
+  const toIndex = APP_SECTIONS.findIndex((section) => section.href === toHref);
+  if (fromIndex === null || toIndex === -1 || fromIndex === toIndex) return null;
+  return toIndex > fromIndex ? "next" : "prev";
+}
+
 export const TAB_SWIPE_ENTER_KEY = "pd-tab-swipe-enter";

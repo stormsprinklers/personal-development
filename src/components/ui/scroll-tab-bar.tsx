@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { APP_SECTIONS, isAppSectionActive } from "@/lib/navigation";
-import type { AppSection } from "@/lib/navigation";
+import { isAppSectionActive, type AppSection } from "@/lib/navigation";
+import { useTabTransition } from "@/components/layout/tab-transition";
 
 type Props = {
   sections: AppSection[];
@@ -14,6 +13,8 @@ function isActive(section: AppSection, pathname: string) {
 }
 
 export function ScrollTabBar({ sections, activePath }: Props) {
+  const { navigateToTab, animating } = useTabTransition();
+
   return (
     <nav aria-label="App sections" className="min-w-0">
       <div className="ios-scroll-tabs overflow-x-auto pb-3 pt-0.5">
@@ -22,16 +23,21 @@ export function ScrollTabBar({ sections, activePath }: Props) {
             const active = isActive(section, activePath);
             const label = section.shortTitle ?? section.title;
             return (
-              <Link
+              <button
                 key={section.href}
-                href={section.href}
-                className={`glass-button inline-flex snap-start items-center whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-semibold transition-colors ${
+                type="button"
+                disabled={animating}
+                onClick={() => {
+                  if (active) return;
+                  navigateToTab(section.href);
+                }}
+                className={`glass-button inline-flex snap-start items-center whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-60 ${
                   active ? "glass-button-tint text-white" : "text-ios-label"
                 }`}
                 aria-current={active ? "page" : undefined}
               >
                 {label}
-              </Link>
+              </button>
             );
           })}
         </div>
