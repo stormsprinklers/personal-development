@@ -14,7 +14,7 @@ import {
 import { normalizeMeasurementPreferences, runBikeDistanceUnitAbbr, weightUnitAbbr } from "@/lib/units";
 import { formatDateKey } from "@/lib/timezone";
 import { activeWorkoutRoutines } from "@/lib/workout-routines";
-import { todayKey, useAppData } from "@/lib/storage";
+import { useAppData, useTodayKey } from "@/lib/storage";
 
 const CARDIO_TYPES: CardioType[] = ["run", "bike", "swim"];
 const ADD_ROUTINE_OPTION = "__add_routine__";
@@ -105,8 +105,13 @@ export default function WorkoutsPage() {
   const prefs = useMemo(() => normalizeMeasurementPreferences(data.measurementPreferences), [data.measurementPreferences]);
   const weightAbbr = weightUnitAbbr(prefs.weightUnit);
   const distanceAbbr = runBikeDistanceUnitAbbr(prefs.runBikeDistanceUnit);
-  const today = todayKey();
-  const [workoutDate, setWorkoutDate] = useState(today);
+  const today = useTodayKey();
+  const [pickedDate, setPickedDate] = useState<string | null>(null);
+  const workoutDate = pickedDate ?? today;
+
+  useEffect(() => {
+    if (today && pickedDate === null) setPickedDate(today);
+  }, [today, pickedDate]);
   const [selectedRoutineId, setSelectedRoutineId] = useState("");
 
   const [setDrafts, setSetDrafts] = useState<Record<string, { weight: string; reps: string }>>({});
@@ -347,7 +352,7 @@ export default function WorkoutsPage() {
     });
   }
 
-  if (!ready) return <div className="p-6">Loading workouts...</div>;
+  if (!ready || !workoutDate) return <div className="p-6">Loading workouts...</div>;
 
   return (
     <AppShell title="Workouts" description="">
@@ -358,8 +363,8 @@ export default function WorkoutsPage() {
             <input
               type="date"
               value={workoutDate}
-              onChange={(e) => setWorkoutDate(e.target.value)}
-              max={today}
+              onChange={(e) => setPickedDate(e.target.value)}
+              max={today || undefined}
               className="absolute inset-0 cursor-pointer opacity-0"
             />
           </label>

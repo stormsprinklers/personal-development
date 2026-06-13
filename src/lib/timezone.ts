@@ -1,5 +1,7 @@
-/** US Mountain Time (Denver). Handles MST/MDT automatically. */
-export const APP_TIMEZONE = "America/Denver";
+/** US Mountain Standard Time (UTC−7, no daylight saving). */
+export const APP_TIMEZONE = "America/Phoenix";
+
+export const APP_TIMEZONE_LABEL = "MST";
 
 const dateKeyFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: APP_TIMEZONE,
@@ -8,7 +10,7 @@ const dateKeyFormatter = new Intl.DateTimeFormat("en-CA", {
   day: "2-digit",
 });
 
-/** Calendar date `YYYY-MM-DD` in US Mountain Time. */
+/** Calendar date `YYYY-MM-DD` in US Mountain Standard Time. */
 export function dateKeyInAppTimezone(instant: Date = new Date()): string {
   return dateKeyFormatter.format(instant);
 }
@@ -23,7 +25,7 @@ export function yearInAppTimezone(instant: Date = new Date()): number {
   );
 }
 
-/** Calendar date from an ISO timestamp, in US Mountain Time. */
+/** Calendar date from an ISO timestamp, in US Mountain Standard Time. */
 export function dateKeyFromIsoTimestamp(iso: string): string {
   return dateKeyInAppTimezone(new Date(iso));
 }
@@ -69,7 +71,7 @@ export function formatDateKey(
     day: "numeric",
   },
 ): string {
-  return new Intl.DateTimeFormat(undefined, { timeZone: APP_TIMEZONE, ...options }).format(
+  return new Intl.DateTimeFormat("en-US", { timeZone: APP_TIMEZONE, ...options }).format(
     instantNoonForDateKey(dateKey),
   );
 }
@@ -80,6 +82,36 @@ export function dayOfMonthInAppTimezone(dateKey: string): number {
       instantNoonForDateKey(dateKey),
     ),
   );
+}
+
+/** Format an ISO timestamp for display in US Mountain Standard Time. */
+export function formatIsoTimestamp(
+  iso: string,
+  options: Intl.DateTimeFormatOptions = {
+    dateStyle: "medium",
+    timeStyle: "short",
+  },
+): string {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: APP_TIMEZONE,
+    timeZoneName: "short",
+    ...options,
+  }).format(new Date(iso));
+}
+
+/** Current date and time in US Mountain Standard Time. */
+export function formatNowInAppTimezone(
+  options: Intl.DateTimeFormatOptions = {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  },
+): string {
+  return new Intl.DateTimeFormat("en-US", { timeZone: APP_TIMEZONE, ...options }).format(new Date());
 }
 
 /** Monday-start week containing `dateKey`. */

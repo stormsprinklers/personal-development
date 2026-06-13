@@ -13,11 +13,12 @@ import { goalsProgressForYear } from "@/lib/metrics/dashboardMetrics";
 import { strengthSummaryByExercise } from "@/lib/metrics/workoutMetrics";
 import { normalizeMeasurementPreferences, weightUnitAbbr } from "@/lib/units";
 import { effectiveDashboardTodoListIds, mainTodoListId, sortTodosByDashboardOrder, sortDailyDashboardItems, dashboardDailyItemKey, dashboardTodoOrderFromDailyOrder } from "@/lib/todo-helpers";
-import { todayKey, useAppData } from "@/lib/storage";
+import { useAppData, useTodayKey } from "@/lib/storage";
 import {
   addDaysToDateKey,
   dateKeyFromIsoTimestamp,
   formatDateKey,
+  formatNowInAppTimezone,
   instantNoonForDateKey,
   startOfWeekDateKey,
   yearInAppTimezone,
@@ -33,8 +34,21 @@ export default function Home() {
     () => weightUnitAbbr(normalizeMeasurementPreferences(data.measurementPreferences).weightUnit),
     [data.measurementPreferences],
   );
-  const today = todayKey();
-  const [dashboardDate, setDashboardDate] = useState(today);
+  const today = useTodayKey();
+  const [pickedDate, setPickedDate] = useState<string | null>(null);
+  const selectedDate = pickedDate ?? today;
+  const [nowLabel, setNowLabel] = useState("");
+
+  useEffect(() => {
+    if (today && pickedDate === null) setPickedDate(today);
+  }, [today, pickedDate]);
+
+  useEffect(() => {
+    const refresh = () => setNowLabel(formatNowInAppTimezone());
+    refresh();
+    const id = window.setInterval(refresh, 30_000);
+    return () => window.clearInterval(id);
+  }, []);
   const [showAllDailyItems, setShowAllDailyItems] = useState(false);
   const [quickTodoTitle, setQuickTodoTitle] = useState("");
   const [quickAddListId, setQuickAddListId] = useState("");
@@ -47,14 +61,14 @@ export default function Home() {
   const [coachSending, setCoachSending] = useState(false);
   const [coachError, setCoachError] = useState<string | null>(null);
 
-  const goalYear = useMemo(() => yearInAppTimezone(instantNoonForDateKey(dashboardDate)), [dashboardDate]);
+  const goalYear = useMemo(() => yearInAppTimezone(instantNoonForDateKey(selectedDate)), [selectedDate]);
 
   useEffect(() => {
     setCoachInput("");
     setCoachError(null);
-  }, [dashboardDate]);
+  }, [selectedDate]);
 
-  const weekStartKey = useMemo(() => startOfWeekDateKey(dashboardDate), [dashboardDate]);
+  const weekStartKey = useMemo(() => startOfWeekDateKey(selectedDate), [selectedDate]);
   const weekEndKey = useMemo(() => addDaysToDateKey(weekStartKey, 6), [weekStartKey]);
 
   const weeklyWorkouts = useMemo(
@@ -124,12 +138,12 @@ export default function Home() {
     () =>
       data.habits
         .filter((habit) => habit.active)
-        .filter((habit) => !data.habitLogs.some((log) => log.habitId === habit.id && log.date === dashboardDate))
+        .filter((habit) => !data.habitLogs.some((log) => log.habitId === habit.id && log.date === selectedDate))
         .map((habit) => ({
           id: habit.id,
           label: habit.name,
         })),
-    [data.habits, data.habitLogs, dashboardDate],
+    [data.habits, data.habitLogs, selectedDate],
   );
   const showListSourceOnTodos = dashboardListIds.length > 1;
   const habitDailyItems = useMemo(
@@ -180,8 +194,8 @@ export default function Home() {
   const hiddenDailyCount = Math.max(0, dailyItems.length - 5);
 
   const latestSummary = useMemo(
-    () => data.aiInsights.find((insight) => insight.type === "daily_summary" && insight.date === dashboardDate),
-    [data.aiInsights, dashboardDate],
+    () => data.aiInsights.find((insight) => insight.type === "daily_summary" && insight.date === selectedDate),
+    [data.aiInsights, selectedDate],
   );
 
   async function runDailySummaryGeneration(targetDate: string, signal?: AbortSignal) {
@@ -218,11 +232,11 @@ export default function Home() {
 
   async function sendCoachMessage() {
     const text = coachInput.trim();
-    const insight = data.aiInsights.find((i) => i.type === "daily_summary" && i.date === dashboardDate);
+    const insight = data.aiInsights.find((i) => i.type === "daily_summary" && i.date === selectedDate);
     if (!text || !insight?.output?.trim() || coachSending) return;
     const openingUserPrompt =
       insight.prompt?.trim() ||
-      dailyCoachOpeningUserPrompt(JSON.stringify(buildAiContext(data, dashboardDate), null, 2));
+      dailyCoachOpeningUserPrompt(JSON.stringify(buildAiContext(data, selectedDate), null, 2));
     setCoachSending(true);
     setCoachError(null);
     try {
@@ -247,7 +261,7 @@ export default function Home() {
       setData((prev) => ({
         ...prev,
         aiInsights: prev.aiInsights.map((row) => {
-          if (row.type !== "daily_summary" || row.date !== dashboardDate) return row;
+          if (row.type !== "daily_summary" || row.date !== selectedDate) return row;
           return {
             ...row,
             coachChat: [
@@ -267,7 +281,7 @@ export default function Home() {
   }
 
   useEffect(() => {
-    const insight = data.aiInsights.find((i) => i.type === "daily_summary" && i.date === dashboardDate);
+    const insight = data.aiInsights.find((i) => i.type === "daily_summary" && i.date === selectedDate);
     if (insight?.output?.trim()) {
       setAiLoading(false);
       setAiError(null);
@@ -281,7 +295,7 @@ export default function Home() {
       setAiLoading(true);
       setAiError(null);
       try {
-        await runDailySummaryGeneration(dashboardDate, ac.signal);
+        await runDailySummaryGeneration(selectedDate, ac.signal);
       } catch (e) {
         if (ac.signal.aborted || cancelled) return;
         setAiError(e instanceof Error ? e.message : "Could not generate summary.");
@@ -295,14 +309,14 @@ export default function Home() {
       ac.abort();
       setAiLoading(false);
     };
-  }, [dashboardDate, data.aiInsights, data, setData]);
+  }, [selectedDate, data.aiInsights, data, setData]);
 
   function saveJournalQuick() {
     const text = journalQuickText.trim();
     if (!text) return;
     setData((prev) => ({
       ...prev,
-      journalEntries: [{ id: crypto.randomUUID(), date: dashboardDate, content: text, goalIds: [] }, ...prev.journalEntries],
+      journalEntries: [{ id: crypto.randomUUID(), date: selectedDate, content: text, goalIds: [] }, ...prev.journalEntries],
     }));
     setJournalQuickText("");
   }
@@ -366,28 +380,33 @@ export default function Home() {
       exitingDailyRef.current.delete(key);
       setExitingDailyKeys((prev) => prev.filter((k) => k !== key));
       setData((prev) => {
-        const existing = prev.habitLogs.find((log) => log.habitId === habitId && log.date === dashboardDate);
+        const existing = prev.habitLogs.find((log) => log.habitId === habitId && log.date === selectedDate);
         const nextLogs = existing
           ? prev.habitLogs.map((log) => (log.id === existing.id ? { ...log, completed } : log))
-          : [{ id: crypto.randomUUID(), habitId, date: dashboardDate, completed }, ...prev.habitLogs];
+          : [{ id: crypto.randomUUID(), habitId, date: selectedDate, completed }, ...prev.habitLogs];
         return { ...prev, habitLogs: nextLogs };
       });
     }, COMPLETE_EXIT_MS);
   }
+
+  if (!selectedDate) return <div className="p-6">Loading...</div>;
 
   return (
     <AppShell
       title="Dashboard"
       description="Your day, summary, and journal at a glance."
       header={
-        <input
-          type="date"
-          value={dashboardDate}
-          max={today}
-          onChange={(e) => setDashboardDate(e.target.value)}
-          aria-label={`Dashboard day, ${formatDashboardDayLabel(dashboardDate)}`}
-          className="ios-field w-full max-w-[11rem] px-3 py-2 text-sm font-medium"
-        />
+        <div className="grid gap-2">
+          {nowLabel ? <p className="ios-footnote text-ios-secondary">{nowLabel}</p> : null}
+          <input
+            type="date"
+            value={selectedDate}
+            max={today || undefined}
+            onChange={(e) => setPickedDate(e.target.value)}
+            aria-label={`Dashboard day, ${formatDashboardDayLabel(selectedDate)}`}
+            className="ios-field w-full max-w-[11rem] px-3 py-2 text-sm font-medium"
+          />
+        </div>
       }
     >
       <SectionCard title="Tasks & habits" clipInset={false}>
@@ -558,7 +577,7 @@ export default function Home() {
 
       <SectionCard title="Quick journal" inset={false}>
         <div className="ios-card grid gap-3 p-4">
-          <p className="ios-footnote">Saved for {dashboardDate}. Link goals from the full Journal page.</p>
+          <p className="ios-footnote">Saved for {selectedDate}. Link goals from the full Journal page.</p>
           <textarea
             value={journalQuickText}
             onChange={(e) => setJournalQuickText(e.target.value)}

@@ -8,7 +8,7 @@ import { GroupedRow } from "@/components/ui/grouped-row";
 import { Sheet } from "@/components/ui/sheet";
 import { currentHabitStreak } from "@/lib/metrics/habitStreaks";
 import { addDaysToDateKey, dayOfMonthInAppTimezone } from "@/lib/timezone";
-import { todayKey, useAppData } from "@/lib/storage";
+import { useAppData, useTodayKey } from "@/lib/storage";
 
 export default function HabitsPage() {
   const { data, ready, setData } = useAppData();
@@ -17,12 +17,12 @@ export default function HabitsPage() {
   const [editingHabitName, setEditingHabitName] = useState("");
   const [calendarHabitId, setCalendarHabitId] = useState<string | null>(null);
   const [calendarDayPicker, setCalendarDayPicker] = useState<string | null>(null);
-  const today = todayKey();
+  const today = useTodayKey();
 
   const todayLogs = useMemo(() => data.habitLogs.filter((log) => log.date === today), [data.habitLogs, today]);
 
   const habitCalendarData = useMemo(() => {
-    if (!calendarHabitId) return null;
+    if (!calendarHabitId || !today) return null;
     const habit = data.habits.find((h) => h.id === calendarHabitId);
     if (!habit) return null;
 
@@ -105,6 +105,7 @@ export default function HabitsPage() {
   }
 
   function setTodayHabitLog(habitId: string, completed: boolean) {
+    if (!today) return;
     setHabitLog(habitId, today, completed);
   }
 
@@ -113,7 +114,7 @@ export default function HabitsPage() {
     setCalendarDayPicker(null);
   }
 
-  if (!ready) return <div className="p-6">Loading habits...</div>;
+  if (!ready || !today) return <div className="p-6">Loading habits...</div>;
 
   return (
     <AppShell

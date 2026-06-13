@@ -5,6 +5,7 @@ import { SectionCard } from "@/components/layout/section-card";
 import { GlassButton } from "@/components/ui/glass-button";
 import { getClientSyncKey, getStorageMode } from "@/lib/cloud-sync";
 import { useAppData } from "@/lib/storage";
+import { formatIsoTimestamp } from "@/lib/timezone";
 
 export function CloudStorageCard() {
   const { storageMode, syncStatus, enableCloudStorage, disableCloudStorage, syncNow } = useAppData();
@@ -46,7 +47,7 @@ export function CloudStorageCard() {
       ? "Saving to cloud..."
       : syncStatus.state === "synced"
         ? syncStatus.lastSyncedAt
-          ? `Synced ${new Date(syncStatus.lastSyncedAt).toLocaleString()}`
+          ? `Synced ${formatIsoTimestamp(syncStatus.lastSyncedAt)}`
           : "Synced"
         : syncStatus.state === "error"
           ? syncStatus.message ?? "Sync error"

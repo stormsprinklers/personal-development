@@ -6,7 +6,7 @@ import { SectionCard } from "@/components/layout/section-card";
 import { GlassButton } from "@/components/ui/glass-button";
 import { buildAiContext } from "@/lib/ai/contextBuilder";
 import { journalAnalysisPrompt, qaPrompt } from "@/lib/ai/prompts";
-import { todayKey, useAppData } from "@/lib/storage";
+import { useAppData, useTodayKey } from "@/lib/storage";
 
 function ChevronIcon({ expanded }: { expanded: boolean }) {
   return (
@@ -31,7 +31,7 @@ export default function JournalPage() {
   const [aiOutput, setAiOutput] = useState("");
   const [expandedEntryIds, setExpandedEntryIds] = useState<Set<string>>(() => new Set());
 
-  const today = todayKey();
+  const today = useTodayKey();
   const journalOrdered = useMemo(
     () => [...data.journalEntries].sort((a, b) => (a.date === b.date ? 0 : a.date < b.date ? 1 : -1)),
     [data.journalEntries],
@@ -45,7 +45,7 @@ export default function JournalPage() {
   }
 
   function addEntry() {
-    if (!entryText.trim()) return;
+    if (!entryText.trim() || !today) return;
     setData((prev) => ({
       ...prev,
       journalEntries: [
@@ -59,7 +59,7 @@ export default function JournalPage() {
 
   async function analyzeLatestEntry() {
     const latest = journalOrdered[0];
-    if (!latest) return;
+    if (!latest || !today) return;
     const context = buildAiContext(data, today);
     const prompt = journalAnalysisPrompt(latest.content, JSON.stringify(context, null, 2));
     const response = await fetch("/api/ai", {
@@ -81,7 +81,7 @@ export default function JournalPage() {
   }
 
   async function askAiQuestion() {
-    if (!question.trim()) return;
+    if (!question.trim() || !today) return;
     const context = buildAiContext(data, today);
     const prompt = qaPrompt(question, JSON.stringify(context, null, 2));
     const response = await fetch("/api/ai", {
@@ -109,7 +109,7 @@ export default function JournalPage() {
     });
   }
 
-  if (!ready) return <div className="p-6">Loading journal...</div>;
+  if (!ready || !today) return <div className="p-6">Loading journal...</div>;
 
   return (
     <AppShell

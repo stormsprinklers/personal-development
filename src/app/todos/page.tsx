@@ -7,11 +7,11 @@ import { SectionCard } from "@/components/layout/section-card";
 import { GlassButton } from "@/components/ui/glass-button";
 import { mainTodoListId, reassignMainTodoList } from "@/lib/todo-helpers";
 import { yearInAppTimezone } from "@/lib/timezone";
-import { todayKey, useAppData } from "@/lib/storage";
+import { useAppData, useTodayKey } from "@/lib/storage";
 
 export default function TodosPage() {
   const { data, ready, setData } = useAppData();
-  const today = todayKey();
+  const today = useTodayKey();
   const [newListName, setNewListName] = useState("");
   const [todoTitle, setTodoTitle] = useState("");
   const [selectedListId, setSelectedListId] = useState("");
@@ -349,6 +349,7 @@ export default function TodosPage() {
   }
 
   function logHabitTodayWithExit(habitId: string, completed: boolean) {
+    if (!today) return;
     if (exitingHabitIdsRef.current.has(habitId)) return;
     exitingHabitIdsRef.current.add(habitId);
     setFadingHabitIds((prev) => [...prev, habitId]);
@@ -365,7 +366,7 @@ export default function TodosPage() {
     }, COMPLETE_EXIT_MS);
   }
 
-  if (!ready) return <div className="p-6">Loading to-do lists...</div>;
+  if (!ready || !today) return <div className="p-6">Loading to-do lists...</div>;
 
   return (
     <AppShell
