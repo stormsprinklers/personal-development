@@ -213,7 +213,7 @@ export function DashboardSortableTodos({
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <SortableContext items={items.map((item) => item.key)} strategy={verticalListSortingStrategy}>
-        <div className="min-w-0">
+        <div className="min-w-0" data-no-tab-swipe="">
           {items.map((item, index) => (
             <SortableDailyRow
               key={item.key}

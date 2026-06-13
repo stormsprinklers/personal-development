@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { APP_SECTIONS, isAppSectionActive } from "@/lib/navigation";
 import type { AppSection } from "@/lib/navigation";
 
 type Props = {
@@ -9,9 +10,7 @@ type Props = {
 };
 
 function isActive(section: AppSection, pathname: string) {
-  if (section.href === "/") return pathname === "/";
-  if (section.href === "/workouts") return pathname.startsWith("/workouts");
-  return pathname === section.href || pathname.startsWith(`${section.href}/`);
+  return isAppSectionActive(section, pathname);
 }
 
 export function ScrollTabBar({ sections, activePath }: Props) {

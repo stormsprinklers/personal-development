@@ -39,3 +39,24 @@ export const APP_SECTIONS: AppSection[] = [
     description: "Manage area-based lists with hidden completions and history.",
   },
 ];
+
+export function isAppSectionActive(section: AppSection, pathname: string): boolean {
+  if (section.href === "/") return pathname === "/";
+  if (section.href === "/workouts") return pathname.startsWith("/workouts");
+  return pathname === section.href || pathname.startsWith(`${section.href}/`);
+}
+
+export function appSectionIndex(pathname: string): number | null {
+  const index = APP_SECTIONS.findIndex((section) => isAppSectionActive(section, pathname));
+  return index === -1 ? null : index;
+}
+
+export function adjacentAppSectionHref(pathname: string, direction: "next" | "prev"): string | null {
+  const index = appSectionIndex(pathname);
+  if (index === null) return null;
+  const nextIndex = direction === "next" ? index + 1 : index - 1;
+  if (nextIndex < 0 || nextIndex >= APP_SECTIONS.length) return null;
+  return APP_SECTIONS[nextIndex].href;
+}
+
+export const TAB_SWIPE_ENTER_KEY = "pd-tab-swipe-enter";
