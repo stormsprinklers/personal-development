@@ -7,34 +7,10 @@ import { GlassButton } from "@/components/ui/glass-button";
 import { Sheet } from "@/components/ui/sheet";
 import { CompleteExitRow, COMPLETE_EXIT_MS } from "@/components/complete-exit-row";
 import { runBikeDistanceUnitAbbr, weightUnitAbbr, defaultMeasurementPreferences } from "@/lib/units";
-import { manualGoalProgressPercent } from "@/lib/goal-progress";
+import { computeGoalProgressPercent, latestBodyWeightInYear, manualGoalProgressPercent } from "@/lib/goal-progress";
 import { todoItemsForGoal } from "@/lib/todo-helpers";
 import { yearInAppTimezone } from "@/lib/timezone";
 import { useAppData } from "@/lib/storage";
-
-function latestBodyWeightInYear(data: { workoutSessions: { date: string; bodyWeight?: number }[] }, year: number) {
-  const prefix = `${year}-`;
-  const sessions = data.workoutSessions
-    .filter(
-      (s) =>
-        s.date.startsWith(prefix) &&
-        typeof s.bodyWeight === "number" &&
-        !Number.isNaN(s.bodyWeight) &&
-        s.bodyWeight > 0,
-    )
-    .sort((a, b) => b.date.localeCompare(a.date));
-  return sessions[0]?.bodyWeight;
-}
-
-function bodyWeightGoalProgress(start: number, target: number, latest: number | undefined): number {
-  const current = latest ?? start;
-  if (!Number.isFinite(start) || !Number.isFinite(target)) return 0;
-  if (target === start) return Math.abs(current - target) < 1e-6 ? 100 : 0;
-  if (target > start) {
-    return Math.min(100, Math.max(0, ((current - start) / (target - start)) * 100));
-  }
-  return Math.min(100, Math.max(0, ((start - current) / (start - target)) * 100));
-}
 
 export default function GoalsPage() {
   const { data, ready, setData } = useAppData();
@@ -115,101 +91,7 @@ export default function GoalsPage() {
   }
 
   function computeGoalProgress(goalId: string) {
-    const goal = data.goals.find((item) => item.id === goalId);
-    if (!goal) return 0;
-    if (goal.completed === true) return 100;
-
-    const tasks = todoItemsForGoal(data, goalId);
-    const doneTasks = tasks.filter((item) => !item.active).length;
-
-    const progressParts: number[] = [];
-
-    if (tasks.length) {
-      progressParts.push((doneTasks / tasks.length) * 100);
-    }
-
-    const hasHabitTarget = Boolean(goal.habitTargetDays && goal.habitTargetDays > 0);
-    const linkedHabitIds = goal.linkedHabitIds ?? [];
-    const hasLinkedHabits = linkedHabitIds.length > 0;
-
-    let habitProgress = 0;
-    if (hasHabitTarget && hasLinkedHabits) {
-      const perHabitProgress = linkedHabitIds.map((habitId) => {
-        const completedDays = data.habitLogs.filter(
-          (log) => log.habitId === habitId && log.completed && log.date.startsWith(`${goalYear}-`),
-        ).length;
-        return Math.min(100, (completedDays / (goal.habitTargetDays as number)) * 100);
-      });
-      habitProgress =
-        perHabitProgress.reduce((sum, value) => sum + value, 0) / Math.max(1, perHabitProgress.length);
-    }
-
-    if (hasHabitTarget && hasLinkedHabits) progressParts.push(habitProgress);
-    const hasExerciseProgress =
-      goal.linkedExerciseId &&
-      typeof goal.exerciseStartValue === "number" &&
-      typeof goal.exerciseTargetValue === "number";
-    if (hasExerciseProgress) {
-      const exercise = data.exercises.find((item) => item.id === goal.linkedExerciseId);
-      if (exercise) {
-        const yearPrefix = `${goalYear}-`;
-        let achieved = goal.exerciseStartValue as number;
-
-        if (exercise.category === "strength") {
-          achieved = data.workoutSessions
-            .filter((session) => session.date.startsWith(yearPrefix))
-            .flatMap((session) => session.strengthSets)
-            .filter((set) => set.exerciseId === exercise.id)
-            .reduce((max, set) => Math.max(max, set.weight), achieved);
-        } else if (exercise.category === "run" || exercise.category === "bike") {
-          achieved = data.workoutSessions
-            .filter((session) => session.date.startsWith(yearPrefix))
-            .flatMap((session) => session.cardioEntries)
-            .filter((entry) => entry.type === exercise.category)
-            .reduce((max, entry) => Math.max(max, entry.distance ?? 0), achieved);
-        } else if (exercise.category === "swim") {
-          achieved = data.workoutSessions
-            .filter((session) => session.date.startsWith(yearPrefix))
-            .flatMap((session) => session.cardioEntries)
-            .filter((entry) => entry.type === "swim")
-            .reduce((max, entry) => Math.max(max, entry.laps ?? 0), achieved);
-        }
-
-        const start = goal.exerciseStartValue as number;
-        const target = goal.exerciseTargetValue as number;
-        const range = target - start;
-        const exerciseProgress =
-          range === 0
-            ? achieved >= target
-              ? 100
-              : 0
-            : Math.min(100, Math.max(0, ((achieved - start) / range) * 100));
-        progressParts.push(exerciseProgress);
-      }
-    }
-
-    const bwStart = goal.bodyWeightStart;
-    const bwTarget = goal.bodyWeightTarget;
-    if (
-      typeof bwStart === "number" &&
-      typeof bwTarget === "number" &&
-      bwTarget !== bwStart
-    ) {
-      const latest = latestBodyWeightInYear(data, goalYear);
-      progressParts.push(bodyWeightGoalProgress(bwStart, bwTarget, latest));
-    }
-
-    const manualPercent = manualGoalProgressPercent(
-      goal.manualProgressCurrent as number,
-      goal.manualProgressTarget as number,
-      goal.manualProgressStart,
-    );
-    if (manualPercent !== undefined) {
-      progressParts.push(manualPercent);
-    }
-
-    if (!progressParts.length) return 0;
-    return Math.min(100, progressParts.reduce((sum, value) => sum + value, 0) / progressParts.length);
+    return computeGoalProgressPercent(data, goalId, goalYear);
   }
 
   const goalsBySection = data.goalSections.map((section) => {

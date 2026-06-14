@@ -7,8 +7,10 @@ export const runtime = "nodejs";
 
 type RespondBody = {
   action?: "accept" | "reject";
-  /** When accepting, whether you share your progress back (toShares on the link). */
-  shareBack?: boolean;
+  /** Recipient allows the requester to see their shared progress (toShares). */
+  allowThemToSeeMine?: boolean;
+  /** Recipient accepts the requester's offer to share progress (fromShares). */
+  allowTheirShareWithMe?: boolean;
 };
 
 export async function POST(
@@ -59,12 +61,22 @@ export async function POST(
     return NextResponse.json({ error: "Only the recipient can accept this request." }, { status: 403 });
   }
 
-  const shareBack = body.shareBack === true;
+  const allowThemToSeeMine = body.allowThemToSeeMine === true;
+  const allowTheirShareWithMe = body.allowTheirShareWithMe === true;
+
+  if (!allowThemToSeeMine && !allowTheirShareWithMe) {
+    return NextResponse.json(
+      { error: "Select at least one sharing permission to accept, or decline the request." },
+      { status: 400 },
+    );
+  }
+
   await prisma.accountabilityLink.update({
     where: { id },
     data: {
       status: AccountabilityLinkStatus.active,
-      toShares: shareBack,
+      toShares: allowThemToSeeMine,
+      fromShares: allowTheirShareWithMe,
     },
   });
 

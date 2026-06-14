@@ -1,4 +1,5 @@
 import type { AppData } from "@/lib/models";
+import { averageGoalsProgressForYear } from "@/lib/goal-progress";
 import { addDaysToDateKey, dateKeyFromIsoTimestamp, dateKeyInAppTimezone } from "@/lib/timezone";
 
 export function dateKeysLastNDays(n: number, end = new Date()) {
@@ -55,8 +56,5 @@ export function cardioMinutesLastDays(data: AppData, days = 14) {
 }
 
 export function goalsProgressForYear(data: AppData, year: number) {
-  const list = data.goals.filter((g) => g.year === year);
-  if (!list.length) return { done: 0, total: 0, percent: 0 };
-  const done = list.filter((g) => g.completed).length;
-  return { done, total: list.length, percent: Math.round((done / list.length) * 100) };
+  return averageGoalsProgressForYear(data, year);
 }

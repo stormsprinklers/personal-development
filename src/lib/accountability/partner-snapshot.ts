@@ -1,4 +1,5 @@
 import type { AppData } from "@/lib/models";
+import { computeGoalProgressPercent } from "@/lib/goal-progress";
 import { goalsProgressForYear } from "@/lib/metrics/dashboardMetrics";
 import { strengthSummaryByExercise } from "@/lib/metrics/workoutMetrics";
 import { normalizeAppData } from "@/lib/normalize-app-data";
@@ -15,6 +16,7 @@ export type PartnerDashboardSnapshot = {
     title: string;
     completed: boolean;
     sectionName: string;
+    progressPercent: number;
   }>;
   habits: Array<{
     id: string;
@@ -49,6 +51,7 @@ export function buildPartnerSnapshot(
       title: g.title,
       completed: g.completed,
       sectionName: sectionNameById.get(g.sectionId) ?? "Goals",
+      progressPercent: Math.round(computeGoalProgressPercent(normalized, g.id, goalYear)),
     }));
 
   const activeHabits = normalized.habits.filter((h) => h.active);

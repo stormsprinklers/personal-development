@@ -3,6 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { SectionCard } from "@/components/layout/section-card";
 import { GlassButton } from "@/components/ui/glass-button";
+import {
+  ACCOUNTABILITY_SHARED_ITEMS,
+  describeActiveLink,
+  describeIncomingRequest,
+  describeOutgoingRequest,
+} from "@/lib/accountability/link-copy";
 import { useAuth } from "@/lib/auth/auth-context";
 
 type LinkUser = { id: string; displayName: string; accountabilityCode: string };
@@ -40,6 +46,108 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<{ ok: bool
   } catch {
     throw new Error(`Server returned an invalid response (${response.status}).`);
   }
+}
+
+function IncomingRequestRow({
+  link,
+  busy,
+  onRespond,
+}: {
+  link: AccountabilityLinkRow;
+  busy: boolean;
+  onRespond: (
+    linkId: string,
+    action: "accept" | "reject",
+    grants?: { allowThemToSeeMine: boolean; allowTheirShareWithMe: boolean },
+  ) => void;
+}) {
+  const { requesterName, wantsToSeeYours, wantsToShareWithYou } = describeIncomingRequest(link);
+  const [allowThemToSeeMine, setAllowThemToSeeMine] = useState(wantsToSeeYours);
+  const [allowTheirShareWithMe, setAllowTheirShareWithMe] = useState(wantsToShareWithYou);
+
+  useEffect(() => {
+    setAllowThemToSeeMine(wantsToSeeYours);
+    setAllowTheirShareWithMe(wantsToShareWithYou);
+  }, [link.id, wantsToSeeYours, wantsToShareWithYou]);
+
+  const canAccept = allowThemToSeeMine || allowTheirShareWithMe;
+
+  return (
+    <div className="px-4 py-3">
+      <p className="text-sm font-medium text-ios-label">{requesterName}</p>
+      <p className="mt-1 text-xs text-ios-secondary">Requested access:</p>
+      <ul className="mt-1 list-inside list-disc text-xs text-ios-secondary">
+        {wantsToSeeYours ? (
+          <li>
+            Wants to see your {ACCOUNTABILITY_SHARED_ITEMS}
+          </li>
+        ) : null}
+        {wantsToShareWithYou ? (
+          <li>
+            Wants to share their {ACCOUNTABILITY_SHARED_ITEMS} with you
+          </li>
+        ) : null}
+        {!wantsToSeeYours && !wantsToShareWithYou ? <li>No specific access requested</li> : null}
+      </ul>
+
+      <p className="mt-3 text-xs font-medium uppercase tracking-wide text-ios-secondary">You allow</p>
+      <div className="mt-2 grid gap-2">
+        {wantsToSeeYours ? (
+          <label className="flex items-start gap-2 text-sm text-ios-label">
+            <input
+              type="checkbox"
+              className="mt-0.5 shrink-0"
+              checked={allowThemToSeeMine}
+              onChange={(e) => setAllowThemToSeeMine(e.target.checked)}
+            />
+            <span>
+              {requesterName} can see my {ACCOUNTABILITY_SHARED_ITEMS}
+            </span>
+          </label>
+        ) : null}
+        {wantsToShareWithYou ? (
+          <label className="flex items-start gap-2 text-sm text-ios-label">
+            <input
+              type="checkbox"
+              className="mt-0.5 shrink-0"
+              checked={allowTheirShareWithMe}
+              onChange={(e) => setAllowTheirShareWithMe(e.target.checked)}
+            />
+            <span>
+              I can see {requesterName}&apos;s {ACCOUNTABILITY_SHARED_ITEMS}
+            </span>
+          </label>
+        ) : null}
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <GlassButton
+          variant="primary"
+          className="min-h-9 px-3 py-1 text-xs"
+          disabled={busy || !canAccept}
+          onClick={() =>
+            onRespond(link.id, "accept", {
+              allowThemToSeeMine: wantsToSeeYours ? allowThemToSeeMine : false,
+              allowTheirShareWithMe: wantsToShareWithYou ? allowTheirShareWithMe : false,
+            })
+          }
+        >
+          Accept selected
+        </GlassButton>
+        <GlassButton
+          variant="destructive"
+          className="min-h-9 px-3 py-1 text-xs"
+          disabled={busy}
+          onClick={() => onRespond(link.id, "reject")}
+        >
+          Decline
+        </GlassButton>
+      </div>
+      {!canAccept ? (
+        <p className="mt-2 text-xs text-ios-secondary">Select at least one permission to accept.</p>
+      ) : null}
+    </div>
+  );
 }
 
 export function AccountabilitySettingsPanel() {
@@ -115,14 +223,26 @@ export function AccountabilitySettingsPanel() {
     }
   }
 
-  async function respond(linkId: string, action: "accept" | "reject", shareBack?: boolean) {
+  async function respond(
+    linkId: string,
+    action: "accept" | "reject",
+    grants?: { allowThemToSeeMine: boolean; allowTheirShareWithMe: boolean },
+  ) {
     setBusy(true);
     setError(null);
     try {
       const { ok, data } = await fetchJson<{ error?: string }>(`/api/accountability/requests/${linkId}/respond`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, shareBack }),
+        body: JSON.stringify(
+          action === "accept"
+            ? {
+                action,
+                allowThemToSeeMine: grants?.allowThemToSeeMine ?? false,
+                allowTheirShareWithMe: grants?.allowTheirShareWithMe ?? false,
+              }
+            : { action },
+        ),
       });
       if (!ok) throw new Error(data.error ?? "Could not update request.");
       await load();
@@ -154,13 +274,6 @@ export function AccountabilitySettingsPanel() {
     return link.fromUser.id === user.id ? link.toUser.displayName : link.fromUser.displayName;
   }
 
-  function describeLink(link: AccountabilityLinkRow) {
-    const parts: string[] = [];
-    if (link.fromShares) parts.push(`${link.fromUser.displayName} shares with ${link.toUser.displayName}`);
-    if (link.toShares) parts.push(`${link.toUser.displayName} shares with ${link.fromUser.displayName}`);
-    return parts.length ? parts.join(" · ") : "No sharing enabled yet";
-  }
-
   if (loading) {
     return <p className="text-sm text-ios-secondary">Loading accountability partners…</p>;
   }
@@ -170,8 +283,8 @@ export function AccountabilitySettingsPanel() {
       <SectionCard title="Your code" inset={false}>
         <div className="ios-card grid gap-3 p-4">
           <p className="text-sm text-ios-secondary">
-            Share this code so others can connect with you. Partners can view goals, habits, workouts, and AI summaries
-            only — not your journal or individual tasks.
+            Share this code so others can connect with you. Partners can view {ACCOUNTABILITY_SHARED_ITEMS} only —
+            not your journal or individual tasks.
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <code className="ios-card-muted rounded-lg px-4 py-2 text-lg font-semibold tracking-widest">
@@ -203,16 +316,26 @@ export function AccountabilitySettingsPanel() {
             autoComplete="off"
             spellCheck={false}
           />
-          <label className="flex items-center gap-2 text-sm text-ios-secondary">
-            <input type="checkbox" checked={shareMine} onChange={(e) => setShareMine(e.target.checked)} />
-            Share my progress with them
+          <label className="flex items-start gap-2 text-sm text-ios-secondary">
+            <input
+              type="checkbox"
+              className="mt-0.5 shrink-0"
+              checked={shareMine}
+              onChange={(e) => setShareMine(e.target.checked)}
+            />
+            <span>Share my {ACCOUNTABILITY_SHARED_ITEMS} with them</span>
           </label>
-          <label className="flex items-center gap-2 text-sm text-ios-secondary">
-            <input type="checkbox" checked={seeTheirs} onChange={(e) => setSeeTheirs(e.target.checked)} />
-            Ask to see their progress
+          <label className="flex items-start gap-2 text-sm text-ios-secondary">
+            <input
+              type="checkbox"
+              className="mt-0.5 shrink-0"
+              checked={seeTheirs}
+              onChange={(e) => setSeeTheirs(e.target.checked)}
+            />
+            <span>Ask to see their {ACCOUNTABILITY_SHARED_ITEMS}</span>
           </label>
           <p className="text-xs text-ios-secondary">
-            Sharing can be one-way or two-way. The other person approves what they share back when accepting your request.
+            They will see exactly what you request and choose which permissions to grant.
           </p>
           <div className="flex flex-wrap gap-2">
             <GlassButton variant="primary" disabled={busy || !codeInput.trim()} onClick={() => void sendRequest()}>
@@ -230,35 +353,8 @@ export function AccountabilitySettingsPanel() {
         <SectionCard title="Incoming requests" inset={false}>
           <div className="ios-card overflow-hidden">
             {incoming.map((link, i) => (
-              <div key={link.id} className={`px-4 py-3 ${i < incoming.length - 1 ? "ios-hairline" : ""}`}>
-                <p className="text-sm font-medium text-ios-label">{partnerLabel(link)}</p>
-                <p className="text-xs text-ios-secondary">{describeLink(link)}</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <GlassButton
-                    variant="primary"
-                    className="min-h-9 px-3 py-1 text-xs"
-                    disabled={busy}
-                    onClick={() => void respond(link.id, "accept", true)}
-                  >
-                    Accept & share back
-                  </GlassButton>
-                  <GlassButton
-                    variant="secondary"
-                    className="min-h-9 px-3 py-1 text-xs"
-                    disabled={busy}
-                    onClick={() => void respond(link.id, "accept", false)}
-                  >
-                    Accept (don&apos;t share back)
-                  </GlassButton>
-                  <GlassButton
-                    variant="destructive"
-                    className="min-h-9 px-3 py-1 text-xs"
-                    disabled={busy}
-                    onClick={() => void respond(link.id, "reject")}
-                  >
-                    Decline
-                  </GlassButton>
-                </div>
+              <div key={link.id} className={i < incoming.length - 1 ? "ios-hairline" : ""}>
+                <IncomingRequestRow link={link} busy={busy} onRespond={(id, action, grants) => void respond(id, action, grants)} />
               </div>
             ))}
           </div>
@@ -271,7 +367,12 @@ export function AccountabilitySettingsPanel() {
             {outgoing.map((link, i) => (
               <div key={link.id} className={`px-4 py-3 ${i < outgoing.length - 1 ? "ios-hairline" : ""}`}>
                 <p className="text-sm font-medium text-ios-label">{partnerLabel(link)}</p>
-                <p className="text-xs text-ios-secondary">{describeLink(link)} · Pending</p>
+                <ul className="mt-1 list-inside list-disc text-xs text-ios-secondary">
+                  {user
+                    ? describeOutgoingRequest(link, user.id).map((line) => <li key={line}>{line}</li>)
+                    : null}
+                </ul>
+                <p className="mt-1 text-xs text-ios-secondary">Pending their response</p>
               </div>
             ))}
           </div>
@@ -283,7 +384,9 @@ export function AccountabilitySettingsPanel() {
           {active.map((link, i) => (
             <div key={link.id} className={`px-4 py-3 ${i < active.length - 1 ? "ios-hairline" : ""}`}>
               <p className="text-sm font-medium text-ios-label">{partnerLabel(link)}</p>
-              <p className="text-xs text-ios-secondary">{describeLink(link)}</p>
+              <ul className="mt-1 list-inside list-disc text-xs text-ios-secondary">
+                {user ? describeActiveLink(link, user.id).map((line) => <li key={line}>{line}</li>) : null}
+              </ul>
               <GlassButton
                 variant="destructive"
                 className="mt-2 min-h-9 px-2 py-1 text-xs"
@@ -307,8 +410,10 @@ export function AccountabilitySettingsPanel() {
               <div key={p.linkId} className={`px-4 py-3 ${i < partners.length - 1 ? "ios-hairline" : ""}`}>
                 <p className="text-sm font-medium text-ios-label">{p.displayName}</p>
                 <p className="text-xs text-ios-secondary">
-                  {p.theyShareWithMe ? "You can view their dashboard summary" : "They have not shared their progress yet"}
-                  {p.iShareWithThem ? " · You share with them" : ""}
+                  {p.theyShareWithMe
+                    ? `You can view their ${ACCOUNTABILITY_SHARED_ITEMS}`
+                    : "They have not shared their progress with you"}
+                  {p.iShareWithThem ? ` · They can view your ${ACCOUNTABILITY_SHARED_ITEMS}` : ""}
                 </p>
               </div>
             ))}

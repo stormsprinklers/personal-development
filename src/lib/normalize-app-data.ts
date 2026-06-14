@@ -1,4 +1,5 @@
 import type { AppData } from "@/lib/models";
+import { sanitizeDashboardSectionOrder } from "@/lib/dashboard-sections";
 import { MAIN_TODO_LIST_ID, normalizeTodoListsAndItems, sanitizeDashboardDailyOrder, sanitizeDashboardTodoOrder, migrateDashboardDailyOrder, dashboardTodoOrderFromDailyOrder } from "@/lib/todo-helpers";
 import { sanitizeWorkoutRoutines } from "@/lib/workout-routines";
 import { normalizeMeasurementPreferences } from "@/lib/units";
@@ -103,6 +104,7 @@ export function normalizeAppData(input: unknown): AppData {
       dashboardTodoListIds: parsed.dashboardTodoListIds,
       dashboardTodoOrder: parsed.dashboardTodoOrder,
       dashboardDailyOrder: parsed.dashboardDailyOrder,
+      dashboardSectionOrder: parsed.dashboardSectionOrder,
     };
     const { todoLists, todoItems } = normalizeTodoListsAndItems(
       merged.todoLists,
@@ -122,6 +124,7 @@ export function normalizeAppData(input: unknown): AppData {
       todoItems,
     );
     const syncedTodoOrder = dashboardTodoOrderFromDailyOrder(dashboardDailyOrder) ?? dashboardTodoOrder;
+    const dashboardSectionOrder = sanitizeDashboardSectionOrder(merged.dashboardSectionOrder);
     const todoSections = (merged.todoSections ?? []).filter((s) => todoLists.some((l) => l.id === s.listId));
     const workoutRoutines = sanitizeWorkoutRoutines(merged.workoutRoutines, merged.exercises);
     const habits = normalizeHabits(merged.habits);
@@ -133,6 +136,7 @@ export function normalizeAppData(input: unknown): AppData {
       dashboardTodoListIds,
       dashboardTodoOrder: syncedTodoOrder,
       dashboardDailyOrder,
+      dashboardSectionOrder,
       workoutRoutines,
       habits,
     };
