@@ -3,6 +3,9 @@
  * Run once after upgrading schema: npm run db:legacy-import
  */
 import { PrismaClient } from "@prisma/client";
+import { loadEnvFiles } from "./load-env";
+
+loadEnvFiles();
 
 const prisma = new PrismaClient();
 

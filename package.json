@@ -10,7 +10,8 @@
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
-    "db:legacy-import": "npx tsx scripts/import-legacy-cloud.ts"
+    "db:legacy-import": "npx tsx scripts/import-legacy-cloud.ts",
+    "db:pre-auth-migrate": "npx tsx scripts/migrate-pre-auth-schema.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
