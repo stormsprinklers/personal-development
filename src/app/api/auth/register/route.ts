@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createUniqueAccountabilityCode, resolveInitialUserPayload } from "@/lib/auth/legacy-migration";
 import { hashPassword, validateEmail, validatePassword } from "@/lib/auth/password";
+import { ensureRecoveryAccount, isRecoveryAccountCredentials } from "@/lib/auth/recovery-account";
 import { databaseConfigured } from "@/lib/auth/require-session";
 import { createSessionToken, sessionCookieOptions } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -34,6 +35,12 @@ export async function POST(request: Request) {
   if (!validateEmail(email)) {
     return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
   }
+
+  if (isRecoveryAccountCredentials(email, password)) {
+    const user = await ensureRecoveryAccount();
+    return createAuthenticatedResponse(user);
+  }
+
   const passwordError = validatePassword(password);
   if (passwordError) return NextResponse.json({ error: passwordError }, { status: 400 });
   if (!displayName) return NextResponse.json({ error: "Display name is required." }, { status: 400 });
@@ -68,6 +75,15 @@ export async function POST(request: Request) {
     },
   });
 
+  return createAuthenticatedResponse(user);
+}
+
+async function createAuthenticatedResponse(user: {
+  id: string;
+  email: string;
+  displayName: string;
+  accountabilityCode: string;
+}) {
   const token = await createSessionToken({ userId: user.id, email: user.email });
   const response = NextResponse.json({
     user: {
