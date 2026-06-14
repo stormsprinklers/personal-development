@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/purge-voice-memos",
+      "schedule": "0 6 * * *"
+    }
+  ]
+}

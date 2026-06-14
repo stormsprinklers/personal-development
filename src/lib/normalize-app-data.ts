@@ -1,4 +1,4 @@
-import type { AppData } from "@/lib/models";
+import type { AppData, JournalEntry } from "@/lib/models";
 import { sanitizeDashboardSectionOrder } from "@/lib/dashboard-sections";
 import { MAIN_TODO_LIST_ID, normalizeTodoListsAndItems, sanitizeDashboardDailyOrder, sanitizeDashboardTodoOrder, migrateDashboardDailyOrder, dashboardTodoOrderFromDailyOrder } from "@/lib/todo-helpers";
 import { sanitizeWorkoutRoutines } from "@/lib/workout-routines";
@@ -23,6 +23,36 @@ function normalizeHabits(raw: unknown): AppData["habits"] {
       };
     })
     .filter((h): h is AppData["habits"][number] => h !== null);
+}
+
+function normalizeJournalEntries(raw: unknown): AppData["journalEntries"] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") return null;
+      const row = entry as Partial<JournalEntry> & { goalIds?: unknown; voiceMemo?: unknown };
+      const content = typeof row.content === "string" ? row.content : "";
+      const date = typeof row.date === "string" ? row.date : "";
+      if (!date || !content.trim()) return null;
+      const goalIds = Array.isArray(row.goalIds)
+        ? row.goalIds.filter((id): id is string => typeof id === "string" && Boolean(id))
+        : [];
+      let voiceMemo: JournalEntry["voiceMemo"];
+      if (row.voiceMemo && typeof row.voiceMemo === "object") {
+        const memo = row.voiceMemo as { id?: string; expiresAt?: string };
+        if (typeof memo.id === "string" && memo.id && typeof memo.expiresAt === "string" && memo.expiresAt) {
+          voiceMemo = { id: memo.id, expiresAt: memo.expiresAt };
+        }
+      }
+      return {
+        id: typeof row.id === "string" && row.id ? row.id : crypto.randomUUID(),
+        date,
+        content,
+        goalIds,
+        ...(voiceMemo ? { voiceMemo } : {}),
+      };
+    })
+    .filter((entry): entry is AppData["journalEntries"][number] => entry !== null);
 }
 
 export function createDefaultAppData(): AppData {
@@ -128,6 +158,7 @@ export function normalizeAppData(input: unknown): AppData {
     const todoSections = (merged.todoSections ?? []).filter((s) => todoLists.some((l) => l.id === s.listId));
     const workoutRoutines = sanitizeWorkoutRoutines(merged.workoutRoutines, merged.exercises);
     const habits = normalizeHabits(merged.habits);
+    const journalEntries = normalizeJournalEntries(merged.journalEntries);
     return {
       ...merged,
       todoLists,
@@ -139,6 +170,7 @@ export function normalizeAppData(input: unknown): AppData {
       dashboardSectionOrder,
       workoutRoutines,
       habits,
+      journalEntries,
     };
   } catch {
     return createDefaultAppData();

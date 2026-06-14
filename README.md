@@ -19,6 +19,8 @@ Every user **registers and signs in** with email and password. Data syncs automa
    - `DATABASE_URL` — Postgres connection string
    - `SESSION_SECRET` — long random string for session cookies
    - `OPENAI_API_KEY` — for AI features (optional locally)
+   - `BLOB_READ_WRITE_TOKEN` — Vercel Blob store for journal voice memos (production)
+   - `CRON_SECRET` — protects scheduled cron routes on Vercel (optional locally)
 2. Apply the schema:
    ```bash
    npm run db:push

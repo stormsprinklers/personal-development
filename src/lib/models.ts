@@ -148,6 +148,11 @@ export type JournalEntry = {
   date: string;
   content: string;
   goalIds: string[];
+  /** Playback metadata; audio file expires after 7 days. */
+  voiceMemo?: {
+    id: string;
+    expiresAt: string;
+  };
 };
 
 export type AiInsightType = "daily_summary" | "journal_analysis" | "qa";

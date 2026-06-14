@@ -4,8 +4,10 @@ import { useMemo, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
 import { GlassButton } from "@/components/ui/glass-button";
+import { VoiceMemoRecorder, type TranscribedVoiceMemo } from "@/components/journal/voice-memo-recorder";
 import { buildAiContext } from "@/lib/ai/contextBuilder";
 import { journalAnalysisPrompt, qaPrompt } from "@/lib/ai/prompts";
+import { isVoiceMemoExpired } from "@/lib/journal/voice-memo";
 import { useAppData, useTodayKey } from "@/lib/storage";
 
 function ChevronIcon({ expanded }: { expanded: boolean }) {
@@ -30,6 +32,7 @@ export default function JournalPage() {
   const [question, setQuestion] = useState("");
   const [aiOutput, setAiOutput] = useState("");
   const [expandedEntryIds, setExpandedEntryIds] = useState<Set<string>>(() => new Set());
+  const [pendingVoiceMemo, setPendingVoiceMemo] = useState<TranscribedVoiceMemo["voiceMemo"] | null>(null);
 
   const today = useTodayKey();
   const journalOrdered = useMemo(
@@ -44,17 +47,43 @@ export default function JournalPage() {
     );
   }
 
-  function addEntry() {
+  function handleVoiceTranscribed(result: TranscribedVoiceMemo) {
+    setEntryText((prev) => (prev.trim() ? `${prev.trim()}\n\n${result.transcript}` : result.transcript));
+    setPendingVoiceMemo(result.voiceMemo);
+  }
+
+  async function addEntry() {
     if (!entryText.trim() || !today) return;
+    const entryId = crypto.randomUUID();
+    const voiceMemo = pendingVoiceMemo ?? undefined;
     setData((prev) => ({
       ...prev,
       journalEntries: [
-        { id: crypto.randomUUID(), date: today, content: entryText.trim(), goalIds: selectedGoalIds },
+        {
+          id: entryId,
+          date: today,
+          content: entryText.trim(),
+          goalIds: selectedGoalIds,
+          ...(voiceMemo ? { voiceMemo } : {}),
+        },
         ...prev.journalEntries,
       ],
     }));
     setEntryText("");
     setSelectedGoalIds([]);
+    setPendingVoiceMemo(null);
+
+    if (voiceMemo) {
+      try {
+        await fetch("/api/journal/voice-memo/link", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ voiceMemoId: voiceMemo.id, journalEntryId: entryId }),
+        });
+      } catch {
+        // Entry is saved locally; link can be retried on next sync if needed.
+      }
+    }
   }
 
   async function analyzeLatestEntry() {
@@ -118,6 +147,13 @@ export default function JournalPage() {
     >
       <SectionCard title="New Entry" subtitle="Create unlimited journal entries and link to relevant goals." inset={false}>
         <div className="grid gap-3">
+          <VoiceMemoRecorder onTranscribed={handleVoiceTranscribed} />
+          {pendingVoiceMemo && !isVoiceMemoExpired(pendingVoiceMemo.expiresAt) ? (
+            <p className="ios-footnote text-ios-secondary">
+              Voice memo attached — audio available for playback until{" "}
+              {new Date(pendingVoiceMemo.expiresAt).toLocaleDateString()}.
+            </p>
+          ) : null}
           <textarea
             value={entryText}
             onChange={(event) => setEntryText(event.target.value)}
@@ -174,12 +210,22 @@ export default function JournalPage() {
             const expanded = expandedEntryIds.has(entry.id);
             const preview = entry.content.trim();
             const isLong = preview.length > 180 || preview.split("\n").length > 3;
+            const showVoicePlayback =
+              entry.voiceMemo && !isVoiceMemoExpired(entry.voiceMemo.expiresAt);
 
             const body = (
               <>
                 <p className="ios-footnote font-medium uppercase tracking-wide">{entry.date}</p>
                 {linkedTitles.length ? (
                   <p className="mt-1 text-xs text-ios-secondary">Linked goals: {linkedTitles.join(", ")}</p>
+                ) : null}
+                {showVoicePlayback ? (
+                  <audio
+                    controls
+                    preload="none"
+                    src={`/api/journal/voice-memo/${entry.voiceMemo!.id}`}
+                    className="mt-3 w-full"
+                  />
                 ) : null}
                 <p
                   className={`mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ios-label ${

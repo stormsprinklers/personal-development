@@ -20,6 +20,7 @@ model User {
   linksInitiated       AccountabilityLink[] @relation("LinkInitiator")
   linksFrom            AccountabilityLink[] @relation("LinkFrom")
   linksTo              AccountabilityLink[] @relation("LinkTo")
+  journalVoiceMemos    JournalVoiceMemo[]
 }
 
 /** Full app snapshot (matches client AppData JSON). One row per user. */
@@ -69,4 +70,21 @@ model LegacyAppDataStore {
   payload   Json
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
+}
+
+/** Private voice memo audio stored in Vercel Blob; transcript lives in AppData journalEntries. */
+model JournalVoiceMemo {
+  id             String   @id @default(cuid())
+  userId         String
+  journalEntryId String?
+  blobUrl        String
+  blobPathname   String
+  recordedAt     DateTime @default(now())
+  expiresAt      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@index([userId])
+  @@index([journalEntryId])
 }
