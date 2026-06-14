@@ -1,18 +1,18 @@
 import { normalizeAppData } from "@/lib/normalize-app-data";
+import { requireSession, databaseConfigured } from "@/lib/auth/require-session";
 import { prisma } from "@/lib/prisma";
-import { syncKeyFromRequest, validateSyncKey } from "@/lib/sync-auth";
 
 export const runtime = "nodejs";
 
-export async function GET(request: Request) {
-  if (!process.env.DATABASE_URL?.trim()) {
+export async function GET() {
+  if (!databaseConfigured()) {
     return Response.json({ error: "DATABASE_URL is not configured on the server." }, { status: 503 });
   }
 
-  const auth = validateSyncKey(syncKeyFromRequest(request));
-  if (!auth.ok) return Response.json({ error: auth.error }, { status: auth.error.includes("required") ? 401 : 403 });
+  const auth = await requireSession();
+  if (!auth.ok) return auth.response;
 
-  const row = await prisma.appDataStore.findUnique({ where: { syncKey: auth.key } });
+  const row = await prisma.appDataStore.findUnique({ where: { userId: auth.session.userId } });
   if (!row) {
     return Response.json({ data: null, updatedAt: null });
   }
@@ -24,12 +24,12 @@ export async function GET(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  if (!process.env.DATABASE_URL?.trim()) {
+  if (!databaseConfigured()) {
     return Response.json({ error: "DATABASE_URL is not configured on the server." }, { status: 503 });
   }
 
-  const auth = validateSyncKey(syncKeyFromRequest(request));
-  if (!auth.ok) return Response.json({ error: auth.error }, { status: auth.error.includes("required") ? 401 : 403 });
+  const auth = await requireSession();
+  if (!auth.ok) return auth.response;
 
   let body: unknown;
   try {
@@ -42,8 +42,8 @@ export async function PUT(request: Request) {
   const normalized = normalizeAppData(payload);
 
   const row = await prisma.appDataStore.upsert({
-    where: { syncKey: auth.key },
-    create: { syncKey: auth.key, payload: normalized as object },
+    where: { userId: auth.session.userId },
+    create: { userId: auth.session.userId, payload: normalized as object },
     update: { payload: normalized as object },
   });
 

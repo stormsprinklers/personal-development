@@ -1,217 +1,268 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { SectionCard } from "@/components/layout/section-card";
 import { GlassButton } from "@/components/ui/glass-button";
-import type { AccountabilityPartner } from "@/lib/models";
-import { useAppData } from "@/lib/storage";
+import { useAuth } from "@/lib/auth/auth-context";
+
+type LinkUser = { id: string; displayName: string; accountabilityCode: string };
+
+type AccountabilityLinkRow = {
+  id: string;
+  status: string;
+  fromShares: boolean;
+  toShares: boolean;
+  initiatedByUserId: string;
+  fromUser: LinkUser;
+  toUser: LinkUser;
+};
+
+type PartnerRow = {
+  linkId: string;
+  userId: string;
+  displayName: string;
+  accountabilityCode: string;
+  theyShareWithMe: boolean;
+  iShareWithThem: boolean;
+};
 
 export function AccountabilitySettingsPanel() {
-  const { data, setData } = useAppData();
-  const partners = data.accountabilityPartners ?? [];
+  const { user } = useAuth();
+  const [codeInput, setCodeInput] = useState("");
+  const [shareMine, setShareMine] = useState(true);
+  const [seeTheirs, setSeeTheirs] = useState(true);
+  const [incoming, setIncoming] = useState<AccountabilityLinkRow[]>([]);
+  const [outgoing, setOutgoing] = useState<AccountabilityLinkRow[]>([]);
+  const [active, setActive] = useState<AccountabilityLinkRow[]>([]);
+  const [partners, setPartners] = useState<PartnerRow[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editEmail, setEditEmail] = useState("");
-  const [editPhone, setEditPhone] = useState("");
-
-  function resetDraft() {
-    setName("");
-    setEmail("");
-    setPhone("");
-  }
-
-  function addPartner() {
-    const trimmedName = name.trim();
-    const trimmedEmail = email.trim();
-    const trimmedPhone = phone.trim();
-    if (!trimmedName || !trimmedEmail) return;
-
-    const partner: AccountabilityPartner = {
-      id: crypto.randomUUID(),
-      name: trimmedName,
-      email: trimmedEmail,
-      phone: trimmedPhone,
-      createdAt: new Date().toISOString(),
+  const load = useCallback(async () => {
+    const [reqRes, partnersRes] = await Promise.all([
+      fetch("/api/accountability/requests", { cache: "no-store" }),
+      fetch("/api/accountability/partners", { cache: "no-store" }),
+    ]);
+    const reqPayload = (await reqRes.json()) as {
+      incoming?: AccountabilityLinkRow[];
+      outgoing?: AccountabilityLinkRow[];
+      active?: AccountabilityLinkRow[];
+      error?: string;
     };
+    const partnersPayload = (await partnersRes.json()) as { partners?: PartnerRow[]; error?: string };
+    if (reqRes.ok) {
+      setIncoming(reqPayload.incoming ?? []);
+      setOutgoing(reqPayload.outgoing ?? []);
+      setActive(reqPayload.active ?? []);
+    }
+    if (partnersRes.ok) setPartners(partnersPayload.partners ?? []);
+  }, []);
 
-    setData((prev) => ({
-      ...prev,
-      accountabilityPartners: [...(prev.accountabilityPartners ?? []), partner],
-    }));
-    resetDraft();
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  async function sendRequest() {
+    setBusy(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/accountability/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: codeInput, fromShares: shareMine, toShares: seeTheirs }),
+      });
+      const payload = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(payload.error ?? "Could not send request.");
+      setCodeInput("");
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Request failed.");
+    } finally {
+      setBusy(false);
+    }
   }
 
-  function startEdit(partner: AccountabilityPartner) {
-    setEditingId(partner.id);
-    setEditName(partner.name);
-    setEditEmail(partner.email);
-    setEditPhone(partner.phone);
+  async function respond(linkId: string, action: "accept" | "reject", shareBack?: boolean) {
+    setBusy(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/accountability/requests/${linkId}/respond`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, shareBack }),
+      });
+      const payload = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(payload.error ?? "Could not update request.");
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Update failed.");
+    } finally {
+      setBusy(false);
+    }
   }
 
-  function cancelEdit() {
-    setEditingId(null);
-    setEditName("");
-    setEditEmail("");
-    setEditPhone("");
+  async function revoke(linkId: string) {
+    setBusy(true);
+    try {
+      await fetch(`/api/accountability/links/${linkId}`, { method: "DELETE" });
+      await load();
+    } finally {
+      setBusy(false);
+    }
   }
 
-  function saveEdit() {
-    if (!editingId || !editName.trim() || !editEmail.trim()) return;
-    setData((prev) => ({
-      ...prev,
-      accountabilityPartners: (prev.accountabilityPartners ?? []).map((partner) =>
-        partner.id === editingId
-          ? {
-              ...partner,
-              name: editName.trim(),
-              email: editEmail.trim(),
-              phone: editPhone.trim(),
-            }
-          : partner,
-      ),
-    }));
-    cancelEdit();
+  function partnerLabel(link: AccountabilityLinkRow) {
+    if (!user) return "";
+    return link.fromUser.id === user.id ? link.toUser.displayName : link.fromUser.displayName;
   }
 
-  function removePartner(partnerId: string) {
-    setData((prev) => ({
-      ...prev,
-      accountabilityPartners: (prev.accountabilityPartners ?? []).filter((partner) => partner.id !== partnerId),
-    }));
-    if (editingId === partnerId) cancelEdit();
+  function describeLink(link: AccountabilityLinkRow) {
+    const parts: string[] = [];
+    if (link.fromShares) parts.push(`${link.fromUser.displayName} shares with ${link.toUser.displayName}`);
+    if (link.toShares) parts.push(`${link.toUser.displayName} shares with ${link.fromUser.displayName}`);
+    return parts.length ? parts.join(" · ") : "No sharing enabled";
   }
 
   return (
     <>
-      <SectionCard title="About accountability" inset={false}>
-        <p className="ios-card-muted p-4 text-sm text-ios-secondary">
-          Add people who should receive automated updates on your habits, tasks, workouts, goals, and journal
-          progress. Twilio SMS and email delivery will be wired up here later.
-        </p>
-      </SectionCard>
-
-      <SectionCard title="Add partner" inset={false}>
+      <SectionCard title="Your code" inset={false}>
         <div className="ios-card grid gap-3 p-4">
-          <label className="grid gap-1 text-xs font-medium text-ios-secondary">
-            Name
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Partner name"
-              className="ios-field px-3 py-2.5 text-sm"
-              autoComplete="name"
-            />
-          </label>
-          <label className="grid gap-1 text-xs font-medium text-ios-secondary">
-            Email
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="partner@example.com"
-              className="ios-field px-3 py-2.5 text-sm"
-              autoComplete="email"
-            />
-          </label>
-          <label className="grid gap-1 text-xs font-medium text-ios-secondary">
-            Phone
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+1 555 123 4567"
-              className="ios-field px-3 py-2.5 text-sm"
-              autoComplete="tel"
-            />
-          </label>
-          <GlassButton variant="primary" onClick={addPartner} disabled={!name.trim() || !email.trim()}>
-            Add accountability partner
-          </GlassButton>
+          <p className="text-sm text-ios-secondary">
+            Share this code so others can connect with you. Partners see goals, habits, workouts, and AI summaries
+            only — not your journal or individual tasks.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <code className="ios-card-muted rounded-lg px-4 py-2 text-lg font-semibold tracking-widest">
+              {user?.accountabilityCode ?? "—"}
+            </code>
+            <GlassButton
+              variant="secondary"
+              onClick={() => {
+                if (!user?.accountabilityCode) return;
+                void navigator.clipboard.writeText(user.accountabilityCode);
+                setCopied(true);
+                window.setTimeout(() => setCopied(false), 2000);
+              }}
+            >
+              {copied ? "Copied" : "Copy"}
+            </GlassButton>
+          </div>
         </div>
       </SectionCard>
 
-      <SectionCard title="Partners" inset={false}>
+      <SectionCard title="Add partner by code" inset={false}>
+        <div className="ios-card grid gap-3 p-4">
+          <input
+            value={codeInput}
+            onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
+            placeholder="Partner code"
+            className="ios-field px-3 py-2.5 text-sm uppercase tracking-wider"
+          />
+          <label className="flex items-center gap-2 text-sm text-ios-secondary">
+            <input type="checkbox" checked={shareMine} onChange={(e) => setShareMine(e.target.checked)} />
+            Share my progress with them
+          </label>
+          <label className="flex items-center gap-2 text-sm text-ios-secondary">
+            <input type="checkbox" checked={seeTheirs} onChange={(e) => setSeeTheirs(e.target.checked)} />
+            Request to see their progress
+          </label>
+          <GlassButton variant="primary" disabled={busy || !codeInput.trim()} onClick={() => void sendRequest()}>
+            Send request
+          </GlassButton>
+          {error ? <p className="text-sm text-copper">{error}</p> : null}
+        </div>
+      </SectionCard>
+
+      {incoming.length ? (
+        <SectionCard title="Incoming requests" inset={false}>
+          <div className="ios-card overflow-hidden">
+            {incoming.map((link, i) => (
+              <div key={link.id} className={`px-4 py-3 ${i < incoming.length - 1 ? "ios-hairline" : ""}`}>
+                <p className="text-sm font-medium text-ios-label">{partnerLabel(link)}</p>
+                <p className="text-xs text-ios-secondary">{describeLink(link)}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <GlassButton
+                    variant="primary"
+                    className="min-h-9 px-3 py-1 text-xs"
+                    disabled={busy}
+                    onClick={() => void respond(link.id, "accept", true)}
+                  >
+                    Accept & share back
+                  </GlassButton>
+                  <GlassButton
+                    variant="secondary"
+                    className="min-h-9 px-3 py-1 text-xs"
+                    disabled={busy}
+                    onClick={() => void respond(link.id, "accept", false)}
+                  >
+                    Accept (don&apos;t share back)
+                  </GlassButton>
+                  <GlassButton
+                    variant="destructive"
+                    className="min-h-9 px-3 py-1 text-xs"
+                    disabled={busy}
+                    onClick={() => void respond(link.id, "reject")}
+                  >
+                    Decline
+                  </GlassButton>
+                </div>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      ) : null}
+
+      {outgoing.length ? (
+        <SectionCard title="Outgoing requests" inset={false}>
+          <div className="ios-card overflow-hidden">
+            {outgoing.map((link, i) => (
+              <div key={link.id} className={`px-4 py-3 ${i < outgoing.length - 1 ? "ios-hairline" : ""}`}>
+                <p className="text-sm font-medium text-ios-label">{partnerLabel(link)}</p>
+                <p className="text-xs text-ios-secondary">{describeLink(link)} · Pending</p>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      ) : null}
+
+      <SectionCard title="Active partners" inset={false}>
         <div className="ios-card overflow-hidden">
-          {partners.map((partner, index) => (
-            <div
-              key={partner.id}
-              className={`px-4 py-3 ${index < partners.length - 1 ? "ios-hairline" : ""}`}
-            >
-              {editingId === partner.id ? (
-                <div className="grid gap-2">
-                  <input
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    placeholder="Name"
-                    className="ios-field px-3 py-2 text-sm"
-                  />
-                  <input
-                    type="email"
-                    value={editEmail}
-                    onChange={(e) => setEditEmail(e.target.value)}
-                    placeholder="Email"
-                    className="ios-field px-3 py-2 text-sm"
-                  />
-                  <input
-                    type="tel"
-                    value={editPhone}
-                    onChange={(e) => setEditPhone(e.target.value)}
-                    placeholder="Phone"
-                    className="ios-field px-3 py-2 text-sm"
-                  />
-                  <div className="flex flex-wrap gap-2">
-                    <GlassButton variant="primary" className="min-h-9 px-3 py-1 text-xs" onClick={saveEdit}>
-                      Save
-                    </GlassButton>
-                    <GlassButton variant="secondary" className="min-h-9 px-3 py-1 text-xs" onClick={cancelEdit}>
-                      Cancel
-                    </GlassButton>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-ios-label">{partner.name}</p>
-                    <p className="text-sm text-ios-secondary">{partner.email}</p>
-                    {partner.phone ? (
-                      <p className="text-sm text-ios-secondary">{partner.phone}</p>
-                    ) : (
-                      <p className="text-xs text-ios-secondary">No phone number</p>
-                    )}
-                  </div>
-                  <div className="flex shrink-0 gap-2">
-                    <GlassButton
-                      variant="secondary"
-                      className="min-h-9 px-2 py-1 text-xs"
-                      onClick={() => startEdit(partner)}
-                    >
-                      Edit
-                    </GlassButton>
-                    <GlassButton
-                      variant="destructive"
-                      className="min-h-9 px-2 py-1 text-xs"
-                      onClick={() => {
-                        if (window.confirm(`Remove accountability partner "${partner.name}"?`)) {
-                          removePartner(partner.id);
-                        }
-                      }}
-                    >
-                      Remove
-                    </GlassButton>
-                  </div>
-                </div>
-              )}
+          {active.map((link, i) => (
+            <div key={link.id} className={`px-4 py-3 ${i < active.length - 1 ? "ios-hairline" : ""}`}>
+              <p className="text-sm font-medium text-ios-label">{partnerLabel(link)}</p>
+              <p className="text-xs text-ios-secondary">{describeLink(link)}</p>
+              <GlassButton
+                variant="destructive"
+                className="mt-2 min-h-9 px-2 py-1 text-xs"
+                disabled={busy}
+                onClick={() => void revoke(link.id)}
+              >
+                Remove
+              </GlassButton>
             </div>
           ))}
-          {!partners.length ? (
-            <p className="px-4 py-3 text-sm text-ios-secondary">No accountability partners yet.</p>
+          {!active.length ? (
+            <p className="px-4 py-3 text-sm text-ios-secondary">No active partners yet.</p>
           ) : null}
         </div>
       </SectionCard>
+
+      {partners.length ? (
+        <SectionCard title="Sharing with you" inset={false}>
+          <div className="ios-card overflow-hidden">
+            {partners.map((p, i) => (
+              <div key={p.linkId} className={`px-4 py-3 ${i < partners.length - 1 ? "ios-hairline" : ""}`}>
+                <p className="text-sm font-medium text-ios-label">{p.displayName}</p>
+                <p className="text-xs text-ios-secondary">
+                  {p.theyShareWithMe ? "You can view their dashboard" : "Waiting for sharing"}
+                  {p.iShareWithThem ? " · You share with them" : ""}
+                </p>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      ) : null}
     </>
   );
 }

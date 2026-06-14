@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { DashboardAccountabilitySection } from "@/components/dashboard/accountability-section";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
 import { COMPLETE_EXIT_MS } from "@/components/complete-exit-row";
@@ -604,6 +605,8 @@ export default function Home() {
           </GlassButton>
         </div>
       </SectionCard>
+
+      <DashboardAccountabilitySection date={selectedDate} />
     </AppShell>
   );
 }

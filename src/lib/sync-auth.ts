@@ -16,7 +16,7 @@ export function validateSyncKey(provided: string | null): { ok: true; key: strin
     return { ok: false, error: "Cloud storage is not configured (APP_SYNC_KEY missing on server)." };
   }
   if (!provided) {
-    return { ok: false, error: "Sync key required. Add your key under Workout settings → Cloud storage." };
+    return { ok: false, error: "Invalid sync key." };
   }
   if (provided !== expected) {
     return { ok: false, error: "Invalid sync key." };

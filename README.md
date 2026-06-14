@@ -1,58 +1,43 @@
-## Personal Development Hub
+# Personal Development Hub
 
-A Next.js app scaffold for personal growth workflows:
-
-- journaling
-- habit tracking
-- workout tracking
-- to-do lists
-- goal setting
-- language practice
+A Next.js app for personal growth: journaling, habits, workouts, to-dos, goals, and accountability partners.
 
 ## Getting Started
 
-Run the development server:
-
 ```bash
+npm install
 npm run dev
 ```
 
-Then open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000).
 
-## Project Structure
+## Accounts and cloud storage
 
-Core folders in `src/`:
+Every user **registers and signs in** with email and password. Data syncs automatically to PostgreSQL while signed in. A local cache is kept on each device.
 
-- `app/` - App Router pages and route segments
-- `components/` - shared UI and layout components
-- `features/` - domain modules by feature
-- `lib/` - constants, navigation, and starter data
-
-Routes included:
-
-- `/` dashboard
-- `/journal`
-- `/habits`
-- `/workouts`
-- `/todos`
-- `/goals`
-- `/language`
-
-## Cloud storage
-
-By default data lives in this browser only (`localStorage`). You can enable **cloud storage** so the full app snapshot is saved to PostgreSQL and syncs across devices.
-
-1. Create a Postgres database (Neon, Supabase, Vercel Postgres, etc.).
-2. Copy `.env.example` to `.env.local` and set:
+1. Copy `.env.example` to `.env.local` and set:
    - `DATABASE_URL` — Postgres connection string
-   - `APP_SYNC_KEY` — a long secret you choose (same on server and in the app)
-3. Apply the schema:
+   - `SESSION_SECRET` — long random string for session cookies
+   - `OPENAI_API_KEY` — for AI features (optional locally)
+2. Apply the schema:
    ```bash
    npm run db:push
    ```
-4. In the app: **Workouts → settings (gear) → Cloud storage**, enter your sync key, and choose **Enable cloud and upload this device**.
+3. **Existing user migration:** Register with your email. Data in this browser's local storage is imported automatically. If you previously used cloud sync with a sync key, that key is sent on register to merge any legacy cloud snapshot.
 
-Changes auto-save to the cloud when cloud mode is on. Local storage remains as a backup cache.
+### Legacy cloud sync migration
+
+If you had data under the old sync-key system before upgrading:
+
+```bash
+npm run db:legacy-import
+```
+
+Then register in the app — your local data and legacy cloud row (if any) are merged into your new account.
+
+## Accountability partners
+
+Each user has a unique **accountability code** (Settings → Accountability). Add partners by code and choose unilateral or bilateral sharing. Partners can view goals, habits, workouts, and daily AI summaries — not journal entries or individual tasks.
 
 ## Useful Commands
 
@@ -60,4 +45,5 @@ Changes auto-save to the cloud when cloud mode is on. Local storage remains as a
 npm run dev
 npm run lint
 npm run build
+npm run db:push
 ```

@@ -173,15 +173,6 @@ export type UserProfile = {
   timezone: string;
 };
 
-/** Someone who receives automated progress updates (Twilio integration planned). */
-export type AccountabilityPartner = {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  createdAt: string;
-};
-
 /** Stored values match the user’s chosen units (no conversion in the app). */
 export type WeightUnit = "lb" | "kg";
 
@@ -195,7 +186,6 @@ export type MeasurementPreferences = {
 
 export type AppData = {
   userProfile: UserProfile;
-  accountabilityPartners?: AccountabilityPartner[];
   measurementPreferences?: MeasurementPreferences;
   exercises: Exercise[];
   /** Workout templates (e.g. Leg Day); strength ids reference `exercises`. */

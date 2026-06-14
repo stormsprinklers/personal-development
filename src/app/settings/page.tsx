@@ -9,6 +9,26 @@ import { SettingsSubTabBar } from "@/components/ui/settings-sub-tab-bar";
 import { SETTINGS_TABS, parseSettingsTab } from "@/lib/settings-tabs";
 import { useAppData } from "@/lib/storage";
 
+function SettingsShell({
+  activeTab,
+  onSelectTab,
+  children,
+}: {
+  activeTab: string;
+  onSelectTab: (tabId: string) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <AppShell
+      title="Settings"
+      description="Account, cloud sync, and accountability partners."
+      header={<SettingsSubTabBar tabs={SETTINGS_TABS} activeId={activeTab} onSelect={onSelectTab} />}
+    >
+      {children}
+    </AppShell>
+  );
+}
+
 function SettingsContent() {
   const { ready } = useAppData();
   const router = useRouter();
@@ -27,23 +47,31 @@ function SettingsContent() {
     [router, searchParams],
   );
 
-  if (!ready) return <div className="p-6">Loading settings...</div>;
+  if (!ready) {
+    return (
+      <SettingsShell activeTab={activeTab} onSelectTab={selectTab}>
+        <p className="text-sm text-ios-secondary">Loading settings…</p>
+      </SettingsShell>
+    );
+  }
 
   return (
-    <AppShell
-      title="Settings"
-      description="Cloud sync, accountability partners, and app preferences."
-      header={<SettingsSubTabBar tabs={SETTINGS_TABS} activeId={activeTab} onSelect={selectTab} />}
-    >
+    <SettingsShell activeTab={activeTab} onSelectTab={selectTab}>
       {activeTab === "cloud" ? <CloudStorageCard /> : null}
       {activeTab === "accountability" ? <AccountabilitySettingsPanel /> : null}
-    </AppShell>
+    </SettingsShell>
   );
 }
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<div className="p-6">Loading settings...</div>}>
+    <Suspense
+      fallback={
+        <SettingsShell activeTab="cloud" onSelectTab={() => {}}>
+          <p className="text-sm text-ios-secondary">Loading settings…</p>
+        </SettingsShell>
+      }
+    >
       <SettingsContent />
     </Suspense>
   );

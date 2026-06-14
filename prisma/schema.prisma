@@ -7,8 +7,64 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/** Full app snapshot (matches client `AppData` JSON). One row per sync key. */
+model User {
+  id                 String   @id @default(cuid())
+  email              String   @unique
+  passwordHash       String
+  displayName        String
+  accountabilityCode String   @unique
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  appData              AppDataStore?
+  linksInitiated       AccountabilityLink[] @relation("LinkInitiator")
+  linksFrom            AccountabilityLink[] @relation("LinkFrom")
+  linksTo              AccountabilityLink[] @relation("LinkTo")
+}
+
+/** Full app snapshot (matches client AppData JSON). One row per user. */
 model AppDataStore {
+  userId    String   @id
+  payload   Json
+  legacySyncKey String? @unique
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum AccountabilityLinkStatus {
+  pending
+  active
+  rejected
+  revoked
+}
+
+model AccountabilityLink {
+  id              String                   @id @default(cuid())
+  fromUserId      String
+  toUserId        String
+  status          AccountabilityLinkStatus @default(pending)
+  /** fromUser shares progress with toUser */
+  fromShares      Boolean                  @default(false)
+  /** toUser shares progress with fromUser */
+  toShares        Boolean                  @default(false)
+  initiatedByUserId String
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  fromUser      User @relation("LinkFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser        User @relation("LinkTo", fields: [toUserId], references: [id], onDelete: Cascade)
+  initiatedBy   User @relation("LinkInitiator", fields: [initiatedByUserId], references: [id], onDelete: Cascade)
+
+  @@unique([fromUserId, toUserId])
+  @@index([fromUserId])
+  @@index([toUserId])
+  @@index([status])
+}
+
+/** Legacy rows from pre-auth cloud sync (syncKey primary key). Migrated on register. */
+model LegacyAppDataStore {
   syncKey   String   @id
   payload   Json
   updatedAt DateTime @updatedAt
