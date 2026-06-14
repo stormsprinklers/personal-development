@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { verifyPassword, validateEmail } from "@/lib/auth/password";
+import { ensureRecoveryAccount, isRecoveryAccountCredentials } from "@/lib/auth/recovery-account";
 import { databaseConfigured } from "@/lib/auth/require-session";
 import { createSessionToken, sessionCookieOptions } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -28,11 +29,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Password is required." }, { status: 400 });
   }
 
+  if (isRecoveryAccountCredentials(email, password)) {
+    const user = await ensureRecoveryAccount();
+    return createAuthenticatedResponse(user);
+  }
+
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || !(await verifyPassword(password, user.passwordHash))) {
     return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
   }
 
+  return createAuthenticatedResponse(user);
+}
+
+async function createAuthenticatedResponse(user: {
+  id: string;
+  email: string;
+  displayName: string;
+  accountabilityCode: string;
+}) {
   const token = await createSessionToken({ userId: user.id, email: user.email });
   const response = NextResponse.json({
     user: {
