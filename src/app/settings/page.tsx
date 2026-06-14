@@ -1,20 +1,28 @@
 "use client";
 
-import { Suspense, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { CloudStorageCard } from "@/components/cloud-storage-card";
 import { AccountabilitySettingsPanel } from "@/components/settings/accountability-settings-panel";
 import { SettingsSubTabBar } from "@/components/ui/settings-sub-tab-bar";
-import { SETTINGS_TABS, parseSettingsTab } from "@/lib/settings-tabs";
+import { SETTINGS_TABS, parseSettingsTab, type SettingsTabId } from "@/lib/settings-tabs";
 import { useAppData } from "@/lib/storage";
+
+function readTabFromLocation(): SettingsTabId {
+  if (typeof window === "undefined") return "cloud";
+  return parseSettingsTab(new URLSearchParams(window.location.search).get("tab"));
+}
+
+function settingsPathForTab(tab: SettingsTabId): string {
+  return tab === "cloud" ? "/settings" : `/settings?tab=${tab}`;
+}
 
 function SettingsShell({
   activeTab,
   onSelectTab,
   children,
 }: {
-  activeTab: string;
+  activeTab: SettingsTabId;
   onSelectTab: (tabId: string) => void;
   children: React.ReactNode;
 }) {
@@ -29,23 +37,24 @@ function SettingsShell({
   );
 }
 
-function SettingsContent() {
+export default function SettingsPage() {
   const { ready } = useAppData();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const activeTab = parseSettingsTab(searchParams.get("tab"));
+  const [activeTab, setActiveTab] = useState<SettingsTabId>("cloud");
 
-  const selectTab = useCallback(
-    (tabId: string) => {
-      const next = parseSettingsTab(tabId);
-      const params = new URLSearchParams(searchParams.toString());
-      if (next === "cloud") params.delete("tab");
-      else params.set("tab", next);
-      const query = params.toString();
-      router.replace(query ? `/settings?${query}` : "/settings", { scroll: false });
-    },
-    [router, searchParams],
-  );
+  useEffect(() => {
+    setActiveTab(readTabFromLocation());
+
+    const onPopState = () => setActiveTab(readTabFromLocation());
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  const selectTab = useCallback((tabId: string) => {
+    const next = parseSettingsTab(tabId);
+    setActiveTab(next);
+    const path = settingsPathForTab(next);
+    window.history.replaceState(null, "", path);
+  }, []);
 
   if (!ready) {
     return (
@@ -60,19 +69,5 @@ function SettingsContent() {
       {activeTab === "cloud" ? <CloudStorageCard /> : null}
       {activeTab === "accountability" ? <AccountabilitySettingsPanel /> : null}
     </SettingsShell>
-  );
-}
-
-export default function SettingsPage() {
-  return (
-    <Suspense
-      fallback={
-        <SettingsShell activeTab="cloud" onSelectTab={() => {}}>
-          <p className="text-sm text-ios-secondary">Loading settings…</p>
-        </SettingsShell>
-      }
-    >
-      <SettingsContent />
-    </Suspense>
   );
 }

@@ -26,6 +26,22 @@ type PartnerRow = {
   iShareWithThem: boolean;
 };
 
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<{ ok: boolean; data: T }> {
+  const response = await fetch(url, { cache: "no-store", ...init });
+  const text = await response.text();
+  if (!text.trim()) {
+    return {
+      ok: response.ok,
+      data: {} as T,
+    };
+  }
+  try {
+    return { ok: response.ok, data: JSON.parse(text) as T };
+  } catch {
+    throw new Error(`Server returned an invalid response (${response.status}).`);
+  }
+}
+
 export function AccountabilitySettingsPanel() {
   const { user } = useAuth();
   const [codeInput, setCodeInput] = useState("");
@@ -35,45 +51,61 @@ export function AccountabilitySettingsPanel() {
   const [outgoing, setOutgoing] = useState<AccountabilityLinkRow[]>([]);
   const [active, setActive] = useState<AccountabilityLinkRow[]>([]);
   const [partners, setPartners] = useState<PartnerRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   const load = useCallback(async () => {
-    const [reqRes, partnersRes] = await Promise.all([
-      fetch("/api/accountability/requests", { cache: "no-store" }),
-      fetch("/api/accountability/partners", { cache: "no-store" }),
-    ]);
-    const reqPayload = (await reqRes.json()) as {
-      incoming?: AccountabilityLinkRow[];
-      outgoing?: AccountabilityLinkRow[];
-      active?: AccountabilityLinkRow[];
-      error?: string;
-    };
-    const partnersPayload = (await partnersRes.json()) as { partners?: PartnerRow[]; error?: string };
-    if (reqRes.ok) {
-      setIncoming(reqPayload.incoming ?? []);
-      setOutgoing(reqPayload.outgoing ?? []);
-      setActive(reqPayload.active ?? []);
+    setError(null);
+    try {
+      const [reqRes, partnersRes] = await Promise.all([
+        fetchJson<{
+          incoming?: AccountabilityLinkRow[];
+          outgoing?: AccountabilityLinkRow[];
+          active?: AccountabilityLinkRow[];
+          error?: string;
+        }>("/api/accountability/requests"),
+        fetchJson<{ partners?: PartnerRow[]; error?: string }>("/api/accountability/partners"),
+      ]);
+
+      if (!reqRes.ok) {
+        throw new Error(reqRes.data.error ?? "Could not load accountability requests.");
+      }
+      if (!partnersRes.ok) {
+        throw new Error(partnersRes.data.error ?? "Could not load partners.");
+      }
+
+      setIncoming(reqRes.data.incoming ?? []);
+      setOutgoing(reqRes.data.outgoing ?? []);
+      setActive(reqRes.data.active ?? []);
+      setPartners(partnersRes.data.partners ?? []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not load accountability settings.");
     }
-    if (partnersRes.ok) setPartners(partnersPayload.partners ?? []);
   }, []);
 
   useEffect(() => {
-    void load();
+    let cancelled = false;
+    setLoading(true);
+    void load().finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [load]);
 
   async function sendRequest() {
     setBusy(true);
     setError(null);
     try {
-      const response = await fetch("/api/accountability/request", {
+      const { ok, data } = await fetchJson<{ error?: string }>("/api/accountability/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: codeInput, fromShares: shareMine, toShares: seeTheirs }),
       });
-      const payload = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(payload.error ?? "Could not send request.");
+      if (!ok) throw new Error(data.error ?? "Could not send request.");
       setCodeInput("");
       await load();
     } catch (e) {
@@ -87,13 +119,12 @@ export function AccountabilitySettingsPanel() {
     setBusy(true);
     setError(null);
     try {
-      const response = await fetch(`/api/accountability/requests/${linkId}/respond`, {
+      const { ok, data } = await fetchJson<{ error?: string }>(`/api/accountability/requests/${linkId}/respond`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, shareBack }),
       });
-      const payload = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(payload.error ?? "Could not update request.");
+      if (!ok) throw new Error(data.error ?? "Could not update request.");
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Update failed.");
@@ -104,16 +135,22 @@ export function AccountabilitySettingsPanel() {
 
   async function revoke(linkId: string) {
     setBusy(true);
+    setError(null);
     try {
-      await fetch(`/api/accountability/links/${linkId}`, { method: "DELETE" });
+      const { ok, data } = await fetchJson<{ error?: string }>(`/api/accountability/links/${linkId}`, {
+        method: "DELETE",
+      });
+      if (!ok) throw new Error(data.error ?? "Could not remove partner.");
       await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Remove failed.");
     } finally {
       setBusy(false);
     }
   }
 
   function partnerLabel(link: AccountabilityLinkRow) {
-    if (!user) return "";
+    if (!user) return "Partner";
     return link.fromUser.id === user.id ? link.toUser.displayName : link.fromUser.displayName;
   }
 
@@ -121,7 +158,11 @@ export function AccountabilitySettingsPanel() {
     const parts: string[] = [];
     if (link.fromShares) parts.push(`${link.fromUser.displayName} shares with ${link.toUser.displayName}`);
     if (link.toShares) parts.push(`${link.toUser.displayName} shares with ${link.fromUser.displayName}`);
-    return parts.length ? parts.join(" · ") : "No sharing enabled";
+    return parts.length ? parts.join(" · ") : "No sharing enabled yet";
+  }
+
+  if (loading) {
+    return <p className="text-sm text-ios-secondary">Loading accountability partners…</p>;
   }
 
   return (
@@ -129,7 +170,7 @@ export function AccountabilitySettingsPanel() {
       <SectionCard title="Your code" inset={false}>
         <div className="ios-card grid gap-3 p-4">
           <p className="text-sm text-ios-secondary">
-            Share this code so others can connect with you. Partners see goals, habits, workouts, and AI summaries
+            Share this code so others can connect with you. Partners can view goals, habits, workouts, and AI summaries
             only — not your journal or individual tasks.
           </p>
           <div className="flex flex-wrap items-center gap-2">
@@ -138,6 +179,7 @@ export function AccountabilitySettingsPanel() {
             </code>
             <GlassButton
               variant="secondary"
+              disabled={!user?.accountabilityCode}
               onClick={() => {
                 if (!user?.accountabilityCode) return;
                 void navigator.clipboard.writeText(user.accountabilityCode);
@@ -156,8 +198,10 @@ export function AccountabilitySettingsPanel() {
           <input
             value={codeInput}
             onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
-            placeholder="Partner code"
+            placeholder="Partner code (6–12 characters)"
             className="ios-field px-3 py-2.5 text-sm uppercase tracking-wider"
+            autoComplete="off"
+            spellCheck={false}
           />
           <label className="flex items-center gap-2 text-sm text-ios-secondary">
             <input type="checkbox" checked={shareMine} onChange={(e) => setShareMine(e.target.checked)} />
@@ -165,11 +209,19 @@ export function AccountabilitySettingsPanel() {
           </label>
           <label className="flex items-center gap-2 text-sm text-ios-secondary">
             <input type="checkbox" checked={seeTheirs} onChange={(e) => setSeeTheirs(e.target.checked)} />
-            Request to see their progress
+            Ask to see their progress
           </label>
-          <GlassButton variant="primary" disabled={busy || !codeInput.trim()} onClick={() => void sendRequest()}>
-            Send request
-          </GlassButton>
+          <p className="text-xs text-ios-secondary">
+            Sharing can be one-way or two-way. The other person approves what they share back when accepting your request.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <GlassButton variant="primary" disabled={busy || !codeInput.trim()} onClick={() => void sendRequest()}>
+              Send request
+            </GlassButton>
+            <GlassButton variant="secondary" disabled={busy} onClick={() => void load()}>
+              Refresh
+            </GlassButton>
+          </div>
           {error ? <p className="text-sm text-copper">{error}</p> : null}
         </div>
       </SectionCard>
@@ -243,19 +295,19 @@ export function AccountabilitySettingsPanel() {
             </div>
           ))}
           {!active.length ? (
-            <p className="px-4 py-3 text-sm text-ios-secondary">No active partners yet.</p>
+            <p className="px-4 py-3 text-sm text-ios-secondary">No active partners yet. Add someone by code above.</p>
           ) : null}
         </div>
       </SectionCard>
 
       {partners.length ? (
-        <SectionCard title="Sharing with you" inset={false}>
+        <SectionCard title="Dashboard access" inset={false}>
           <div className="ios-card overflow-hidden">
             {partners.map((p, i) => (
               <div key={p.linkId} className={`px-4 py-3 ${i < partners.length - 1 ? "ios-hairline" : ""}`}>
                 <p className="text-sm font-medium text-ios-label">{p.displayName}</p>
                 <p className="text-xs text-ios-secondary">
-                  {p.theyShareWithMe ? "You can view their dashboard" : "Waiting for sharing"}
+                  {p.theyShareWithMe ? "You can view their dashboard summary" : "They have not shared their progress yet"}
                   {p.iShareWithThem ? " · You share with them" : ""}
                 </p>
               </div>
