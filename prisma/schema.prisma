@@ -21,6 +21,8 @@ model User {
   linksFrom            AccountabilityLink[] @relation("LinkFrom")
   linksTo              AccountabilityLink[] @relation("LinkTo")
   journalVoiceMemos    JournalVoiceMemo[]
+  accountabilityInvitesCreated AccountabilityInvite[] @relation("InviteCreator")
+  accountabilityInvitesRedeemed AccountabilityInvite[] @relation("InviteUsedBy")
 }
 
 /** Full app snapshot (matches client AppData JSON). One row per user. */
@@ -87,4 +89,23 @@ model JournalVoiceMemo {
   @@index([expiresAt])
   @@index([userId])
   @@index([journalEntryId])
+}
+
+/** One-time invite link for a new user to register and auto-link as an accountability partner. */
+model AccountabilityInvite {
+  id            String    @id @default(cuid())
+  inviterUserId String
+  fromShares    Boolean
+  toShares      Boolean
+  usedAt        DateTime?
+  usedByUserId  String?
+  expiresAt     DateTime
+  createdAt     DateTime  @default(now())
+
+  inviter User  @relation("InviteCreator", fields: [inviterUserId], references: [id], onDelete: Cascade)
+  usedBy  User? @relation("InviteUsedBy", fields: [usedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([inviterUserId])
+  @@index([expiresAt])
+  @@index([usedAt])
 }

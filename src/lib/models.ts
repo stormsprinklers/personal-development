@@ -113,11 +113,15 @@ export type GoalSection = {
   name: string;
 };
 
+export type GoalTrackingMode = "tasks" | "habits" | "exercise" | "body_weight" | "manual";
+
 export type Goal = {
   id: string;
   sectionId: string;
   title: string;
   year: number;
+  /** Explicit tracking metrics; inferred from legacy fields when omitted. */
+  trackingModes?: GoalTrackingMode[];
   linkedHabitIds?: string[];
   habitTargetDays?: number;
   linkedExerciseId?: string;

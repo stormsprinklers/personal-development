@@ -1,4 +1,5 @@
-import type { AppData } from "@/lib/models";
+import type { AppData, Goal, GoalTrackingMode } from "@/lib/models";
+import { resolveGoalTrackingModes } from "@/lib/goals/tracking-modes";
 import { todoItemsForGoal } from "@/lib/todo-helpers";
 
 /** Progress from `start` → `target` given `current` (supports increase or decrease). */
@@ -41,20 +42,25 @@ export function computeGoalProgressPercent(data: AppData, goalId: string, year: 
   if (!goal) return 0;
   if (goal.completed === true) return 100;
 
-  const tasks = todoItemsForGoal(data, goalId);
-  const doneTasks = tasks.filter((item) => !item.active).length;
+  const enabledModes = new Set(resolveGoalTrackingModes(goal, data));
+  const modeEnabled = (mode: GoalTrackingMode) =>
+    enabledModes.size === 0 || enabledModes.has(mode);
 
   const progressParts: number[] = [];
 
-  if (tasks.length) {
-    progressParts.push((doneTasks / tasks.length) * 100);
+  if (modeEnabled("tasks")) {
+    const tasks = todoItemsForGoal(data, goalId);
+    const doneTasks = tasks.filter((item) => !item.active).length;
+    if (tasks.length) {
+      progressParts.push((doneTasks / tasks.length) * 100);
+    }
   }
 
   const hasHabitTarget = Boolean(goal.habitTargetDays && goal.habitTargetDays > 0);
   const linkedHabitIds = goal.linkedHabitIds ?? [];
   const hasLinkedHabits = linkedHabitIds.length > 0;
 
-  if (hasHabitTarget && hasLinkedHabits) {
+  if (modeEnabled("habits") && hasHabitTarget && hasLinkedHabits) {
     const perHabitProgress = linkedHabitIds.map((habitId) => {
       const completedDays = data.habitLogs.filter(
         (log) => log.habitId === habitId && log.completed && log.date.startsWith(`${year}-`),
@@ -67,6 +73,7 @@ export function computeGoalProgressPercent(data: AppData, goalId: string, year: 
   }
 
   const hasExerciseProgress =
+    modeEnabled("exercise") &&
     goal.linkedExerciseId &&
     typeof goal.exerciseStartValue === "number" &&
     typeof goal.exerciseTargetValue === "number";
@@ -108,7 +115,12 @@ export function computeGoalProgressPercent(data: AppData, goalId: string, year: 
 
   const bwStart = goal.bodyWeightStart;
   const bwTarget = goal.bodyWeightTarget;
-  if (typeof bwStart === "number" && typeof bwTarget === "number" && bwTarget !== bwStart) {
+  if (
+    modeEnabled("body_weight") &&
+    typeof bwStart === "number" &&
+    typeof bwTarget === "number" &&
+    bwTarget !== bwStart
+  ) {
     const latest = latestBodyWeightInYear(data, year);
     progressParts.push(progressBetweenValues(bwStart, bwTarget, latest ?? bwStart));
   }
@@ -118,7 +130,7 @@ export function computeGoalProgressPercent(data: AppData, goalId: string, year: 
     goal.manualProgressTarget as number,
     goal.manualProgressStart,
   );
-  if (manualPercent !== undefined) {
+  if (modeEnabled("manual") && manualPercent !== undefined) {
     progressParts.push(manualPercent);
   }
 

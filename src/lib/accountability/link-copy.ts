@@ -47,6 +47,22 @@ export function describeIncomingRequest(link: AccountabilityLinkParties): {
   };
 }
 
+/** Lines shown on the register screen for an accountability invite. */
+export function describeInviteSetup(
+  inviterName: string,
+  fromShares: boolean,
+  toShares: boolean,
+): string[] {
+  const lines: string[] = [];
+  if (fromShares) {
+    lines.push(`${inviterName} will share their ${ACCOUNTABILITY_SHARED_ITEMS} with you.`);
+  }
+  if (toShares) {
+    lines.push(`You will share your ${ACCOUNTABILITY_SHARED_ITEMS} with ${inviterName}.`);
+  }
+  return lines.length ? lines : ["You will be connected as accountability partners."];
+}
+
 export function describeActiveLink(link: AccountabilityLinkParties, viewerUserId: string): string[] {
   const iAmFrom = link.fromUser.id === viewerUserId;
   const partnerName = iAmFrom ? link.toUser.displayName : link.fromUser.displayName;

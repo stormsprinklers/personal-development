@@ -1,5 +1,6 @@
 import type { AppData, JournalEntry } from "@/lib/models";
 import { sanitizeDashboardSectionOrder } from "@/lib/dashboard-sections";
+import { sanitizeGoalTrackingModes } from "@/lib/goals/tracking-modes";
 import { MAIN_TODO_LIST_ID, normalizeTodoListsAndItems, sanitizeDashboardDailyOrder, sanitizeDashboardTodoOrder, migrateDashboardDailyOrder, dashboardTodoOrderFromDailyOrder } from "@/lib/todo-helpers";
 import { sanitizeWorkoutRoutines } from "@/lib/workout-routines";
 import { normalizeMeasurementPreferences } from "@/lib/units";
@@ -159,6 +160,16 @@ export function normalizeAppData(input: unknown): AppData {
     const workoutRoutines = sanitizeWorkoutRoutines(merged.workoutRoutines, merged.exercises);
     const habits = normalizeHabits(merged.habits);
     const journalEntries = normalizeJournalEntries(merged.journalEntries);
+    const goalsWithTracking = merged.goals.map((goal) => ({
+      ...goal,
+      trackingModes: sanitizeGoalTrackingModes(goal.trackingModes, goal, {
+        ...merged,
+        todoLists,
+        todoItems,
+        habits,
+        goals: merged.goals,
+      }),
+    }));
     return {
       ...merged,
       todoLists,
@@ -171,6 +182,7 @@ export function normalizeAppData(input: unknown): AppData {
       workoutRoutines,
       habits,
       journalEntries,
+      goals: goalsWithTracking,
     };
   } catch {
     return createDefaultAppData();

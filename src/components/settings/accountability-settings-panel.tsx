@@ -7,8 +7,10 @@ import {
   ACCOUNTABILITY_SHARED_ITEMS,
   describeActiveLink,
   describeIncomingRequest,
+  describeInviteSetup,
   describeOutgoingRequest,
 } from "@/lib/accountability/link-copy";
+import { ACCOUNTABILITY_INVITE_VALID_DAYS } from "@/lib/accountability/invite";
 import { useAuth } from "@/lib/auth/auth-context";
 
 type LinkUser = { id: string; displayName: string; accountabilityCode: string };
@@ -163,6 +165,10 @@ export function AccountabilitySettingsPanel() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [inviteShareMine, setInviteShareMine] = useState(true);
+  const [inviteSeeTheirs, setInviteSeeTheirs] = useState(true);
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [inviteCopied, setInviteCopied] = useState(false);
 
   const load = useCallback(async () => {
     setError(null);
@@ -203,6 +209,27 @@ export function AccountabilitySettingsPanel() {
       cancelled = true;
     };
   }, [load]);
+
+  async function createInviteLink() {
+    setBusy(true);
+    setError(null);
+    try {
+      const { ok, data } = await fetchJson<{ url?: string; error?: string }>("/api/accountability/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fromShares: inviteShareMine, toShares: inviteSeeTheirs }),
+      });
+      if (!ok || !data.url) throw new Error(data.error ?? "Could not create invite link.");
+      setInviteUrl(data.url);
+      await navigator.clipboard.writeText(data.url);
+      setInviteCopied(true);
+      window.setTimeout(() => setInviteCopied(false), 2000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not create invite link.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function sendRequest() {
     setBusy(true);
@@ -303,6 +330,54 @@ export function AccountabilitySettingsPanel() {
               {copied ? "Copied" : "Copy"}
             </GlassButton>
           </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Invite link" inset={false}>
+        <div className="ios-card grid gap-3 p-4">
+          <p className="text-sm text-ios-secondary">
+            Create a one-time link for someone new to register and connect as your accountability partner. The link
+            expires in {ACCOUNTABILITY_INVITE_VALID_DAYS} days.
+          </p>
+          <label className="flex items-start gap-2 text-sm text-ios-secondary">
+            <input
+              type="checkbox"
+              className="mt-0.5 shrink-0"
+              checked={inviteShareMine}
+              onChange={(e) => setInviteShareMine(e.target.checked)}
+            />
+            <span>Share my {ACCOUNTABILITY_SHARED_ITEMS} with them</span>
+          </label>
+          <label className="flex items-start gap-2 text-sm text-ios-secondary">
+            <input
+              type="checkbox"
+              className="mt-0.5 shrink-0"
+              checked={inviteSeeTheirs}
+              onChange={(e) => setInviteSeeTheirs(e.target.checked)}
+            />
+            <span>They share their {ACCOUNTABILITY_SHARED_ITEMS} with me</span>
+          </label>
+          {user ? (
+            <ul className="list-inside list-disc text-xs text-ios-secondary">
+              {describeInviteSetup(user.displayName, inviteShareMine, inviteSeeTheirs).map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            <GlassButton
+              variant="primary"
+              disabled={busy || (!inviteShareMine && !inviteSeeTheirs)}
+              onClick={() => void createInviteLink()}
+            >
+              {inviteCopied ? "Link copied" : "Create & copy invite link"}
+            </GlassButton>
+          </div>
+          {inviteUrl ? (
+            <p className="break-all text-xs text-ios-secondary">
+              Latest link: <span className="font-medium text-ios-label">{inviteUrl}</span>
+            </p>
+          ) : null}
         </div>
       </SectionCard>
 

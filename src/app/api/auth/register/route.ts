@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createUniqueAccountabilityCode, resolveInitialUserPayload } from "@/lib/auth/legacy-migration";
+import { redeemAccountabilityInvite, getAccountabilityInvitePreview } from "@/lib/accountability/invite";
 import { hashPassword, validateEmail, validatePassword } from "@/lib/auth/password";
 import { ensureRecoveryAccount, isRecoveryAccountCredentials } from "@/lib/auth/recovery-account";
 import { databaseConfigured } from "@/lib/auth/require-session";
@@ -14,6 +15,7 @@ type RegisterBody = {
   displayName?: string;
   localPayload?: unknown;
   legacySyncKey?: string;
+  inviteId?: string;
 };
 
 export async function POST(request: Request) {
@@ -50,6 +52,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
   }
 
+  const inviteId = body.inviteId?.trim();
+  if (inviteId) {
+    const preview = await getAccountabilityInvitePreview(inviteId);
+    if (!preview.valid) {
+      return NextResponse.json({ error: preview.error ?? "Invalid invite." }, { status: 400 });
+    }
+  }
+
   const passwordHash = await hashPassword(password);
   const accountabilityCode = await createUniqueAccountabilityCode();
   const payload = await resolveInitialUserPayload({
@@ -74,6 +84,14 @@ export async function POST(request: Request) {
       },
     },
   });
+
+  if (inviteId) {
+    const redeemed = await redeemAccountabilityInvite(inviteId, user.id);
+    if (!redeemed.ok) {
+      await prisma.user.delete({ where: { id: user.id } });
+      return NextResponse.json({ error: redeemed.error }, { status: 400 });
+    }
+  }
 
   return createAuthenticatedResponse(user);
 }

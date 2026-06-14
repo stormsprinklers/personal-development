@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { AccountabilityLinkStatus } from "@prisma/client";
+import { redeemAccountabilityInvite } from "@/lib/accountability/invite";
+import { upsertAccountabilityLink } from "@/lib/accountability/upsert-link";
 import { isValidAccountabilityCode, normalizeAccountabilityCode } from "@/lib/auth/accountability-code";
 import { requireSession } from "@/lib/auth/require-session";
 import { prisma } from "@/lib/prisma";
@@ -56,49 +58,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "A pending or active link already exists with this user." }, { status: 409 });
   }
 
-  const endedLinks = await prisma.accountabilityLink.findMany({
-    where: {
-      OR: [
-        { fromUserId: auth.session.userId, toUserId: target.id },
-        { fromUserId: target.id, toUserId: auth.session.userId },
-      ],
-      status: { in: [AccountabilityLinkStatus.revoked, AccountabilityLinkStatus.rejected] },
-    },
-  });
-
-  const reusableLink = endedLinks.find(
-    (row) => row.fromUserId === auth.session.userId && row.toUserId === target.id,
-  );
-
-  if (reusableLink) {
-    const link = await prisma.accountabilityLink.update({
-      where: { id: reusableLink.id },
-      data: {
-        status: AccountabilityLinkStatus.pending,
-        fromShares,
-        toShares,
-        initiatedByUserId: auth.session.userId,
-      },
-    });
-    return NextResponse.json({ linkId: link.id, status: link.status });
-  }
-
-  if (endedLinks.length) {
-    await prisma.accountabilityLink.deleteMany({
-      where: { id: { in: endedLinks.map((row) => row.id) } },
-    });
-  }
-
-  const link = await prisma.accountabilityLink.create({
-    data: {
+  try {
+    const link = await upsertAccountabilityLink({
       fromUserId: auth.session.userId,
       toUserId: target.id,
       initiatedByUserId: auth.session.userId,
       status: AccountabilityLinkStatus.pending,
       fromShares,
       toShares,
-    },
-  });
-
-  return NextResponse.json({ linkId: link.id, status: link.status });
+    });
+    return NextResponse.json({ linkId: link.id, status: link.status });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not create link.";
+    return NextResponse.json({ error: message }, { status: 409 });
+  }
 }

@@ -18,7 +18,7 @@ type AuthContextValue = {
   user: AuthUser | null;
   ready: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, displayName: string) => Promise<void>;
+  register: (email: string, password: string, displayName: string, inviteId?: string) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 };
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const register = useCallback(async (email: string, password: string, displayName: string) => {
+  const register = useCallback(async (email: string, password: string, displayName: string, inviteId?: string) => {
     let localPayload: unknown;
     try {
       const raw = window.localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const response = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, displayName, localPayload, legacySyncKey }),
+      body: JSON.stringify({ email, password, displayName, localPayload, legacySyncKey, inviteId }),
     });
     const payload = (await response.json()) as { user?: AuthUser; error?: string };
     if (!response.ok) throw new Error(payload.error ?? "Registration failed.");
