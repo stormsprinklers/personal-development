@@ -9,9 +9,9 @@ import { RecipeEditorSheet } from "@/components/food/recipe-editor-sheet";
 import { SavedMealEditorSheet } from "@/components/food/saved-meal-editor-sheet";
 import type { AppData, FoodItem, MealSlot } from "@/lib/models";
 import { addFoodLogEntry, addSavedMealEntries, foodDraftToItem, upsertFoodInLibrary } from "@/lib/nutrition/food-log";
-import { roundNutrition } from "@/lib/nutrition/daily-totals";
+import { formatServingCaloriesSummary } from "@/lib/nutrition/serving-format";
 
-type SearchItem = { fdcId: number; name: string; brand?: string; caloriesPer100g?: number };
+type SearchItem = { fdcId: number; name: string; brand?: string; caloriesPerServing?: number; servingLabel?: string };
 
 type Props = {
   open: boolean;
@@ -168,7 +168,7 @@ export function AddFoodSheet({ open, onClose, data, date, defaultMeal = "breakfa
         <p className="font-medium text-ios-label">{selectedFood.name}</p>
         {selectedFood.brand ? <p className="text-xs text-ios-secondary">{selectedFood.brand}</p> : null}
         <p className="mt-1 text-xs text-ios-secondary">
-          {roundNutrition(selectedFood.calories, 0)} cal per {selectedFood.servingLabel}
+          {formatServingCaloriesSummary(selectedFood.calories, selectedFood.servingLabel, selectedFood.servingGrams)}
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -226,7 +226,9 @@ export function AddFoodSheet({ open, onClose, data, date, defaultMeal = "breakfa
                         className="ios-card-muted rounded-xl px-3 py-2.5 text-left text-sm"
                       >
                         <span className="font-medium text-ios-label">{food.name}</span>
-                        <span className="ml-2 text-xs text-ios-secondary">{roundNutrition(food.calories, 0)} cal</span>
+                        <span className="ml-2 text-xs text-ios-secondary">
+                          {formatServingCaloriesSummary(food.calories, food.servingLabel, food.servingGrams)}
+                        </span>
                       </button>
                     ))
                   ) : (
@@ -256,8 +258,11 @@ export function AddFoodSheet({ open, onClose, data, date, defaultMeal = "breakfa
                     >
                       <span className="font-medium text-ios-label">{item.name}</span>
                       {item.brand ? <span className="ml-1 text-xs text-ios-secondary">· {item.brand}</span> : null}
-                      {typeof item.caloriesPer100g === "number" ? (
-                        <span className="ml-2 text-xs text-ios-secondary">{Math.round(item.caloriesPer100g)} cal/100g</span>
+                      {typeof item.caloriesPerServing === "number" ? (
+                        <span className="ml-2 text-xs text-ios-secondary">
+                          {Math.round(item.caloriesPerServing)} cal
+                          {item.servingLabel ? ` per ${item.servingLabel}` : " per serving"}
+                        </span>
                       ) : null}
                     </button>
                   ))}
