@@ -56,6 +56,39 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "A pending or active link already exists with this user." }, { status: 409 });
   }
 
+  const endedLinks = await prisma.accountabilityLink.findMany({
+    where: {
+      OR: [
+        { fromUserId: auth.session.userId, toUserId: target.id },
+        { fromUserId: target.id, toUserId: auth.session.userId },
+      ],
+      status: { in: [AccountabilityLinkStatus.revoked, AccountabilityLinkStatus.rejected] },
+    },
+  });
+
+  const reusableLink = endedLinks.find(
+    (row) => row.fromUserId === auth.session.userId && row.toUserId === target.id,
+  );
+
+  if (reusableLink) {
+    const link = await prisma.accountabilityLink.update({
+      where: { id: reusableLink.id },
+      data: {
+        status: AccountabilityLinkStatus.pending,
+        fromShares,
+        toShares,
+        initiatedByUserId: auth.session.userId,
+      },
+    });
+    return NextResponse.json({ linkId: link.id, status: link.status });
+  }
+
+  if (endedLinks.length) {
+    await prisma.accountabilityLink.deleteMany({
+      where: { id: { in: endedLinks.map((row) => row.id) } },
+    });
+  }
+
   const link = await prisma.accountabilityLink.create({
     data: {
       fromUserId: auth.session.userId,
