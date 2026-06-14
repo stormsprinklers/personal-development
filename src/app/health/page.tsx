@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
-export default function WorkoutsRedirectPage() {
+export default function HealthPage() {
   redirect("/health/workouts");
 }

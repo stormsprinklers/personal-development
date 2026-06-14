@@ -30,22 +30,34 @@ export function AppShell({ title, description: _description, children, header, a
   void _description;
   const pathname = usePathname();
 
-  const onRoutineEditPage = pathname.startsWith("/workouts/routines/");
-  const workoutTopActions =
-    pathname === "/workouts" ? (
+  const onRoutineEditPage = pathname.startsWith("/health/workouts/routines/");
+  const onHealthFood = pathname === "/health/food";
+  const onHealthWorkouts = pathname === "/health/workouts";
+  const onHealthSettings = pathname === "/health/settings";
+  const onWorkoutSettings = pathname === "/health/workouts/settings";
+
+  const healthTopActions =
+    onHealthFood || onHealthWorkouts ? (
       <Link
-        href="/workouts/settings"
+        href="/health/settings"
         className="glass-button inline-flex h-11 min-w-11 items-center justify-center rounded-full text-ios-label shadow-sm"
-        aria-label="Workout settings"
-        title="Workout settings"
+        aria-label="Health settings"
+        title="Health settings"
       >
         <SettingsIcon />
       </Link>
-    ) : pathname === "/workouts/settings" || onRoutineEditPage ? (
+    ) : onHealthSettings ? (
+      <Link
+        href="/health/workouts"
+        className="glass-button inline-flex h-11 items-center rounded-full px-4 text-sm font-semibold text-ios-label"
+      >
+        Health
+      </Link>
+    ) : onWorkoutSettings || onRoutineEditPage ? (
       <div className="flex shrink-0 items-center gap-2">
         {onRoutineEditPage ? (
           <Link
-            href="/workouts/settings"
+            href="/health/workouts/settings"
             className="glass-button inline-flex h-11 min-w-11 items-center justify-center rounded-full text-ios-label shadow-sm"
             aria-label="Workout settings"
             title="Workout settings"
@@ -54,7 +66,7 @@ export function AppShell({ title, description: _description, children, header, a
           </Link>
         ) : null}
         <Link
-          href="/workouts"
+          href="/health/workouts"
           className="glass-button inline-flex h-11 items-center rounded-full px-4 text-sm font-semibold text-ios-label"
         >
           Workouts
@@ -62,7 +74,7 @@ export function AppShell({ title, description: _description, children, header, a
       </div>
     ) : null;
 
-  const topRight = actions ?? workoutTopActions;
+  const topRight = actions ?? healthTopActions;
 
   return (
     <div className="min-h-dvh bg-ios-bg text-ios-label">

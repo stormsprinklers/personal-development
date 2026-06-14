@@ -193,6 +193,87 @@ export type MeasurementPreferences = {
   runBikeDistanceUnit: RunBikeDistanceUnit;
 };
 
+export type FoodSource = "custom" | "usda" | "openfoodfacts";
+
+export type CuratedNutrientId =
+  | "fiber_g"
+  | "sodium_mg"
+  | "sugar_g"
+  | "saturated_fat_g"
+  | "cholesterol_mg"
+  | "calcium_mg"
+  | "iron_mg"
+  | "potassium_mg"
+  | "vitamin_a_mcg"
+  | "vitamin_c_mg"
+  | "vitamin_d_mcg";
+
+export type NutrientMap = Partial<Record<CuratedNutrientId, number>>;
+
+export type FoodItem = {
+  id: string;
+  name: string;
+  brand?: string;
+  source: FoodSource;
+  externalId?: string;
+  servingLabel: string;
+  servingGrams: number;
+  calories: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+  micronutrients?: NutrientMap;
+  createdAt: string;
+  archived?: boolean;
+};
+
+export type Recipe = {
+  id: string;
+  name: string;
+  servings: number;
+  ingredients: { foodId: string; servings: number }[];
+  createdAt: string;
+};
+
+export type SavedMeal = {
+  id: string;
+  name: string;
+  items: { foodId?: string; recipeId?: string; servings: number }[];
+  createdAt: string;
+};
+
+export type MealSlot = "breakfast" | "lunch" | "dinner";
+
+export type FoodLogEntry = {
+  id: string;
+  date: string;
+  meal: MealSlot;
+  foodId?: string;
+  recipeId?: string;
+  servings: number;
+  loggedAt: string;
+};
+
+export type NutritionGoals = {
+  calories?: number;
+  proteinG?: number;
+  carbsG?: number;
+  fatG?: number;
+  micronutrients?: Partial<Record<CuratedNutrientId, number>>;
+  enabledMicronutrients?: CuratedNutrientId[];
+};
+
+export type ActivityLevel = "sedentary" | "light" | "moderate" | "active" | "very_active";
+
+export type HealthProfile = {
+  sex: "male" | "female";
+  birthYear?: number;
+  heightCm: number;
+  weightKg: number;
+  activityLevel: ActivityLevel;
+  macroSplitPct: { protein: number; carbs: number; fat: number };
+};
+
 export type AppData = {
   userProfile: UserProfile;
   measurementPreferences?: MeasurementPreferences;
@@ -220,4 +301,11 @@ export type AppData = {
   goalNotes: GoalNote[];
   journalEntries: JournalEntry[];
   aiInsights: AiInsight[];
+  foods: FoodItem[];
+  recipes: Recipe[];
+  savedMeals: SavedMeal[];
+  foodLogEntries: FoodLogEntry[];
+  nutritionGoals?: NutritionGoals;
+  healthProfile?: HealthProfile;
+  recentFoodIds?: string[];
 };

@@ -14,7 +14,8 @@ export function prefetchAppTabRoutes(router: TabRouter) {
 /** Preload client JS for tab pages so navigation reuses cached chunks. */
 export function preloadAppTabChunks() {
   void import("@/app/page");
-  void import("@/app/workouts/page");
+  void import("@/app/health/workouts/page");
+  void import("@/app/health/food/page");
   void import("@/app/goals/page");
   void import("@/app/journal/page");
   void import("@/app/habits/page");

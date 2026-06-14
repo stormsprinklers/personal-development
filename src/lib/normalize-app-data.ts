@@ -1,6 +1,15 @@
 import type { AppData, JournalEntry } from "@/lib/models";
 import { sanitizeDashboardSectionOrder } from "@/lib/dashboard-sections";
 import { sanitizeGoalTrackingModes } from "@/lib/goals/tracking-modes";
+import {
+  normalizeFoodLogEntries,
+  normalizeFoods,
+  normalizeHealthProfile,
+  normalizeNutritionGoals,
+  normalizeRecentFoodIds,
+  normalizeRecipes,
+  normalizeSavedMeals,
+} from "@/lib/nutrition/normalize-food-data";
 import { MAIN_TODO_LIST_ID, normalizeTodoListsAndItems, sanitizeDashboardDailyOrder, sanitizeDashboardTodoOrder, migrateDashboardDailyOrder, dashboardTodoOrderFromDailyOrder } from "@/lib/todo-helpers";
 import { sanitizeWorkoutRoutines } from "@/lib/workout-routines";
 import { normalizeMeasurementPreferences } from "@/lib/units";
@@ -94,6 +103,10 @@ export function createDefaultAppData(): AppData {
     goalNotes: [],
     journalEntries: [],
     aiInsights: [],
+    foods: [],
+    recipes: [],
+    savedMeals: [],
+    foodLogEntries: [],
   };
 }
 
@@ -160,6 +173,13 @@ export function normalizeAppData(input: unknown): AppData {
     const workoutRoutines = sanitizeWorkoutRoutines(merged.workoutRoutines, merged.exercises);
     const habits = normalizeHabits(merged.habits);
     const journalEntries = normalizeJournalEntries(merged.journalEntries);
+    const foods = normalizeFoods(merged.foods);
+    const recipes = normalizeRecipes(merged.recipes);
+    const savedMeals = normalizeSavedMeals(merged.savedMeals);
+    const foodLogEntries = normalizeFoodLogEntries(merged.foodLogEntries);
+    const nutritionGoals = normalizeNutritionGoals(merged.nutritionGoals);
+    const healthProfile = normalizeHealthProfile(merged.healthProfile);
+    const recentFoodIds = normalizeRecentFoodIds(merged.recentFoodIds, foods);
     const goalsWithTracking = merged.goals.map((goal) => ({
       ...goal,
       trackingModes: sanitizeGoalTrackingModes(goal.trackingModes, goal, {
@@ -182,6 +202,13 @@ export function normalizeAppData(input: unknown): AppData {
       workoutRoutines,
       habits,
       journalEntries,
+      foods,
+      recipes,
+      savedMeals,
+      foodLogEntries,
+      nutritionGoals,
+      healthProfile,
+      recentFoodIds,
       goals: goalsWithTracking,
     };
   } catch {

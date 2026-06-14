@@ -13,9 +13,10 @@ export const APP_SECTIONS: AppSection[] = [
     description: "View progress trends, insights, and your daily AI summary.",
   },
   {
-    href: "/workouts",
-    title: "Workouts",
-    description: "Log strength and cardio sessions with progression metrics.",
+    href: "/health",
+    title: "Health",
+    shortTitle: "Health",
+    description: "Log workouts, track food, and manage nutrition goals.",
   },
   {
     href: "/goals",
@@ -47,7 +48,7 @@ export const APP_SECTIONS: AppSection[] = [
 
 export function isAppSectionActive(section: AppSection, pathname: string): boolean {
   if (section.href === "/") return pathname === "/";
-  if (section.href === "/workouts") return pathname.startsWith("/workouts");
+  if (section.href === "/health") return pathname.startsWith("/health");
   if (section.href === "/settings") return pathname.startsWith("/settings");
   return pathname === section.href || pathname.startsWith(`${section.href}/`);
 }
