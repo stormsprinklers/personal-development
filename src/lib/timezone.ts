@@ -101,17 +101,12 @@ export function dayOfMonthInAppTimezone(dateKey: string): number {
 }
 
 /** Format an ISO timestamp for display in US Mountain Standard Time. */
-export function formatIsoTimestamp(
-  iso: string,
-  options: Intl.DateTimeFormatOptions = {
-    dateStyle: "medium",
-    timeStyle: "short",
-  },
-): string {
+export function formatIsoTimestamp(iso: string): string {
+  // dateStyle/timeStyle cannot be combined with timeZoneName (throws "Invalid option : option").
   return new Intl.DateTimeFormat("en-US", {
     timeZone: APP_TIMEZONE,
-    timeZoneName: "short",
-    ...options,
+    dateStyle: "medium",
+    timeStyle: "short",
   }).format(new Date(iso));
 }
 
