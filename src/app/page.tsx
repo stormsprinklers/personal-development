@@ -13,7 +13,15 @@ import { DASHBOARD_COACH_SYSTEM_PROMPT, dailyCoachOpeningUserPrompt } from "@/li
 import { goalsProgressForYear } from "@/lib/metrics/dashboardMetrics";
 import { strengthSummaryByExercise } from "@/lib/metrics/workoutMetrics";
 import { normalizeMeasurementPreferences, weightUnitAbbr } from "@/lib/units";
-import { effectiveDashboardTodoListIds, mainTodoListId, sortTodosByDashboardOrder, sortDailyDashboardItems, dashboardDailyItemKey, dashboardTodoOrderFromDailyOrder } from "@/lib/todo-helpers";
+import {
+  dashboardDailyItemKey,
+  dashboardTodoOrderFromDailyOrder,
+  effectiveDashboardTodoListIds,
+  mainTodoListId,
+  normalizeDashboardDailyOrder,
+  sortDailyDashboardItems,
+  sortTodosByDashboardOrder,
+} from "@/lib/todo-helpers";
 import { useAppData, useTodayKey } from "@/lib/storage";
 import {
   addDaysToDateKey,
@@ -38,10 +46,17 @@ export default function Home() {
   const today = useTodayKey();
   const [pickedDate, setPickedDate] = useState<string | null>(null);
   const selectedDate = pickedDate ?? today;
+  const lastTodayRef = useRef<string | null>(null);
   const [nowLabel, setNowLabel] = useState("");
 
   useEffect(() => {
-    if (today && pickedDate === null) setPickedDate(today);
+    if (!today) return;
+    if (pickedDate === null) {
+      setPickedDate(today);
+    } else if (lastTodayRef.current && lastTodayRef.current !== today && pickedDate === lastTodayRef.current) {
+      setPickedDate(today);
+    }
+    lastTodayRef.current = today;
   }, [today, pickedDate]);
 
   useEffect(() => {
@@ -141,17 +156,16 @@ export default function Home() {
       return { ...prev, dashboardTodoListIds: ids };
     });
   }
-  const todaysHabits = useMemo(
-    () =>
-      data.habits
-        .filter((habit) => habit.active)
-        .filter((habit) => !data.habitLogs.some((log) => log.habitId === habit.id && log.date === selectedDate))
-        .map((habit) => ({
-          id: habit.id,
-          label: habit.name,
-        })),
-    [data.habits, data.habitLogs, selectedDate],
-  );
+  const todaysHabits = useMemo(() => {
+    if (!today || selectedDate !== today) return [];
+    return data.habits
+      .filter((habit) => habit.active)
+      .filter((habit) => !data.habitLogs.some((log) => log.habitId === habit.id && log.date === today))
+      .map((habit) => ({
+        id: habit.id,
+        label: habit.name,
+      }));
+  }, [data.habits, data.habitLogs, selectedDate, today]);
   const showListSourceOnTodos = dashboardListIds.length > 1;
   const habitDailyItems = useMemo(
     () =>
@@ -348,16 +362,21 @@ export default function Home() {
         ...prev.todoItems,
       ],
       dashboardTodoOrder: [id, ...(prev.dashboardTodoOrder ?? [])],
-      dashboardDailyOrder: [dashboardDailyItemKey("todo", id), ...(prev.dashboardDailyOrder ?? [])],
+      dashboardDailyOrder: normalizeDashboardDailyOrder([
+        ...(prev.dashboardDailyOrder ?? []).filter((key) => key.startsWith("habit-")),
+        dashboardDailyItemKey("todo", id),
+        ...(prev.dashboardDailyOrder ?? []).filter((key) => key.startsWith("todo-")),
+      ]),
     }));
     setQuickTodoTitle("");
   }
 
   function reorderDashboardDailyItems(orderedKeys: string[]) {
+    const normalized = normalizeDashboardDailyOrder(orderedKeys);
     setData((prev) => ({
       ...prev,
-      dashboardDailyOrder: orderedKeys,
-      dashboardTodoOrder: dashboardTodoOrderFromDailyOrder(orderedKeys) ?? prev.dashboardTodoOrder,
+      dashboardDailyOrder: normalized,
+      dashboardTodoOrder: dashboardTodoOrderFromDailyOrder(normalized) ?? prev.dashboardTodoOrder,
     }));
   }
 
@@ -381,6 +400,7 @@ export default function Home() {
   }
 
   function logHabitTodayWithExit(habitId: string, completed: boolean) {
+    if (!today) return;
     const key = dashboardDailyItemKey("habit", habitId);
     if (exitingDailyRef.current.has(key)) return;
     exitingDailyRef.current.add(key);
@@ -389,10 +409,10 @@ export default function Home() {
       exitingDailyRef.current.delete(key);
       setExitingDailyKeys((prev) => prev.filter((k) => k !== key));
       setData((prev) => {
-        const existing = prev.habitLogs.find((log) => log.habitId === habitId && log.date === selectedDate);
+        const existing = prev.habitLogs.find((log) => log.habitId === habitId && log.date === today);
         const nextLogs = existing
           ? prev.habitLogs.map((log) => (log.id === existing.id ? { ...log, completed } : log))
-          : [{ id: crypto.randomUUID(), habitId, date: selectedDate, completed }, ...prev.habitLogs];
+          : [{ id: crypto.randomUUID(), habitId, date: today, completed }, ...prev.habitLogs];
         return { ...prev, habitLogs: nextLogs };
       });
     }, COMPLETE_EXIT_MS);

@@ -55,35 +55,41 @@ export function dashboardDailyItemKey(kind: "habit" | "todo", id: string): strin
   return `${kind}-${id}`;
 }
 
-/** Sort dashboard habits + todos by saved order; unknown keys trail (habits before todos). */
+/** Habits always precede todos in saved dashboard order. */
+export function normalizeDashboardDailyOrder(order: string[]): string[] {
+  const habits = order.filter((key) => key.startsWith("habit-"));
+  const todos = order.filter((key) => key.startsWith("todo-"));
+  return [...habits, ...todos];
+}
+
+/** Sort dashboard habits + todos; habits always on top, order applied within each group. */
 export function sortDailyDashboardItems<T extends { kind: "habit" | "todo"; id: string }>(
   items: T[],
   order: string[] | undefined,
   todoCreatedAt: (id: string) => string,
 ): T[] {
   const keyOf = (item: T) => dashboardDailyItemKey(item.kind, item.id);
-  if (!order?.length) {
-    const habits = items.filter((item) => item.kind === "habit");
-    const todos = items
-      .filter((item) => item.kind === "todo")
-      .sort((a, b) => todoCreatedAt(b.id).localeCompare(todoCreatedAt(a.id)));
-    return [...habits, ...todos];
-  }
-  const index = new Map(order.map((id, i) => [id, i]));
-  return [...items].sort((a, b) => {
-    const ai = index.get(keyOf(a));
-    const bi = index.get(keyOf(b));
-    if (ai === undefined && bi === undefined) {
-      if (a.kind !== b.kind) return a.kind === "habit" ? -1 : 1;
-      if (a.kind === "todo" && b.kind === "todo") {
-        return todoCreatedAt(b.id).localeCompare(todoCreatedAt(a.id));
+  const sortGroup = (group: T[], kind: "habit" | "todo"): T[] => {
+    if (!order?.length) {
+      if (kind === "todo") {
+        return [...group].sort((a, b) => todoCreatedAt(b.id).localeCompare(todoCreatedAt(a.id)));
       }
-      return 0;
+      return group;
     }
-    if (ai === undefined) return 1;
-    if (bi === undefined) return -1;
-    return ai - bi;
-  });
+    const index = new Map(order.map((id, i) => [id, i]));
+    return [...group].sort((a, b) => {
+      const ai = index.get(keyOf(a));
+      const bi = index.get(keyOf(b));
+      if (ai === undefined && bi === undefined) return 0;
+      if (ai === undefined) return 1;
+      if (bi === undefined) return -1;
+      return ai - bi;
+    });
+  };
+
+  const habits = items.filter((item) => item.kind === "habit");
+  const todos = items.filter((item) => item.kind === "todo");
+  return [...sortGroup(habits, "habit"), ...sortGroup(todos, "todo")];
 }
 
 export function sanitizeDashboardDailyOrder(
