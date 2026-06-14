@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { AiSummaryText } from "@/components/ai/ai-summary-text";
 import { SectionCard } from "@/components/layout/section-card";
 import { GlassButton } from "@/components/ui/glass-button";
 import { Sheet } from "@/components/ui/sheet";
@@ -379,9 +380,11 @@ export function DashboardAccountabilitySection({ date, actions }: Props) {
             </PartnerSectionBox>
 
             <PartnerSectionBox title="Daily summary">
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-ios-label">
-                {snapshot.dailyAiSummary ?? "No summary for this day."}
-              </p>
+              {snapshot.dailyAiSummary ? (
+                <AiSummaryText text={snapshot.dailyAiSummary} />
+              ) : (
+                <p className="text-sm text-ios-label">No summary for this day.</p>
+              )}
             </PartnerSectionBox>
           </div>
         ) : (

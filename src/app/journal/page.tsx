@@ -4,9 +4,10 @@ import { useMemo, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
 import { GlassButton } from "@/components/ui/glass-button";
+import { AiSummaryText } from "@/components/ai/ai-summary-text";
 import { VoiceMemoRecorder, type TranscribedVoiceMemo } from "@/components/journal/voice-memo-recorder";
 import { buildAiContext } from "@/lib/ai/contextBuilder";
-import { journalAnalysisPrompt, qaPrompt } from "@/lib/ai/prompts";
+import { journalAnalysisPrompt } from "@/lib/ai/prompts";
 import { isVoiceMemoExpired } from "@/lib/journal/voice-memo";
 import { useAppData, useTodayKey } from "@/lib/storage";
 
@@ -29,7 +30,6 @@ export default function JournalPage() {
   const { data, ready, setData } = useAppData();
   const [entryText, setEntryText] = useState("");
   const [selectedGoalIds, setSelectedGoalIds] = useState<string[]>([]);
-  const [question, setQuestion] = useState("");
   const [aiOutput, setAiOutput] = useState("");
   const [expandedEntryIds, setExpandedEntryIds] = useState<Set<string>>(() => new Set());
   const [pendingVoiceMemo, setPendingVoiceMemo] = useState<TranscribedVoiceMemo["voiceMemo"] | null>(null);
@@ -109,26 +109,6 @@ export default function JournalPage() {
     }));
   }
 
-  async function askAiQuestion() {
-    if (!question.trim() || !today) return;
-    const context = buildAiContext(data, today);
-    const prompt = qaPrompt(question, JSON.stringify(context, null, 2));
-    const response = await fetch("/api/ai", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, temperature: 0.4 }),
-    });
-    const payload = (await response.json()) as { output?: string; error?: string };
-    setAiOutput(payload.output ?? payload.error ?? "No answer returned.");
-
-    if (!payload.output) return;
-    setData((prev) => ({
-      ...prev,
-      aiInsights: [{ id: crypto.randomUUID(), type: "qa", date: today, prompt, output: payload.output ?? "" }, ...prev.aiInsights],
-    }));
-    setQuestion("");
-  }
-
   function toggleEntryExpanded(entryId: string) {
     setExpandedEntryIds((prev) => {
       const next = new Set(prev);
@@ -179,24 +159,13 @@ export default function JournalPage() {
         </div>
       </SectionCard>
 
-      <SectionCard title="AI Analysis + Q&A" subtitle="Analyze your latest entry or ask context-based questions." inset={false}>
+      <SectionCard title="AI Analysis" subtitle="Analyze your latest journal entry." inset={false}>
         <div className="grid gap-3">
           <GlassButton variant="primary" onClick={() => void analyzeLatestEntry()}>
             Analyze Latest Entry
           </GlassButton>
-          <div className="grid gap-2 md:grid-cols-[1fr_auto]">
-            <input
-              value={question}
-              onChange={(event) => setQuestion(event.target.value)}
-              placeholder="Ask AI about your progress and patterns..."
-              className="ios-field px-3 py-2.5 text-sm"
-            />
-            <GlassButton variant="primary" onClick={() => void askAiQuestion()}>
-              Ask
-            </GlassButton>
-          </div>
-          <div className="ios-card-muted p-4 text-sm whitespace-pre-wrap text-ios-label">
-            {aiOutput || "AI output will appear here."}
+          <div className="ios-card-muted p-4">
+            {aiOutput ? <AiSummaryText text={aiOutput} /> : <p className="text-sm text-ios-label">AI output will appear here.</p>}
           </div>
         </div>
       </SectionCard>

@@ -2,7 +2,6 @@ export const DASHBOARD_COACH_SYSTEM_PROMPT = [
   "You are a practical personal progress assistant.",
   "Be neutral, respectful, and evidence-based. Never lecture, guilt-trip, or use harsh or condescending language.",
   "Ground every point in the provided context. If data is thin, note that briefly instead of inventing trends.",
-  "In follow-up replies, stay concise and answer the user's question directly.",
 ].join(" ");
 
 /** First user message for the dashboard coach (includes serialized JSON context). */
@@ -37,7 +36,7 @@ export function journalAnalysisPrompt(journalText: string, serializedContext: st
   return [
     "You are a reflective psychology-focused assistant.",
     "Analyze the journal entry with grounded insights.",
-    "Output 3 sections with short bullets: Patterns, Risks, Next Actions.",
+    "Output 3 sections with short bullets. Start each section title on its own line with `###` (e.g. `### Patterns`).",
     "Keep it practical and non-clinical.",
     "",
     "Journal entry:",

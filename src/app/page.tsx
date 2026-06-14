@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AiSummaryText } from "@/components/ai/ai-summary-text";
 import { DashboardAccountabilitySection } from "@/components/dashboard/accountability-section";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
@@ -80,19 +81,11 @@ export default function Home() {
   const [journalQuickText, setJournalQuickText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
-  const [coachInput, setCoachInput] = useState("");
-  const [coachSending, setCoachSending] = useState(false);
-  const [coachError, setCoachError] = useState<string | null>(null);
 
   const goalYear = useMemo(
     () => (selectedDate ? yearInAppTimezone(instantNoonForDateKey(selectedDate)) : yearInAppTimezone()),
     [selectedDate],
   );
-
-  useEffect(() => {
-    setCoachInput("");
-    setCoachError(null);
-  }, [selectedDate]);
 
   const weekStartKey = useMemo(() => (selectedDate ? startOfWeekDateKey(selectedDate) : ""), [selectedDate]);
   const weekEndKey = useMemo(
@@ -260,56 +253,6 @@ export default function Home() {
         ...prev.aiInsights.filter((insight) => !(insight.type === "daily_summary" && insight.date === targetDate)),
       ],
     }));
-  }
-
-  async function sendCoachMessage() {
-    const text = coachInput.trim();
-    const insight = data.aiInsights.find((i) => i.type === "daily_summary" && i.date === selectedDate);
-    if (!text || !insight?.output?.trim() || coachSending) return;
-    const openingUserPrompt =
-      insight.prompt?.trim() ||
-      dailyCoachOpeningUserPrompt(JSON.stringify(buildAiContext(data, selectedDate), null, 2));
-    setCoachSending(true);
-    setCoachError(null);
-    try {
-      const prevChat = insight.coachChat ?? [];
-      const historyOpenAi = prevChat.map((t) => ({ role: t.role, content: t.content }));
-      const messages = [
-        { role: "system" as const, content: DASHBOARD_COACH_SYSTEM_PROMPT },
-        { role: "user" as const, content: openingUserPrompt },
-        { role: "assistant" as const, content: insight.output },
-        ...historyOpenAi,
-        { role: "user" as const, content: text },
-      ];
-      const response = await fetch("/api/ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages, temperature: 0.55 }),
-      });
-      const payload = (await response.json()) as { output?: string; error?: string };
-      const reply = payload.output ?? payload.error;
-      if (!reply?.trim()) throw new Error("No reply from coach.");
-      const now = new Date().toISOString();
-      setData((prev) => ({
-        ...prev,
-        aiInsights: prev.aiInsights.map((row) => {
-          if (row.type !== "daily_summary" || row.date !== selectedDate) return row;
-          return {
-            ...row,
-            coachChat: [
-              ...(row.coachChat ?? []),
-              { role: "user" as const, content: text, at: now },
-              { role: "assistant" as const, content: reply.trim(), at: now },
-            ],
-          };
-        }),
-      }));
-      setCoachInput("");
-    } catch (e) {
-      setCoachError(e instanceof Error ? e.message : "Chat failed.");
-    } finally {
-      setCoachSending(false);
-    }
   }
 
   useEffect(() => {
@@ -583,49 +526,15 @@ export default function Home() {
             <div className="grid gap-3">
               {aiLoading ? <p className="text-sm text-ios-secondary">Summarizing your trends…</p> : null}
               {aiError ? <p className="ios-card rounded-xl bg-copper/10 p-3 text-sm text-copper">{aiError}</p> : null}
-              <div className="ios-card p-4 text-sm leading-relaxed whitespace-pre-wrap text-ios-label">
-                {latestSummary?.output?.trim() ?? (aiLoading ? "" : "Summary will load automatically.")}
-              </div>
-              {latestSummary?.output?.trim() && !aiLoading ? (
-                <>
-                  {(latestSummary.coachChat?.length ?? 0) > 0 ? (
-                    <div className="ios-card grid max-h-52 gap-2 overflow-y-auto p-2">
-                      {(latestSummary.coachChat ?? []).map((turn, idx) => (
-                        <div key={`${turn.at}-${idx}`} className={`flex ${turn.role === "user" ? "justify-end" : "justify-start"}`}>
-                          <div
-                            className={`max-w-[min(100%,22rem)] rounded-2xl px-3 py-2 text-xs leading-relaxed whitespace-pre-wrap ${
-                              turn.role === "user" ? "bg-ios-tint/15 text-ios-label" : "glass-surface text-ios-label"
-                            }`}
-                          >
-                            {turn.content}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
-                  {coachError ? <p className="text-sm text-copper">{coachError}</p> : null}
-                  <div className="grid gap-2">
-                    <label className="grid gap-1 text-xs font-medium text-ios-secondary">
-                      Follow-up question
-                      <textarea
-                        value={coachInput}
-                        onChange={(e) => setCoachInput(e.target.value)}
-                        placeholder="Ask for more detail on a trend or action…"
-                        rows={2}
-                        disabled={coachSending}
-                        className="ios-field w-full resize-y px-3 py-2.5 text-sm disabled:opacity-50"
-                      />
-                    </label>
-                    <GlassButton
-                      variant="primary"
-                      disabled={coachSending || !coachInput.trim()}
-                      onClick={() => void sendCoachMessage()}
-                    >
-                      {coachSending ? "Sending…" : "Send"}
-                    </GlassButton>
-                  </div>
-                </>
-              ) : null}
+              {latestSummary?.output?.trim() ? (
+                <div className="ios-card p-4">
+                  <AiSummaryText text={latestSummary.output.trim()} />
+                </div>
+              ) : (
+                <div className="ios-card p-4 text-sm text-ios-label">
+                  {aiLoading ? "" : "Summary will load automatically."}
+                </div>
+              )}
             </div>
           </SectionCard>
         );
