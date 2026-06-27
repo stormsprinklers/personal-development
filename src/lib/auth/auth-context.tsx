@@ -109,8 +109,12 @@ export function readLocalAppData(userId: string | null): string | null {
 
 export function writeLocalAppData(userId: string | null, json: string) {
   if (typeof window === "undefined") return;
-  if (userId) {
-    window.localStorage.setItem(localStorageKeyForUser(userId), json);
+  try {
+    if (userId) {
+      window.localStorage.setItem(localStorageKeyForUser(userId), json);
+    }
+    window.localStorage.setItem(LOCAL_STORAGE_KEY, json);
+  } catch (e) {
+    console.warn("Could not save local app data:", e);
   }
-  window.localStorage.setItem(LOCAL_STORAGE_KEY, json);
 }

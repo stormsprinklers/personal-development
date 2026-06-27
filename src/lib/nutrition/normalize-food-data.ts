@@ -1,5 +1,4 @@
 import type { AppData, CuratedNutrientId, FoodItem, FoodLogEntry, FoodSource, MealSlot, NutrientMap, Recipe, SavedMeal, HealthProfile, NutritionGoals } from "@/lib/models";
-import { formatOzFromGrams } from "@/lib/nutrition/serving-format";
 
 const MEAL_SLOTS: MealSlot[] = ["breakfast", "lunch", "dinner"];
 const FOOD_SOURCES: FoodSource[] = ["custom", "usda", "openfoodfacts"];
@@ -49,7 +48,7 @@ export function normalizeFoods(raw: unknown): FoodItem[] {
       brand: typeof row.brand === "string" && row.brand.trim() ? row.brand.trim() : undefined,
       source,
       externalId: typeof row.externalId === "string" && row.externalId ? row.externalId : undefined,
-      servingLabel: typeof row.servingLabel === "string" && row.servingLabel.trim() ? row.servingLabel.trim() : formatOzFromGrams(100),
+      servingLabel: typeof row.servingLabel === "string" && row.servingLabel.trim() ? row.servingLabel.trim() : "1 serving",
       servingGrams,
       calories: typeof row.calories === "number" && Number.isFinite(row.calories) ? row.calories : 0,
       proteinG: typeof row.proteinG === "number" && Number.isFinite(row.proteinG) ? row.proteinG : 0,

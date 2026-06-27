@@ -46,7 +46,9 @@ function formatDashboardDayLabel(dateKey: string) {
 }
 
 export default function Home() {
-  const { data, setData } = useAppData();
+  const { data, setData, ready } = useAppData();
+  const dataRef = useRef(data);
+  dataRef.current = data;
   const weightAbbr = useMemo(
     () => weightUnitAbbr(normalizeMeasurementPreferences(data.measurementPreferences).weightUnit),
     [data.measurementPreferences],
@@ -222,9 +224,10 @@ export default function Home() {
     () => data.aiInsights.find((insight) => insight.type === "daily_summary" && insight.date === selectedDate),
     [data.aiInsights, selectedDate],
   );
+  const hasSummaryForDate = Boolean(latestSummary?.output?.trim());
 
   async function runDailySummaryGeneration(targetDate: string, signal?: AbortSignal) {
-    const context = buildAiContext(data, targetDate);
+    const context = buildAiContext(dataRef.current, targetDate);
     const serialized = JSON.stringify(context, null, 2);
     const userContent = dailyCoachOpeningUserPrompt(serialized);
     const messages = [
@@ -256,10 +259,9 @@ export default function Home() {
   }
 
   useEffect(() => {
-    if (!selectedDate) return;
+    if (!ready || !selectedDate) return;
 
-    const insight = data.aiInsights.find((i) => i.type === "daily_summary" && i.date === selectedDate);
-    if (insight?.output?.trim()) {
+    if (hasSummaryForDate) {
       setAiLoading(false);
       setAiError(null);
       return;
@@ -286,7 +288,7 @@ export default function Home() {
       ac.abort();
       setAiLoading(false);
     };
-  }, [selectedDate, data.aiInsights, data, setData]);
+  }, [ready, selectedDate, hasSummaryForDate, setData]);
 
   function saveJournalQuick() {
     const text = journalQuickText.trim();
@@ -561,7 +563,7 @@ export default function Home() {
     }
   }
 
-  if (!selectedDate) {
+  if (!selectedDate || !ready) {
     return (
       <AppShell title="Dashboard" description="Your day, summary, and journal at a glance.">
         <div className="p-6 text-sm text-ios-secondary">Loading…</div>

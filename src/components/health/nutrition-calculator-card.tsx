@@ -57,10 +57,6 @@ export function NutritionCalculatorCard({ data, setData }: Props) {
     const goals: NutritionGoals = {
       calories: Math.round(targetCal),
       proteinG: macroGrams?.proteinG,
-      carbsG: macroGrams?.carbsG,
-      fatG: macroGrams?.fatG,
-      enabledMicronutrients: data.nutritionGoals?.enabledMicronutrients,
-      micronutrients: data.nutritionGoals?.micronutrients,
     };
     setData((prev) => ({
       ...prev,

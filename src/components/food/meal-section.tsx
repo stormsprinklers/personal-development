@@ -1,17 +1,6 @@
 import type { AppData, FoodLogEntry, MealSlot } from "@/lib/models";
 import { logEntryLabel, resolveLogEntryNutrition } from "@/lib/nutrition/food-nutrition";
 import { roundNutrition } from "@/lib/nutrition/daily-totals";
-import { formatOzFromGrams } from "@/lib/nutrition/serving-format";
-
-function entryServingDetail(data: AppData, entry: FoodLogEntry): string | null {
-  if (entry.foodId) {
-    const food = data.foods.find((f) => f.id === entry.foodId);
-    if (!food) return null;
-    return food.servingLabel || formatOzFromGrams(food.servingGrams);
-  }
-  if (entry.recipeId) return "1 recipe serving";
-  return null;
-}
 
 type Props = {
   data: AppData;
@@ -20,6 +9,11 @@ type Props = {
   onEditEntry: (entry: FoodLogEntry) => void;
   onDeleteEntry: (entryId: string) => void;
 };
+
+function entryPortion(data: AppData, entry: FoodLogEntry): string | null {
+  if (!entry.foodId) return null;
+  return data.foods.find((f) => f.id === entry.foodId)?.servingLabel ?? null;
+}
 
 export function MealSection({ data, date, meal, onEditEntry, onDeleteEntry }: Props) {
   const entries = data.foodLogEntries.filter((e) => e.date === date && e.meal === meal);
@@ -31,14 +25,16 @@ export function MealSection({ data, date, meal, onEditEntry, onDeleteEntry }: Pr
           {entries.map((entry) => {
             const nutrition = resolveLogEntryNutrition(data, entry);
             const label = logEntryLabel(data, entry);
-            const servingDetail = entryServingDetail(data, entry);
+            const portion = entryPortion(data, entry);
             return (
               <li key={entry.id} className="flex items-center gap-2 border-b border-ios-separator/40 px-4 py-3 last:border-b-0">
                 <button type="button" onClick={() => onEditEntry(entry)} className="min-w-0 flex-1 text-left">
                   <p className="truncate text-sm font-medium text-ios-label">{label}</p>
                   <p className="text-xs text-ios-secondary">
-                    {entry.servings} × {servingDetail ?? "serving"}
-                    {nutrition ? ` · ${roundNutrition(nutrition.calories, 0)} cal` : ""}
+                    {portion ?? "—"}
+                    {nutrition
+                      ? ` · ${roundNutrition(nutrition.calories, 0)} cal · ${roundNutrition(nutrition.proteinG, 0)}g protein`
+                      : ""}
                   </p>
                 </button>
                 <button

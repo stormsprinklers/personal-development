@@ -15,12 +15,12 @@ export function prefetchAppTabRoutes(router: TabRouter) {
 export function preloadAppTabChunks() {
   void import("@/app/page");
   void import("@/app/health/workouts/page");
-  void import("@/app/health/food/page");
   void import("@/app/goals/page");
   void import("@/app/journal/page");
   void import("@/app/habits/page");
   void import("@/app/todos/page");
   void import("@/app/settings/page");
+  // Food tab deferred — pulls in barcode scanner / zxing when opened.
 }
 
 export function prefetchAdjacentTabRoutes(
