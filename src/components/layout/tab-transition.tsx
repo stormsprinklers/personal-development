@@ -50,7 +50,7 @@ function shouldIgnoreSwipe(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false;
   return Boolean(
     target.closest(
-      "input, textarea, select, [data-no-tab-swipe], [role='dialog'], table, .ios-scroll-tabs",
+      "button, a, label, input, textarea, select, [data-no-tab-swipe], [role='button'], [role='dialog'], table, .ios-scroll-tabs",
     ),
   );
 }
@@ -234,11 +234,12 @@ export function TabTransitionProvider({ children }: { children: ReactNode }) {
     function onTouchEnd() {
       const state = touchRef.current;
       if (!state.active) return;
-      const wasVertical = state.locked === "vertical";
+      const locked = state.locked;
       state.active = false;
       state.locked = null;
 
-      if (wasVertical) {
+      // Taps and vertical scrolls should not trigger tab swipe handling.
+      if (locked !== "horizontal") {
         return;
       }
 
