@@ -3,7 +3,7 @@ import { createUniqueAccountabilityCode, resolveInitialUserPayload } from "@/lib
 import { redeemAccountabilityInvite, getAccountabilityInvitePreview } from "@/lib/accountability/invite";
 import { hashPassword, validateEmail, validatePassword } from "@/lib/auth/password";
 import { ensureRecoveryAccount, isRecoveryAccountCredentials } from "@/lib/auth/recovery-account";
-import { databaseConfigured } from "@/lib/auth/require-session";
+import { databaseConfigured, sessionConfigured } from "@/lib/auth/require-session";
 import { createSessionToken, sessionCookieOptions } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
@@ -22,6 +22,9 @@ export async function POST(request: Request) {
   if (!databaseConfigured()) {
     return NextResponse.json({ error: "DATABASE_URL is not configured on the server." }, { status: 503 });
   }
+  if (!sessionConfigured()) {
+    return NextResponse.json({ error: "SESSION_SECRET is not configured on the server." }, { status: 503 });
+  }
 
   let body: RegisterBody;
   try {
@@ -38,62 +41,67 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
   }
 
-  if (isRecoveryAccountCredentials(email, password)) {
-    const user = await ensureRecoveryAccount();
-    return createAuthenticatedResponse(user);
-  }
-
-  const passwordError = validatePassword(password);
-  if (passwordError) return NextResponse.json({ error: passwordError }, { status: 400 });
-  if (!displayName) return NextResponse.json({ error: "Display name is required." }, { status: 400 });
-
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
-    return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
-  }
-
-  const inviteId = body.inviteId?.trim();
-  if (inviteId) {
-    const preview = await getAccountabilityInvitePreview(inviteId);
-    if (!preview.valid) {
-      return NextResponse.json({ error: preview.error ?? "Invalid invite." }, { status: 400 });
+  try {
+    if (isRecoveryAccountCredentials(email, password)) {
+      const user = await ensureRecoveryAccount();
+      return await createAuthenticatedResponse(user);
     }
-  }
 
-  const passwordHash = await hashPassword(password);
-  const accountabilityCode = await createUniqueAccountabilityCode();
-  const payload = await resolveInitialUserPayload({
-    localPayload: body.localPayload,
-    legacySyncKey: body.legacySyncKey,
-    displayName,
-  });
+    const passwordError = validatePassword(password);
+    if (passwordError) return NextResponse.json({ error: passwordError }, { status: 400 });
+    if (!displayName) return NextResponse.json({ error: "Display name is required." }, { status: 400 });
 
-  const legacyKey = body.legacySyncKey?.trim() || null;
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
+    }
 
-  const user = await prisma.user.create({
-    data: {
-      email,
-      passwordHash,
+    const inviteId = body.inviteId?.trim();
+    if (inviteId) {
+      const preview = await getAccountabilityInvitePreview(inviteId);
+      if (!preview.valid) {
+        return NextResponse.json({ error: preview.error ?? "Invalid invite." }, { status: 400 });
+      }
+    }
+
+    const passwordHash = await hashPassword(password);
+    const accountabilityCode = await createUniqueAccountabilityCode();
+    const payload = await resolveInitialUserPayload({
+      localPayload: body.localPayload,
+      legacySyncKey: body.legacySyncKey,
       displayName,
-      accountabilityCode,
-      appData: {
-        create: {
-          payload: payload as object,
-          legacySyncKey: legacyKey,
+    });
+
+    const legacyKey = body.legacySyncKey?.trim() || null;
+
+    const user = await prisma.user.create({
+      data: {
+        email,
+        passwordHash,
+        displayName,
+        accountabilityCode,
+        appData: {
+          create: {
+            payload: payload as object,
+            legacySyncKey: legacyKey,
+          },
         },
       },
-    },
-  });
+    });
 
-  if (inviteId) {
-    const redeemed = await redeemAccountabilityInvite(inviteId, user.id);
-    if (!redeemed.ok) {
-      await prisma.user.delete({ where: { id: user.id } });
-      return NextResponse.json({ error: redeemed.error }, { status: 400 });
+    if (inviteId) {
+      const redeemed = await redeemAccountabilityInvite(inviteId, user.id);
+      if (!redeemed.ok) {
+        await prisma.user.delete({ where: { id: user.id } });
+        return NextResponse.json({ error: redeemed.error }, { status: 400 });
+      }
     }
-  }
 
-  return createAuthenticatedResponse(user);
+    return await createAuthenticatedResponse(user);
+  } catch (error) {
+    console.error("Registration failed:", error);
+    return NextResponse.json({ error: "Could not create account. Please try again." }, { status: 500 });
+  }
 }
 
 async function createAuthenticatedResponse(user: {

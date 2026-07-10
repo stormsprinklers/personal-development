@@ -14,3 +14,7 @@ export async function requireSession(): Promise<
 export function databaseConfigured(): boolean {
   return Boolean(process.env.DATABASE_URL?.trim());
 }
+
+export function sessionConfigured(): boolean {
+  return Boolean(process.env.SESSION_SECRET?.trim() || process.env.APP_SYNC_KEY?.trim());
+}

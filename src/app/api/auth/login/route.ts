@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyPassword, validateEmail } from "@/lib/auth/password";
 import { ensureRecoveryAccount, isRecoveryAccountCredentials } from "@/lib/auth/recovery-account";
-import { databaseConfigured } from "@/lib/auth/require-session";
+import { databaseConfigured, sessionConfigured } from "@/lib/auth/require-session";
 import { createSessionToken, sessionCookieOptions } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
@@ -10,6 +10,9 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   if (!databaseConfigured()) {
     return NextResponse.json({ error: "DATABASE_URL is not configured on the server." }, { status: 503 });
+  }
+  if (!sessionConfigured()) {
+    return NextResponse.json({ error: "SESSION_SECRET is not configured on the server." }, { status: 503 });
   }
 
   let body: { email?: string; password?: string };
@@ -29,17 +32,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Password is required." }, { status: 400 });
   }
 
-  if (isRecoveryAccountCredentials(email, password)) {
-    const user = await ensureRecoveryAccount();
-    return createAuthenticatedResponse(user);
-  }
+  try {
+    if (isRecoveryAccountCredentials(email, password)) {
+      const user = await ensureRecoveryAccount();
+      return await createAuthenticatedResponse(user);
+    }
 
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user || !(await verifyPassword(password, user.passwordHash))) {
-    return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
-  }
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || !(await verifyPassword(password, user.passwordHash))) {
+      return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
+    }
 
-  return createAuthenticatedResponse(user);
+    return await createAuthenticatedResponse(user);
+  } catch (error) {
+    console.error("Login failed:", error);
+    return NextResponse.json({ error: "Could not sign in. Please try again." }, { status: 500 });
+  }
 }
 
 async function createAuthenticatedResponse(user: {

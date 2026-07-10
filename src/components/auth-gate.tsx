@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { GlassButton } from "@/components/ui/glass-button";
 import { describeInviteSetup } from "@/lib/accountability/link-copy";
 import type { InvitePreview } from "@/lib/accountability/invite";
+import { readJsonResponse } from "@/lib/http/read-json-response";
 import { useAuth } from "@/lib/auth/auth-context";
 
 type Mode = "login" | "register";
@@ -37,7 +38,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     setInviteLoading(true);
     void fetch(`/api/accountability/invite/${encodeURIComponent(id)}`, { cache: "no-store" })
       .then(async (response) => {
-        const payload = (await response.json()) as InvitePreview;
+        const payload = await readJsonResponse<InvitePreview>(response);
         if (cancelled) return;
         setInvitePreview(payload);
         if (payload.valid) {
@@ -117,7 +118,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
               ))}
             </ul>
           ) : null}
-          <form onSubmit={(e) => void handleSubmit(e)} className="mt-6 grid gap-3">
+          <form onSubmit={(e) => void handleSubmit(e)} className="mt-6 grid gap-3" noValidate>
             {mode === "register" ? (
               <label className="grid gap-1.5 text-xs font-medium text-ios-secondary">
                 Display name
@@ -133,7 +134,11 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             <label className="grid gap-1.5 text-xs font-medium text-ios-secondary">
               Email
               <input
-                type="email"
+                type="text"
+                inputMode="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"

@@ -6,6 +6,7 @@ import {
   LEGACY_SYNC_KEY_STORAGE,
   localStorageKeyForUser,
 } from "@/lib/cloud-sync";
+import { readJsonResponse } from "@/lib/http/read-json-response";
 
 export type AuthUser = {
   id: string;
@@ -32,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       const response = await fetch("/api/auth/me", { cache: "no-store" });
-      const payload = (await response.json()) as { user?: AuthUser | null; error?: string };
+      const payload = await readJsonResponse<{ user?: AuthUser | null; error?: string }>(response);
       if (!response.ok) throw new Error(payload.error ?? "Could not verify session.");
       setUser(payload.user ?? null);
     } catch {
@@ -51,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      const payload = (await response.json()) as { user?: AuthUser; error?: string };
+      const payload = await readJsonResponse<{ user?: AuthUser; error?: string }>(response);
       if (!response.ok) throw new Error(payload.error ?? "Login failed.");
       setUser(payload.user ?? null);
     },
@@ -73,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password, displayName, localPayload, legacySyncKey, inviteId }),
     });
-    const payload = (await response.json()) as { user?: AuthUser; error?: string };
+    const payload = await readJsonResponse<{ user?: AuthUser; error?: string }>(response);
     if (!response.ok) throw new Error(payload.error ?? "Registration failed.");
     setUser(payload.user ?? null);
   }, []);
