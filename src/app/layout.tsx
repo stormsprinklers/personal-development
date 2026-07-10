@@ -37,8 +37,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistMono.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col bg-ios-bg text-ios-label">
+    <html lang="en" className={`${geistMono.variable} min-h-dvh antialiased`}>
+      <body className="min-h-dvh bg-ios-bg text-ios-label">
         <Providers>{children}</Providers>
       </body>
     </html>

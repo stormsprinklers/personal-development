@@ -77,7 +77,7 @@ export function AppShell({ title, description: _description, children, header, a
   const topRight = actions ?? healthTopActions;
 
   return (
-    <div className="min-h-dvh bg-ios-bg text-ios-label">
+    <div className="flex h-dvh flex-col overflow-hidden bg-ios-bg text-ios-label">
       <div
         className="fixed inset-x-0 top-0 z-40 bg-transparent"
         style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
@@ -87,8 +87,11 @@ export function AppShell({ title, description: _description, children, header, a
         </div>
       </div>
 
-      <TabTransitionSurface>
-        <div className="safe-bottom mx-auto flex w-full max-w-xl min-w-0 flex-col overflow-x-hidden px-4 pb-4 pt-[calc(3.75rem+env(safe-area-inset-top,0px))]">
+      <TabTransitionSurface className="min-h-0 flex-1">
+        <div
+          data-app-scroll
+          className="safe-bottom mx-auto flex h-full w-full max-w-xl min-w-0 flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain px-4 pb-4 pt-[calc(3.75rem+env(safe-area-inset-top,0px))]"
+        >
           {title ? (
             <header className="mb-3 min-w-0">
               <h1 className="ios-large-title">{title}</h1>

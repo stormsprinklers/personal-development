@@ -34,6 +34,18 @@ type TabTransitionContextValue = {
 
 const TabTransitionContext = createContext<TabTransitionContextValue | null>(null);
 
+const APP_SCROLL_SELECTOR = "[data-app-scroll]";
+
+function appScrollContainer(): HTMLElement | null {
+  if (typeof document === "undefined") return null;
+  return document.querySelector(APP_SCROLL_SELECTOR);
+}
+
+function isPageScrolled(): boolean {
+  const scrollEl = appScrollContainer();
+  return scrollEl ? scrollEl.scrollTop > 0 : false;
+}
+
 function shouldIgnoreSwipe(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false;
   return Boolean(
@@ -176,6 +188,7 @@ export function TabTransitionProvider({ children }: { children: ReactNode }) {
     function onTouchStart(event: TouchEvent) {
       if (!swipeEnabledRef.current || animatingRef.current) return;
       if (shouldIgnoreSwipe(event.target)) return;
+      if (isPageScrolled()) return;
       if (event.touches.length !== 1) return;
 
       const touch = event.touches[0];
@@ -203,10 +216,15 @@ export function TabTransitionProvider({ children }: { children: ReactNode }) {
 
       if (!state.locked) {
         if (Math.abs(deltaX) < SWIPE_DIRECTION_LOCK_PX && Math.abs(deltaY) < SWIPE_DIRECTION_LOCK_PX) return;
-        state.locked = Math.abs(deltaX) > Math.abs(deltaY) ? "horizontal" : "vertical";
+        state.locked = Math.abs(deltaX) > Math.abs(deltaY) * 1.2 ? "horizontal" : "vertical";
       }
 
       if (state.locked !== "horizontal") return;
+
+      if (isPageScrolled()) {
+        state.locked = "vertical";
+        return;
+      }
 
       event.preventDefault();
       setAnimating(false);
@@ -216,8 +234,13 @@ export function TabTransitionProvider({ children }: { children: ReactNode }) {
     function onTouchEnd() {
       const state = touchRef.current;
       if (!state.active) return;
+      const wasVertical = state.locked === "vertical";
       state.active = false;
       state.locked = null;
+
+      if (wasVertical) {
+        return;
+      }
 
       if (!swipeEnabledRef.current || animatingRef.current) {
         setDragX(0);
@@ -260,12 +283,18 @@ export function useTabTransition() {
   return ctx;
 }
 
-export function TabTransitionSurface({ children }: { children: ReactNode }) {
+export function TabTransitionSurface({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   const { dragX, animating } = useTabTransition();
 
   return (
     <div
-      className="swipe-tab-content min-w-0"
+      className={`swipe-tab-content min-w-0 ${className}`.trim()}
       style={{
         transform: dragX !== 0 || animating ? `translate3d(${dragX}px, 0, 0)` : undefined,
         transition: animating ? `transform ${TAB_TRANSITION_MS}ms ${TAB_TRANSITION_EASE}` : undefined,

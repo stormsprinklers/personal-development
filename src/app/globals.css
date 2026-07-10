@@ -91,6 +91,10 @@ body {
   touch-action: pan-y;
 }
 
+[data-app-scroll] {
+  -webkit-overflow-scrolling: touch;
+}
+
 /* Glass materials */
 .glass-surface {
   background: rgba(255, 255, 255, 0.72);
