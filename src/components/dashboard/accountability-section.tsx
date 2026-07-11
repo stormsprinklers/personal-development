@@ -131,6 +131,9 @@ function PartnerHabitCalendarSheet({
           </div>
 
           <div className="grid grid-cols-7 gap-1 rounded-xl bg-ios-surface p-2">
+            {Array.from({ length: calendar.leadingOffset }).map((_, index) => (
+              <div key={`leading-offset-${index}`} aria-hidden="true" />
+            ))}
             {calendar.days.map((day) => {
               const cellClass =
                 day.status === "good"

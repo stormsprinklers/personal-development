@@ -1,4 +1,4 @@
-import { addDaysToDateKey, dayOfMonthInAppTimezone } from "@/lib/timezone";
+import { addDaysToDateKey, dayOfMonthInAppTimezone, weekdayInAppTimezone } from "@/lib/timezone";
 
 export type HabitCalendarDay = {
   key: string;
@@ -11,6 +11,8 @@ export type HabitCalendarData = {
   firstDate: string;
   lastDate: string;
   goodDays: number;
+  /** Empty cells before the first day so dates align with Sun–Sat columns. */
+  leadingOffset: number;
 };
 
 export function buildHabitCalendarData(
@@ -30,10 +32,13 @@ export function buildHabitCalendarData(
     };
   });
 
+  const firstDate = days[0]?.key ?? anchorDate;
+
   return {
     days,
-    firstDate: days[0]?.key ?? anchorDate,
+    firstDate,
     lastDate: days[days.length - 1]?.key ?? anchorDate,
     goodDays: days.filter((d) => d.status === "good").length,
+    leadingOffset: weekdayInAppTimezone(firstDate),
   };
 }

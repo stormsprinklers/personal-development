@@ -6,8 +6,8 @@ import { SectionCard } from "@/components/layout/section-card";
 import { GlassButton } from "@/components/ui/glass-button";
 import { GroupedRow } from "@/components/ui/grouped-row";
 import { Sheet } from "@/components/ui/sheet";
+import { buildHabitCalendarData } from "@/lib/metrics/habit-calendar";
 import { currentHabitStreak } from "@/lib/metrics/habitStreaks";
-import { addDaysToDateKey, dayOfMonthInAppTimezone } from "@/lib/timezone";
 import { useAppData, useTodayKey } from "@/lib/storage";
 
 export default function HabitsPage() {
@@ -26,22 +26,9 @@ export default function HabitsPage() {
     const habit = data.habits.find((h) => h.id === calendarHabitId);
     if (!habit) return null;
 
-    const days = Array.from({ length: 30 }, (_, idx) => {
-      const key = addDaysToDateKey(today, -(29 - idx));
-      const log = data.habitLogs.find((entry) => entry.habitId === habit.id && entry.date === key);
-      const status: "good" | "bad" | "none" = !log ? "none" : log.completed === true ? "good" : "bad";
-      return {
-        key,
-        dayOfMonth: dayOfMonthInAppTimezone(key),
-        status,
-      };
-    });
+    const calendar = buildHabitCalendarData(habit.id, data.habitLogs, today);
 
-    const firstDate = days[0]?.key ?? today;
-    const lastDate = days[days.length - 1]?.key ?? today;
-    const goodDays = days.filter((d) => d.status === "good").length;
-
-    return { habit, days, firstDate, lastDate, goodDays };
+    return { habit, ...calendar };
   }, [calendarHabitId, data.habits, data.habitLogs, today]);
 
   function addHabit() {
@@ -276,6 +263,9 @@ export default function HabitsPage() {
             <p className="mb-2 text-[11px] text-ios-secondary">Tap a day to mark success or failure.</p>
 
             <div className="grid grid-cols-7 gap-1 rounded-xl bg-ios-surface p-2">
+              {Array.from({ length: habitCalendarData.leadingOffset }).map((_, index) => (
+                <div key={`leading-offset-${index}`} aria-hidden="true" />
+              ))}
               {habitCalendarData.days.map((day, dayIndex) => {
                 const cellClass =
                   day.status === "good"
