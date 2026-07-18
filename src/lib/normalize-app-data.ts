@@ -10,6 +10,7 @@ import {
   normalizeRecipes,
   normalizeSavedMeals,
 } from "@/lib/nutrition/normalize-food-data";
+import { normalizeNotificationPrefs } from "@/lib/notifications/prefs";
 import { MAIN_TODO_LIST_ID, normalizeTodoListsAndItems, sanitizeDashboardDailyOrder, sanitizeDashboardTodoOrder, migrateDashboardDailyOrder, dashboardTodoOrderFromDailyOrder } from "@/lib/todo-helpers";
 import { sanitizeWorkoutRoutines } from "@/lib/workout-routines";
 import { normalizeMeasurementPreferences } from "@/lib/units";
@@ -180,6 +181,7 @@ export function normalizeAppData(input: unknown): AppData {
     const nutritionGoals = normalizeNutritionGoals(merged.nutritionGoals);
     const healthProfile = normalizeHealthProfile(merged.healthProfile);
     const recentFoodIds = normalizeRecentFoodIds(merged.recentFoodIds, foods);
+    const notificationPrefs = normalizeNotificationPrefs(merged.notificationPrefs);
     const goalsWithTracking = merged.goals.map((goal) => ({
       ...goal,
       trackingModes: sanitizeGoalTrackingModes(goal.trackingModes, goal, {
@@ -209,6 +211,7 @@ export function normalizeAppData(input: unknown): AppData {
       nutritionGoals,
       healthProfile,
       recentFoodIds,
+      notificationPrefs,
       goals: goalsWithTracking,
     };
   } catch {

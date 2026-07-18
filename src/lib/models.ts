@@ -274,6 +274,21 @@ export type HealthProfile = {
   macroSplitPct: { protein: number; carbs: number; fat: number };
 };
 
+/** Push / reminder preferences (sent via Web Push when installed as PWA). */
+export type NotificationPrefs = {
+  /** Master switch — must be on and browser permission granted. */
+  enabled: boolean;
+  habitReminders: boolean;
+  /** Local hour 0–23 in app timezone (America/Phoenix). Default 20 (8pm). */
+  habitReminderHour: number;
+  /** AI one-liner grounded in goals and recent progress. */
+  motivationalAi: boolean;
+  /** Local hour for motivational push. Default 8 (morning). */
+  motivationalHour: number;
+  journalReminders: boolean;
+  journalReminderHour: number;
+};
+
 export type AppData = {
   userProfile: UserProfile;
   measurementPreferences?: MeasurementPreferences;
@@ -308,4 +323,5 @@ export type AppData = {
   nutritionGoals?: NutritionGoals;
   healthProfile?: HealthProfile;
   recentFoodIds?: string[];
+  notificationPrefs?: NotificationPrefs;
 };

@@ -21,11 +21,19 @@ Every user **registers and signs in** with email and password. Data syncs automa
    - `OPENAI_API_KEY` — for AI features (optional locally)
    - `BLOB_READ_WRITE_TOKEN` — Vercel Blob store for journal voice memos (production)
    - `CRON_SECRET` — protects scheduled cron routes on Vercel (optional locally)
+   - `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` — Web Push for iOS home-screen notifications (`npx tsx scripts/generate-vapid-keys.ts`)
 2. Apply the schema:
    ```bash
    npm run db:push
    ```
 3. **Existing user migration:** Register with your email. Data in this browser's local storage is imported automatically. If you previously used cloud sync with a sync key, that key is sent on register to merge any legacy cloud snapshot.
+
+### iOS home screen (PWA)
+
+1. Open the deployed site in **Safari** (not Chrome/in-app browsers).
+2. Share → **Add to Home Screen** — the sun icon should appear.
+3. Open the app from the home screen, go to **Settings → Notifications**, and enable push.
+4. Requires **iOS 16.4+**. Reminder cron runs hourly (`/api/cron/push-notifications`).
 
 ### Legacy cloud sync migration
 

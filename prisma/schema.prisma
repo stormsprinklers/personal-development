@@ -23,6 +23,38 @@ model User {
   journalVoiceMemos    JournalVoiceMemo[]
   accountabilityInvitesCreated AccountabilityInvite[] @relation("InviteCreator")
   accountabilityInvitesRedeemed AccountabilityInvite[] @relation("InviteUsedBy")
+  pushSubscriptions    PushSubscription[]
+  pushDeliveryLogs     PushDeliveryLog[]
+}
+
+/** Web Push subscription for a device (iOS home-screen PWA or other browsers). */
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/** Prevents duplicate push sends for the same user/type/day. */
+model PushDeliveryLog {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  dateKey   String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type, dateKey])
+  @@index([userId])
 }
 
 /** Full app snapshot (matches client AppData JSON). One row per user. */

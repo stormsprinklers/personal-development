@@ -1,18 +1,31 @@
 {
   "name": "Personal Development Hub",
   "short_name": "PD Hub",
-  "description": "Workouts, habits, to-dos, goals, journaling, and AI insights.",
+  "description": "Workouts, habits, to-dos, goals, journaling, food tracking, and AI insights.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#f2f2f7",
-  "theme_color": "#f2f2f7",
+  "background_color": "#7EB8E8",
+  "theme_color": "#7EB8E8",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
