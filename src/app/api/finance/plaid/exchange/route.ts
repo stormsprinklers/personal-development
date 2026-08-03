@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireSession, databaseConfigured } from "@/lib/auth/require-session";
-import { getPlaidClient, plaidConfigured } from "@/lib/finance/plaid-client";
+import { getPlaidClient, getPlaidEnvName, plaidConfigured, plaidErrorMessage } from "@/lib/finance/plaid-client";
 import { prisma } from "@/lib/prisma";
 import { ensureFinanceCategories } from "@/lib/finance/categories";
 import { syncPlaidItem } from "@/lib/finance/sync";
@@ -30,9 +30,18 @@ export async function POST(request: Request) {
   await ensureFinanceCategories(auth.session.userId);
 
   const client = getPlaidClient();
-  const exchange = await client.itemPublicTokenExchange({ public_token: publicToken });
-  const accessToken = exchange.data.access_token;
-  const itemId = exchange.data.item_id;
+  let accessToken: string;
+  let itemId: string;
+  try {
+    const exchange = await client.itemPublicTokenExchange({ public_token: publicToken });
+    accessToken = exchange.data.access_token;
+    itemId = exchange.data.item_id;
+  } catch (e) {
+    return NextResponse.json(
+      { error: plaidErrorMessage(e), env: getPlaidEnvName() },
+      { status: 502 },
+    );
+  }
 
   const item = await prisma.financePlaidItem.upsert({
     where: { itemId },

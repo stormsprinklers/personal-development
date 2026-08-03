@@ -19,9 +19,12 @@ export function PlaidLinkButton({ onLinked, label = "Connect bank" }: Props) {
     setBusy(true);
     try {
       const res = await fetch("/api/finance/plaid/create-link-token", { method: "POST" });
-      const data = (await res.json()) as { link_token?: string; error?: string };
+      const data = (await res.json()) as { link_token?: string; error?: string; hint?: string; env?: string };
       if (!res.ok || !data.link_token) {
-        throw new Error(data.error ?? "Could not start Plaid Link.");
+        const parts = [data.error ?? "Could not start Plaid Link."];
+        if (data.env) parts.push(`(env: ${data.env})`);
+        if (data.hint) parts.push(data.hint);
+        throw new Error(parts.join(" "));
       }
       setToken(data.link_token);
     } catch (e) {
