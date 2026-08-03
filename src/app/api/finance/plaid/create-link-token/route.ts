@@ -15,7 +15,7 @@ export async function POST() {
   }
   if (!plaidConfigured()) {
     return NextResponse.json(
-      { error: "Plaid is not configured. Set PLAID_CLIENT_ID and PLAID_SECRET." },
+      { error: "Plaid is not configured. Set PLAID_CLIENT_ID and PLAID_SECRET_KEY." },
       { status: 503 },
     );
   }

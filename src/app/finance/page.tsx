@@ -92,7 +92,7 @@ export default function FinanceOverviewPage() {
           <div className="grid gap-3">
             {!plaidConfigured ? (
               <p className="text-sm text-copper">
-                Plaid is not configured. Set PLAID_CLIENT_ID, PLAID_SECRET, and PLAID_ENV in your
+                Plaid is not configured. Set PLAID_CLIENT_ID, PLAID_SECRET_KEY, and PLAID_ENV in your
                 environment.
               </p>
             ) : null}

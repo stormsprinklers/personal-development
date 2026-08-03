@@ -16,11 +16,9 @@ import {
 import { strengthSummaryByExercise } from "@/lib/metrics/workoutMetrics";
 import { normalizeMeasurementPreferences, weightUnitAbbr } from "@/lib/units";
 import {
-  createTodoList,
   dashboardDailyItemKey,
   dashboardTodoOrderFromDailyOrder,
   effectiveDashboardTodoListIds,
-  linkTodoListToGoal,
   mainTodoListId,
   normalizeDashboardDailyOrder,
   sortDailyDashboardItems,
@@ -72,8 +70,6 @@ export default function Home() {
   const [showAllDailyItems, setShowAllDailyItems] = useState(false);
   const [quickTodoTitle, setQuickTodoTitle] = useState("");
   const [quickAddListId, setQuickAddListId] = useState("");
-  const [newListName, setNewListName] = useState("");
-  const [newListGoalId, setNewListGoalId] = useState("");
   const [exitingDailyKeys, setExitingDailyKeys] = useState<string[]>([]);
   const exitingDailyRef = useRef(new Set<string>());
   const [journalQuickText, setJournalQuickText] = useState("");
@@ -124,14 +120,6 @@ export default function Home() {
   const weeklyHabitAdherence = habitTarget ? Math.round((habitChecksInWeek / habitTarget) * 100) : 0;
 
   const goalProgress = useMemo(() => goalsProgressForYear(data, goalYear), [data, goalYear]);
-  const yearGoals = useMemo(
-    () =>
-      data.goals
-        .filter((g) => g.year === goalYear && !g.completed)
-        .slice()
-        .sort((a, b) => a.title.localeCompare(b.title)),
-    [data.goals, goalYear],
-  );
   const dashboardSectionOrder = useMemo(
     () => resolveDashboardSectionOrder(data.dashboardSectionOrder),
     [data.dashboardSectionOrder],
@@ -163,18 +151,6 @@ export default function Home() {
       if (!ids.length && main) ids = [main];
       return { ...prev, dashboardTodoListIds: ids };
     });
-  }
-
-  function createDashboardList() {
-    const name = newListName.trim();
-    if (!name) return;
-    setData((prev) => createTodoList(prev, name, { goalId: newListGoalId || undefined }));
-    setNewListName("");
-    setNewListGoalId("");
-  }
-
-  function updateListGoalLink(listId: string, goalIdOrEmpty: string) {
-    setData((prev) => linkTodoListToGoal(prev, listId, goalIdOrEmpty));
   }
 
   const todaysHabits = useMemo(() => {
@@ -326,86 +302,17 @@ export default function Home() {
           <SectionCard key="tasks" title="Tasks & habits" clipInset={false}>
             <GroupedRow hairline>
               <p className="ios-footnote mb-2 font-medium uppercase tracking-wide">Lists on dashboard</p>
-              <div className="grid gap-3">
-                {data.todoLists.map((list) => {
-                  const linkedGoal = list.goalId
-                    ? data.goals.find((g) => g.id === list.goalId)
-                    : undefined;
-                  return (
-                    <div key={list.id} className="flex min-w-0 flex-wrap items-center gap-2">
-                      <label className="flex min-w-0 flex-1 items-center gap-2 text-sm text-ios-secondary">
-                        <input
-                          type="checkbox"
-                          checked={dashboardListIds.includes(list.id)}
-                          onChange={(e) => toggleDashboardList(list.id, e.target.checked)}
-                        />
-                        <span className="min-w-0 truncate">
-                          {list.isMain ? `${list.name} (main)` : list.name}
-                          {linkedGoal ? (
-                            <span className="text-ios-secondary"> · {linkedGoal.title}</span>
-                          ) : null}
-                        </span>
-                      </label>
-                      {!list.isMain ? (
-                        <select
-                          value={list.goalId ?? ""}
-                          onChange={(e) => updateListGoalLink(list.id, e.target.value)}
-                          className="ios-field max-w-[12rem] px-2 py-1.5 text-xs"
-                          aria-label={`Goal for ${list.name}`}
-                        >
-                          <option value="">No goal</option>
-                          {yearGoals.map((goal) => (
-                            <option key={goal.id} value={goal.id}>
-                              {goal.title}
-                            </option>
-                          ))}
-                          {list.goalId && !yearGoals.some((g) => g.id === list.goalId) && linkedGoal ? (
-                            <option value={linkedGoal.id}>{linkedGoal.title}</option>
-                          ) : null}
-                        </select>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="mt-3 grid gap-2">
-                <p className="ios-footnote font-medium uppercase tracking-wide">New list</p>
-                <div className="flex min-w-0 flex-wrap items-end gap-2">
-                  <input
-                    value={newListName}
-                    onChange={(e) => setNewListName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        createDashboardList();
-                      }
-                    }}
-                    placeholder="List name…"
-                    className="ios-field min-w-0 flex-1 px-3 py-2.5 text-sm"
-                  />
-                  <label className="grid gap-1 text-xs font-medium text-ios-secondary">
-                    Goal
-                    <select
-                      value={newListGoalId}
-                      onChange={(e) => setNewListGoalId(e.target.value)}
-                      className="ios-field min-w-[8rem] px-3 py-2.5 text-sm"
-                    >
-                      <option value="">None</option>
-                      {yearGoals.map((goal) => (
-                        <option key={goal.id} value={goal.id}>
-                          {goal.title}
-                        </option>
-                      ))}
-                    </select>
+              <div className="flex flex-wrap gap-3">
+                {data.todoLists.map((list) => (
+                  <label key={list.id} className="flex items-center gap-2 text-sm text-ios-secondary">
+                    <input
+                      type="checkbox"
+                      checked={dashboardListIds.includes(list.id)}
+                      onChange={(e) => toggleDashboardList(list.id, e.target.checked)}
+                    />
+                    <span>{list.isMain ? `${list.name} (main)` : list.name}</span>
                   </label>
-                  <GlassButton
-                    variant="secondary"
-                    onClick={createDashboardList}
-                    disabled={!newListName.trim()}
-                  >
-                    Create list
-                  </GlassButton>
-                </div>
+                ))}
               </div>
             </GroupedRow>
             <GroupedRow hairline={false}>

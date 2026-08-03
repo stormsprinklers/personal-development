@@ -1,7 +1,7 @@
 import { Configuration, PlaidApi, PlaidEnvironments, Products, CountryCode } from "plaid";
 
 export function plaidConfigured(): boolean {
-  return Boolean(process.env.PLAID_CLIENT_ID?.trim() && process.env.PLAID_SECRET?.trim());
+  return Boolean(process.env.PLAID_CLIENT_ID?.trim() && process.env.PLAID_SECRET_KEY?.trim());
 }
 
 function plaidEnv() {
@@ -15,7 +15,7 @@ let client: PlaidApi | null = null;
 
 export function getPlaidClient(): PlaidApi {
   if (!plaidConfigured()) {
-    throw new Error("Plaid is not configured. Set PLAID_CLIENT_ID and PLAID_SECRET.");
+    throw new Error("Plaid is not configured. Set PLAID_CLIENT_ID and PLAID_SECRET_KEY.");
   }
   if (!client) {
     const configuration = new Configuration({
@@ -23,7 +23,7 @@ export function getPlaidClient(): PlaidApi {
       baseOptions: {
         headers: {
           "PLAID-CLIENT-ID": process.env.PLAID_CLIENT_ID!,
-          "PLAID-SECRET": process.env.PLAID_SECRET!,
+          "PLAID-SECRET": process.env.PLAID_SECRET_KEY!,
         },
       },
     });

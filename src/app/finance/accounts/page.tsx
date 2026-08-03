@@ -92,7 +92,7 @@ export default function FinanceAccountsPage() {
         <SectionCard title="Link" inset={false}>
           {!plaidConfigured ? (
             <p className="text-sm text-copper">
-              Set PLAID_CLIENT_ID, PLAID_SECRET, and PLAID_ENV to connect accounts.
+              Set PLAID_CLIENT_ID, PLAID_SECRET_KEY, and PLAID_ENV to connect accounts.
             </p>
           ) : (
             <PlaidLinkButton onLinked={() => void refresh()} label="Connect another institution" />

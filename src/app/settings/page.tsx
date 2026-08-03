@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { CloudStorageCard } from "@/components/cloud-storage-card";
 import { AccountabilitySettingsPanel } from "@/components/settings/accountability-settings-panel";
+import { ListsSettingsPanel } from "@/components/settings/lists-settings-panel";
 import { NotificationsSettingsPanel } from "@/components/settings/notifications-settings-panel";
 import { SettingsSubTabBar } from "@/components/ui/settings-sub-tab-bar";
 import { SETTINGS_TABS, parseSettingsTab, type SettingsTabId } from "@/lib/settings-tabs";
@@ -30,7 +31,7 @@ function SettingsShell({
   return (
     <AppShell
       title="Settings"
-      description="Account, cloud sync, accountability, and notifications."
+      description="Account, lists, accountability, and notifications."
       header={<SettingsSubTabBar tabs={SETTINGS_TABS} activeId={activeTab} onSelect={onSelectTab} />}
     >
       {children}
@@ -68,6 +69,7 @@ export default function SettingsPage() {
   return (
     <SettingsShell activeTab={activeTab} onSelectTab={selectTab}>
       {activeTab === "cloud" ? <CloudStorageCard /> : null}
+      {activeTab === "lists" ? <ListsSettingsPanel /> : null}
       {activeTab === "accountability" ? <AccountabilitySettingsPanel /> : null}
       {activeTab === "notifications" ? <NotificationsSettingsPanel /> : null}
     </SettingsShell>
