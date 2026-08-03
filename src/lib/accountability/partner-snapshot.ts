@@ -28,7 +28,6 @@ export type PartnerDashboardSnapshot = {
   habitLogsRecent: Array<{ date: string; habitId: string; completed: boolean }>;
   weeklyWorkoutCount: number;
   weeklyStrengthTop: Array<{ exerciseName: string; totalSets: number; topWeight: number }>;
-  dailyAiSummary: string | null;
 };
 
 export function buildPartnerSnapshot(
@@ -83,10 +82,6 @@ export function buildPartnerSnapshot(
       topWeight: row.bestWeight,
     }));
 
-  const dailyInsight = normalized.aiInsights.find(
-    (i) => i.type === "daily_summary" && i.date === date,
-  );
-
   return {
     userId,
     displayName,
@@ -98,7 +93,6 @@ export function buildPartnerSnapshot(
     habitLogsRecent,
     weeklyWorkoutCount: weeklyWorkouts.length,
     weeklyStrengthTop,
-    dailyAiSummary: dailyInsight?.output?.trim() ?? null,
   };
 }
 

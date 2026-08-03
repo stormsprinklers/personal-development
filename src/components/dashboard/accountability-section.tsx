@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AiSummaryText } from "@/components/ai/ai-summary-text";
 import { SectionCard } from "@/components/layout/section-card";
 import { GlassButton } from "@/components/ui/glass-button";
 import { Sheet } from "@/components/ui/sheet";
@@ -16,7 +15,6 @@ type PartnerListItem = {
 
 type Props = {
   date: string;
-  actions?: React.ReactNode;
 };
 
 function CalendarIcon({ className }: { className?: string }) {
@@ -172,7 +170,7 @@ function PartnerHabitCalendarSheet({
   );
 }
 
-export function DashboardAccountabilitySection({ date, actions }: Props) {
+export function DashboardAccountabilitySection({ date }: Props) {
   const [partners, setPartners] = useState<PartnerListItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [snapshot, setSnapshot] = useState<PartnerDashboardSnapshot | null>(null);
@@ -245,7 +243,7 @@ export function DashboardAccountabilitySection({ date, actions }: Props) {
 
   if (loading) {
     return (
-      <SectionCard title="Accountability" inset={false} actions={actions}>
+      <SectionCard title="Accountability" inset={false}>
         <p className="text-sm text-ios-secondary">Loading partners…</p>
       </SectionCard>
     );
@@ -253,7 +251,7 @@ export function DashboardAccountabilitySection({ date, actions }: Props) {
 
   if (!partners.length) {
     return (
-      <SectionCard title="Accountability" inset={false} actions={actions}>
+      <SectionCard title="Accountability" inset={false}>
         <p className="ios-card-muted rounded-2xl p-4 text-sm text-ios-secondary">
           No partners are sharing with you yet. Add someone by code in Settings → Accountability.
         </p>
@@ -262,7 +260,7 @@ export function DashboardAccountabilitySection({ date, actions }: Props) {
   }
 
   return (
-    <SectionCard title="Accountability" inset={false} actions={actions}>
+    <SectionCard title="Accountability" inset={false}>
       <div className="grid gap-4">
         <div className="ios-card rounded-2xl p-4">
           <p className="text-sm font-bold text-ios-label">Partner</p>
@@ -380,14 +378,6 @@ export function DashboardAccountabilitySection({ date, actions }: Props) {
                   ))}
                 </ul>
               ) : null}
-            </PartnerSectionBox>
-
-            <PartnerSectionBox title="Daily summary">
-              {snapshot.dailyAiSummary ? (
-                <AiSummaryText text={snapshot.dailyAiSummary} />
-              ) : (
-                <p className="text-sm text-ios-label">No summary for this day.</p>
-              )}
             </PartnerSectionBox>
           </div>
         ) : (

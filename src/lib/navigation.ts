@@ -10,13 +10,18 @@ export const APP_SECTIONS: AppSection[] = [
     href: "/",
     title: "Dashboard",
     shortTitle: "Home",
-    description: "View progress trends, insights, and your daily AI summary.",
+    description: "View your day, goals, journal, and accountability at a glance.",
   },
   {
     href: "/health",
     title: "Health",
     shortTitle: "Health",
-    description: "Log workouts, track food, and manage nutrition goals.",
+    description: "Log workouts and manage exercise settings.",
+  },
+  {
+    href: "/finance",
+    title: "Finance",
+    description: "Track spending, categorize transactions, and review cash flow.",
   },
   {
     href: "/goals",
@@ -26,18 +31,12 @@ export const APP_SECTIONS: AppSection[] = [
   {
     href: "/journal",
     title: "Journal",
-    description: "Capture reflections, link entries to goals, and ask AI questions.",
+    description: "Capture reflections and review recent entries.",
   },
   {
     href: "/habits",
     title: "Habits",
     description: "Track daily habits with check-ins and history.",
-  },
-  {
-    href: "/todos",
-    title: "To-Do Lists",
-    shortTitle: "Tasks",
-    description: "Manage area-based lists with hidden completions and history.",
   },
   {
     href: "/settings",
@@ -49,6 +48,7 @@ export const APP_SECTIONS: AppSection[] = [
 export function isAppSectionActive(section: AppSection, pathname: string): boolean {
   if (section.href === "/") return pathname === "/";
   if (section.href === "/health") return pathname.startsWith("/health");
+  if (section.href === "/finance") return pathname.startsWith("/finance");
   if (section.href === "/settings") return pathname.startsWith("/settings");
   return pathname === section.href || pathname.startsWith(`${section.href}/`);
 }

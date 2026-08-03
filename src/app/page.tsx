@@ -1,30 +1,26 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AiSummaryText } from "@/components/ai/ai-summary-text";
 import { DashboardAccountabilitySection } from "@/components/dashboard/accountability-section";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
-import { SectionReorderButtons } from "@/components/ui/section-reorder-buttons";
 import { COMPLETE_EXIT_MS } from "@/components/complete-exit-row";
 import { DashboardSortableTodos } from "@/components/dashboard-sortable-todos";
 import { GlassButton } from "@/components/ui/glass-button";
 import { GroupedRow } from "@/components/ui/grouped-row";
-import { buildAiContext } from "@/lib/ai/contextBuilder";
-import { DASHBOARD_COACH_SYSTEM_PROMPT, dailyCoachOpeningUserPrompt } from "@/lib/ai/prompts";
 import { goalsProgressForYear } from "@/lib/metrics/dashboardMetrics";
 import {
-  moveDashboardSection,
   resolveDashboardSectionOrder,
-  sanitizeDashboardSectionOrder,
   type DashboardSectionId,
 } from "@/lib/dashboard-sections";
 import { strengthSummaryByExercise } from "@/lib/metrics/workoutMetrics";
 import { normalizeMeasurementPreferences, weightUnitAbbr } from "@/lib/units";
 import {
+  createTodoList,
   dashboardDailyItemKey,
   dashboardTodoOrderFromDailyOrder,
   effectiveDashboardTodoListIds,
+  linkTodoListToGoal,
   mainTodoListId,
   normalizeDashboardDailyOrder,
   sortDailyDashboardItems,
@@ -47,8 +43,6 @@ function formatDashboardDayLabel(dateKey: string) {
 
 export default function Home() {
   const { data, setData, ready } = useAppData();
-  const dataRef = useRef(data);
-  dataRef.current = data;
   const weightAbbr = useMemo(
     () => weightUnitAbbr(normalizeMeasurementPreferences(data.measurementPreferences).weightUnit),
     [data.measurementPreferences],
@@ -78,11 +72,11 @@ export default function Home() {
   const [showAllDailyItems, setShowAllDailyItems] = useState(false);
   const [quickTodoTitle, setQuickTodoTitle] = useState("");
   const [quickAddListId, setQuickAddListId] = useState("");
+  const [newListName, setNewListName] = useState("");
+  const [newListGoalId, setNewListGoalId] = useState("");
   const [exitingDailyKeys, setExitingDailyKeys] = useState<string[]>([]);
   const exitingDailyRef = useRef(new Set<string>());
   const [journalQuickText, setJournalQuickText] = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState<string | null>(null);
 
   const goalYear = useMemo(
     () => (selectedDate ? yearInAppTimezone(instantNoonForDateKey(selectedDate)) : yearInAppTimezone()),
@@ -130,6 +124,14 @@ export default function Home() {
   const weeklyHabitAdherence = habitTarget ? Math.round((habitChecksInWeek / habitTarget) * 100) : 0;
 
   const goalProgress = useMemo(() => goalsProgressForYear(data, goalYear), [data, goalYear]);
+  const yearGoals = useMemo(
+    () =>
+      data.goals
+        .filter((g) => g.year === goalYear && !g.completed)
+        .slice()
+        .sort((a, b) => a.title.localeCompare(b.title)),
+    [data.goals, goalYear],
+  );
   const dashboardSectionOrder = useMemo(
     () => resolveDashboardSectionOrder(data.dashboardSectionOrder),
     [data.dashboardSectionOrder],
@@ -162,6 +164,19 @@ export default function Home() {
       return { ...prev, dashboardTodoListIds: ids };
     });
   }
+
+  function createDashboardList() {
+    const name = newListName.trim();
+    if (!name) return;
+    setData((prev) => createTodoList(prev, name, { goalId: newListGoalId || undefined }));
+    setNewListName("");
+    setNewListGoalId("");
+  }
+
+  function updateListGoalLink(listId: string, goalIdOrEmpty: string) {
+    setData((prev) => linkTodoListToGoal(prev, listId, goalIdOrEmpty));
+  }
+
   const todaysHabits = useMemo(() => {
     if (!today || selectedDate !== today) return [];
     return data.habits
@@ -219,76 +234,6 @@ export default function Home() {
     [dailyItems],
   );
   const hiddenDailyCount = Math.max(0, dailyItems.length - 5);
-
-  const latestSummary = useMemo(
-    () => data.aiInsights.find((insight) => insight.type === "daily_summary" && insight.date === selectedDate),
-    [data.aiInsights, selectedDate],
-  );
-  const hasSummaryForDate = Boolean(latestSummary?.output?.trim());
-
-  async function runDailySummaryGeneration(targetDate: string, signal?: AbortSignal) {
-    const context = buildAiContext(dataRef.current, targetDate);
-    const serialized = JSON.stringify(context, null, 2);
-    const userContent = dailyCoachOpeningUserPrompt(serialized);
-    const messages = [
-      { role: "system" as const, content: DASHBOARD_COACH_SYSTEM_PROMPT },
-      { role: "user" as const, content: userContent },
-    ];
-    const response = await fetch("/api/ai", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages, temperature: 0.55 }),
-      ...(signal ? { signal } : {}),
-    });
-    const payload = (await response.json()) as { output?: string; error?: string };
-    const text = payload.output ?? payload.error;
-    if (!text?.trim()) throw new Error("No summary returned.");
-    setData((prev) => ({
-      ...prev,
-      aiInsights: [
-        {
-          id: crypto.randomUUID(),
-          type: "daily_summary",
-          date: targetDate,
-          prompt: userContent,
-          output: text.trim(),
-        },
-        ...prev.aiInsights.filter((insight) => !(insight.type === "daily_summary" && insight.date === targetDate)),
-      ],
-    }));
-  }
-
-  useEffect(() => {
-    if (!ready || !selectedDate) return;
-
-    if (hasSummaryForDate) {
-      setAiLoading(false);
-      setAiError(null);
-      return;
-    }
-
-    const ac = new AbortController();
-    let cancelled = false;
-
-    (async () => {
-      setAiLoading(true);
-      setAiError(null);
-      try {
-        await runDailySummaryGeneration(selectedDate, ac.signal);
-      } catch (e) {
-        if (ac.signal.aborted || cancelled) return;
-        setAiError(e instanceof Error ? e.message : "Could not generate summary.");
-      } finally {
-        if (!ac.signal.aborted && !cancelled) setAiLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      ac.abort();
-      setAiLoading(false);
-    };
-  }, [ready, selectedDate, hasSummaryForDate, setData]);
 
   function saveJournalQuick() {
     const text = journalQuickText.trim();
@@ -374,45 +319,93 @@ export default function Home() {
     }, COMPLETE_EXIT_MS);
   }
 
-  function moveDashboardSectionId(sectionId: DashboardSectionId, direction: "up" | "down") {
-    setData((prev) => {
-      const order = resolveDashboardSectionOrder(prev.dashboardSectionOrder);
-      const next = moveDashboardSection(order, sectionId, direction);
-      return { ...prev, dashboardSectionOrder: sanitizeDashboardSectionOrder(next) };
-    });
-  }
-
-  function sectionReorderActions(sectionId: DashboardSectionId) {
-    const index = dashboardSectionOrder.indexOf(sectionId);
-    return (
-      <SectionReorderButtons
-        canMoveUp={index > 0}
-        canMoveDown={index < dashboardSectionOrder.length - 1}
-        onMoveUp={() => moveDashboardSectionId(sectionId, "up")}
-        onMoveDown={() => moveDashboardSectionId(sectionId, "down")}
-      />
-    );
-  }
-
   function renderDashboardSection(sectionId: DashboardSectionId) {
-    const actions = sectionReorderActions(sectionId);
     switch (sectionId) {
       case "tasks":
         return (
-          <SectionCard key="tasks" title="Tasks & habits" clipInset={false} actions={actions}>
+          <SectionCard key="tasks" title="Tasks & habits" clipInset={false}>
             <GroupedRow hairline>
               <p className="ios-footnote mb-2 font-medium uppercase tracking-wide">Lists on dashboard</p>
-              <div className="flex flex-wrap gap-3">
-                {data.todoLists.map((list) => (
-                  <label key={list.id} className="flex items-center gap-2 text-sm text-ios-secondary">
-                    <input
-                      type="checkbox"
-                      checked={dashboardListIds.includes(list.id)}
-                      onChange={(e) => toggleDashboardList(list.id, e.target.checked)}
-                    />
-                    <span>{list.isMain ? `${list.name} (main)` : list.name}</span>
+              <div className="grid gap-3">
+                {data.todoLists.map((list) => {
+                  const linkedGoal = list.goalId
+                    ? data.goals.find((g) => g.id === list.goalId)
+                    : undefined;
+                  return (
+                    <div key={list.id} className="flex min-w-0 flex-wrap items-center gap-2">
+                      <label className="flex min-w-0 flex-1 items-center gap-2 text-sm text-ios-secondary">
+                        <input
+                          type="checkbox"
+                          checked={dashboardListIds.includes(list.id)}
+                          onChange={(e) => toggleDashboardList(list.id, e.target.checked)}
+                        />
+                        <span className="min-w-0 truncate">
+                          {list.isMain ? `${list.name} (main)` : list.name}
+                          {linkedGoal ? (
+                            <span className="text-ios-secondary"> · {linkedGoal.title}</span>
+                          ) : null}
+                        </span>
+                      </label>
+                      {!list.isMain ? (
+                        <select
+                          value={list.goalId ?? ""}
+                          onChange={(e) => updateListGoalLink(list.id, e.target.value)}
+                          className="ios-field max-w-[12rem] px-2 py-1.5 text-xs"
+                          aria-label={`Goal for ${list.name}`}
+                        >
+                          <option value="">No goal</option>
+                          {yearGoals.map((goal) => (
+                            <option key={goal.id} value={goal.id}>
+                              {goal.title}
+                            </option>
+                          ))}
+                          {list.goalId && !yearGoals.some((g) => g.id === list.goalId) && linkedGoal ? (
+                            <option value={linkedGoal.id}>{linkedGoal.title}</option>
+                          ) : null}
+                        </select>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-3 grid gap-2">
+                <p className="ios-footnote font-medium uppercase tracking-wide">New list</p>
+                <div className="flex min-w-0 flex-wrap items-end gap-2">
+                  <input
+                    value={newListName}
+                    onChange={(e) => setNewListName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        createDashboardList();
+                      }
+                    }}
+                    placeholder="List name…"
+                    className="ios-field min-w-0 flex-1 px-3 py-2.5 text-sm"
+                  />
+                  <label className="grid gap-1 text-xs font-medium text-ios-secondary">
+                    Goal
+                    <select
+                      value={newListGoalId}
+                      onChange={(e) => setNewListGoalId(e.target.value)}
+                      className="ios-field min-w-[8rem] px-3 py-2.5 text-sm"
+                    >
+                      <option value="">None</option>
+                      {yearGoals.map((goal) => (
+                        <option key={goal.id} value={goal.id}>
+                          {goal.title}
+                        </option>
+                      ))}
+                    </select>
                   </label>
-                ))}
+                  <GlassButton
+                    variant="secondary"
+                    onClick={createDashboardList}
+                    disabled={!newListName.trim()}
+                  >
+                    Create list
+                  </GlassButton>
+                </div>
               </div>
             </GroupedRow>
             <GroupedRow hairline={false}>
@@ -481,7 +474,7 @@ export default function Home() {
         );
       case "goals":
         return (
-          <SectionCard key="goals" title={`Progress toward goals (${goalYear})`} inset={false} actions={actions}>
+          <SectionCard key="goals" title={`Progress toward goals (${goalYear})`} inset={false}>
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="ios-card p-4">
                 <p className="ios-footnote font-medium uppercase tracking-wide">Annual goals</p>
@@ -522,29 +515,11 @@ export default function Home() {
             </div>
           </SectionCard>
         );
-      case "summary":
-        return (
-          <SectionCard key="summary" title="Daily summary" inset={false} actions={actions}>
-            <div className="grid gap-3">
-              {aiLoading ? <p className="text-sm text-ios-secondary">Summarizing your trends…</p> : null}
-              {aiError ? <p className="ios-card rounded-xl bg-copper/10 p-3 text-sm text-copper">{aiError}</p> : null}
-              {latestSummary?.output?.trim() ? (
-                <div className="ios-card p-4">
-                  <AiSummaryText text={latestSummary.output.trim()} />
-                </div>
-              ) : (
-                <div className="ios-card p-4 text-sm text-ios-label">
-                  {aiLoading ? "" : "Summary will load automatically."}
-                </div>
-              )}
-            </div>
-          </SectionCard>
-        );
       case "journal":
         return (
-          <SectionCard key="journal" title="Quick journal" inset={false} actions={actions}>
+          <SectionCard key="journal" title="Quick journal" inset={false}>
             <div className="ios-card grid gap-3 p-4">
-              <p className="ios-footnote">Saved for {selectedDate}. Link goals from the full Journal page.</p>
+              <p className="ios-footnote">Saved for {selectedDate}.</p>
               <textarea
                 value={journalQuickText}
                 onChange={(e) => setJournalQuickText(e.target.value)}
@@ -559,13 +534,13 @@ export default function Home() {
           </SectionCard>
         );
       case "accountability":
-        return <DashboardAccountabilitySection key="accountability" date={selectedDate} actions={actions} />;
+        return <DashboardAccountabilitySection key="accountability" date={selectedDate} />;
     }
   }
 
   if (!selectedDate || !ready) {
     return (
-      <AppShell title="Dashboard" description="Your day, summary, and journal at a glance.">
+      <AppShell title="Dashboard" description="Your day, goals, and journal at a glance.">
         <div className="p-6 text-sm text-ios-secondary">Loading…</div>
       </AppShell>
     );
@@ -574,7 +549,7 @@ export default function Home() {
   return (
     <AppShell
       title="Dashboard"
-      description="Your day, summary, and journal at a glance."
+      description="Your day, goals, and journal at a glance."
       header={
         <div className="grid gap-2">
           {nowLabel ? <p className="ios-footnote text-ios-secondary">{nowLabel}</p> : null}

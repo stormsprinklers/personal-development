@@ -31,13 +31,12 @@ export function AppShell({ title, description: _description, children, header, a
   const pathname = usePathname();
 
   const onRoutineEditPage = pathname.startsWith("/health/workouts/routines/");
-  const onHealthFood = pathname === "/health/food";
   const onHealthWorkouts = pathname === "/health/workouts";
   const onHealthSettings = pathname === "/health/settings";
   const onWorkoutSettings = pathname === "/health/workouts/settings";
 
   const healthTopActions =
-    onHealthFood || onHealthWorkouts ? (
+    onHealthWorkouts ? (
       <Link
         href="/health/settings"
         className="glass-button inline-flex h-11 min-w-11 items-center justify-center rounded-full text-ios-label shadow-sm"

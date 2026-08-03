@@ -27,6 +27,63 @@ export function mainTodoListId(lists: TodoList[]): string {
   return lists[0]?.id ?? "";
 }
 
+/** Create a non-main list; optionally link to a goal (clears that goal from any other list). Auto-shows on dashboard. */
+export function createTodoList(
+  data: AppData,
+  name: string,
+  options?: { goalId?: string; showOnDashboard?: boolean },
+): AppData {
+  const trimmed = name.trim();
+  if (!trimmed) return data;
+
+  const id = crypto.randomUUID();
+  let goalId = options?.goalId?.trim() || undefined;
+  if (goalId && !data.goals.some((g) => g.id === goalId)) goalId = undefined;
+
+  let todoLists = data.todoLists.map((l) =>
+    goalId && l.goalId === goalId ? { ...l, goalId: undefined } : l,
+  );
+  todoLists = [
+    {
+      id,
+      name: trimmed,
+      area: "",
+      isMain: false,
+      goalId,
+      createdAt: new Date().toISOString(),
+    },
+    ...todoLists,
+  ];
+
+  let dashboardTodoListIds = data.dashboardTodoListIds;
+  if (options?.showOnDashboard !== false) {
+    const current = effectiveDashboardTodoListIds({
+      todoLists: data.todoLists,
+      dashboardTodoListIds,
+    });
+    dashboardTodoListIds = [...new Set([...current, id])];
+  }
+
+  return { ...data, todoLists, dashboardTodoListIds };
+}
+
+/** Link a non-main list to a goal (or clear). One list per goal. */
+export function linkTodoListToGoal(data: AppData, listId: string, goalIdOrEmpty: string): AppData {
+  const main = mainTodoListId(data.todoLists);
+  if (listId === main) return data;
+  if (!data.todoLists.some((l) => l.id === listId)) return data;
+
+  const goalId = goalIdOrEmpty.trim();
+  let todoLists = data.todoLists.map((l) => {
+    if (goalId && l.goalId === goalId && l.id !== listId) return { ...l, goalId: undefined };
+    return l;
+  });
+  todoLists = todoLists.map((l) =>
+    l.id === listId ? { ...l, goalId: goalId || undefined } : l,
+  );
+  return { ...data, todoLists };
+}
+
 /** Lists whose active tasks appear on the dashboard; falls back to the main list. */
 export function effectiveDashboardTodoListIds(data: { todoLists: TodoList[]; dashboardTodoListIds?: string[] }): string[] {
   const main = mainTodoListId(data.todoLists);

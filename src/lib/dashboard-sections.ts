@@ -1,7 +1,6 @@
 export const DASHBOARD_SECTION_IDS = [
   "tasks",
   "goals",
-  "summary",
   "journal",
   "accountability",
 ] as const;

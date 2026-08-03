@@ -18,7 +18,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "Personal Development Hub",
   description:
-    "A personal self-improvement hub for workouts, habits, to-dos, annual goals, journaling, and AI insights.",
+    "A personal self-improvement hub for workouts, habits, to-dos, annual goals, and journaling.",
   applicationName: "PD Hub",
   appleWebApp: {
     capable: true,

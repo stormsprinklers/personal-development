@@ -25,6 +25,12 @@ model User {
   accountabilityInvitesRedeemed AccountabilityInvite[] @relation("InviteUsedBy")
   pushSubscriptions    PushSubscription[]
   pushDeliveryLogs     PushDeliveryLog[]
+  financePlaidItems    FinancePlaidItem[]
+  financeAccounts      FinanceAccount[]
+  financeCategories    FinanceCategory[]
+  financeMerchants     FinanceMerchant[]
+  financeMerchantRules FinanceMerchantRule[]
+  financeTransactions  FinanceTransaction[]
 }
 
 /** Web Push subscription for a device (iOS home-screen PWA or other browsers). */
@@ -140,4 +146,161 @@ model AccountabilityInvite {
   @@index([inviterUserId])
   @@index([expiresAt])
   @@index([usedAt])
+}
+
+enum FinanceFlowType {
+  expense
+  income
+  transfer
+  cc_payment
+  other
+}
+
+enum FinanceCategoryKind {
+  expense
+  income
+  transfer
+  system
+}
+
+enum FinanceReviewStatus {
+  needs_review
+  reviewed
+}
+
+enum FinancePlaidItemStatus {
+  active
+  needs_reauth
+  disconnected
+  error
+}
+
+/** Linked Plaid Item (institution connection) for a user. */
+model FinancePlaidItem {
+  id              String                 @id @default(cuid())
+  userId          String
+  itemId          String                 @unique
+  accessToken     String
+  institutionId   String?
+  institutionName String?
+  cursor          String?
+  status          FinancePlaidItemStatus @default(active)
+  lastSyncedAt    DateTime?
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accounts FinanceAccount[]
+
+  @@index([userId])
+}
+
+model FinanceAccount {
+  id              String   @id @default(cuid())
+  userId          String
+  plaidItemId     String
+  plaidAccountId  String   @unique
+  name            String
+  officialName    String?
+  mask            String?
+  type            String
+  subtype         String?
+  isoCurrencyCode String   @default("USD")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plaidItem    FinancePlaidItem     @relation(fields: [plaidItemId], references: [id], onDelete: Cascade)
+  transactions FinanceTransaction[]
+
+  @@index([userId])
+  @@index([plaidItemId])
+}
+
+model FinanceCategory {
+  id        String              @id @default(cuid())
+  userId    String
+  name      String
+  kind      FinanceCategoryKind @default(expense)
+  isSystem  Boolean             @default(false)
+  sortOrder Int                 @default(0)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions FinanceTransaction[]
+  rules        FinanceMerchantRule[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model FinanceMerchant {
+  id          String   @id @default(cuid())
+  userId      String
+  key         String
+  displayName String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions FinanceTransaction[]
+  rule         FinanceMerchantRule?
+
+  @@unique([userId, key])
+  @@index([userId])
+}
+
+model FinanceMerchantRule {
+  id         String           @id @default(cuid())
+  userId     String
+  merchantId String           @unique
+  categoryId String
+  flowType   FinanceFlowType?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  merchant FinanceMerchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  category FinanceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([categoryId])
+}
+
+model FinanceTransaction {
+  id                 String              @id @default(cuid())
+  userId             String
+  accountId          String
+  merchantId         String?
+  categoryId         String?
+  plaidTransactionId String              @unique
+  date               DateTime            @db.Date
+  authorizedDate     DateTime?           @db.Date
+  name               String
+  merchantName       String?
+  amount             Decimal             @db.Decimal(14, 2)
+  isoCurrencyCode    String              @default("USD")
+  pending            Boolean             @default(false)
+  flowType           FinanceFlowType     @default(expense)
+  reviewStatus       FinanceReviewStatus @default(needs_review)
+  plaidPfcPrimary    String?
+  plaidPfcDetailed   String?
+  plaidPfcConfidence String?
+  transferId         String?
+  paymentChannel     String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account  FinanceAccount   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  merchant FinanceMerchant? @relation(fields: [merchantId], references: [id], onDelete: SetNull)
+  category FinanceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([userId, date])
+  @@index([userId, merchantId])
+  @@index([userId, categoryId])
+  @@index([userId, reviewStatus])
+  @@index([userId, flowType])
+  @@index([accountId])
 }

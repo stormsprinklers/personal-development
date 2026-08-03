@@ -22,6 +22,8 @@ Every user **registers and signs in** with email and password. Data syncs automa
    - `BLOB_READ_WRITE_TOKEN` — Vercel Blob store for journal voice memos (production)
    - `CRON_SECRET` — protects scheduled cron routes on Vercel (optional locally)
    - `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` — Web Push for iOS home-screen notifications (`npx tsx scripts/generate-vapid-keys.ts`)
+   - `PLAID_CLIENT_ID` / `PLAID_SECRET` / `PLAID_ENV` (`sandbox` | `development` | `production`) — Finance tab bank linking
+   - `PLAID_WEBHOOK_URL` — public HTTPS URL to `/api/finance/plaid/webhook` (optional locally; use a tunnel or deploy)
 2. Apply the schema:
    ```bash
    npm run db:push
