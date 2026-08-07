@@ -292,6 +292,8 @@ export type NotificationPrefs = {
 export type AppData = {
   userProfile: UserProfile;
   measurementPreferences?: MeasurementPreferences;
+  /** When true, the app uses a dark (night shift) color palette. */
+  nightShiftEnabled?: boolean;
   exercises: Exercise[];
   /** Workout templates (e.g. Leg Day); strength ids reference `exercises`. */
   workoutRoutines: WorkoutRoutine[];

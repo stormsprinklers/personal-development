@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono } from "next/font/google";
 import { Providers } from "@/app/providers";
+import { NIGHT_SHIFT_BOOT_SCRIPT } from "@/lib/appearance";
 import "./globals.css";
 
 const geistMono = Geist_Mono({
@@ -48,8 +49,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistMono.variable} min-h-dvh antialiased`}>
+    <html lang="en" className={`${geistMono.variable} min-h-dvh antialiased`} suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: NIGHT_SHIFT_BOOT_SCRIPT }} />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />

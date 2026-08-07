@@ -13,6 +13,7 @@ import {
 import { normalizeNotificationPrefs } from "@/lib/notifications/prefs";
 import { MAIN_TODO_LIST_ID, normalizeTodoListsAndItems, sanitizeDashboardDailyOrder, sanitizeDashboardTodoOrder, migrateDashboardDailyOrder, dashboardTodoOrderFromDailyOrder } from "@/lib/todo-helpers";
 import { sanitizeWorkoutRoutines } from "@/lib/workout-routines";
+import { normalizeNightShiftEnabled } from "@/lib/appearance";
 import { normalizeMeasurementPreferences } from "@/lib/units";
 import { APP_TIMEZONE, yearInAppTimezone } from "@/lib/timezone";
 
@@ -78,6 +79,7 @@ export function createDefaultAppData(): AppData {
   return {
     userProfile: { name: "Austin", timezone: APP_TIMEZONE },
     measurementPreferences: normalizeMeasurementPreferences(),
+    nightShiftEnabled: false,
     exercises,
     workoutRoutines: sanitizeWorkoutRoutines(undefined, exercises),
     workoutSessions: [],
@@ -141,6 +143,7 @@ export function normalizeAppData(input: unknown): AppData {
       ...parsed,
       userProfile: { ...base.userProfile, ...parsed.userProfile, timezone: APP_TIMEZONE },
       measurementPreferences: normalizeMeasurementPreferences(parsed.measurementPreferences),
+      nightShiftEnabled: normalizeNightShiftEnabled(parsed.nightShiftEnabled),
       goalSections: sections,
       goals,
       todoLists: parsed.todoLists ?? base.todoLists,
@@ -182,6 +185,7 @@ export function normalizeAppData(input: unknown): AppData {
     const healthProfile = normalizeHealthProfile(merged.healthProfile);
     const recentFoodIds = normalizeRecentFoodIds(merged.recentFoodIds, foods);
     const notificationPrefs = normalizeNotificationPrefs(merged.notificationPrefs);
+    const nightShiftEnabled = normalizeNightShiftEnabled(merged.nightShiftEnabled);
     const goalsWithTracking = merged.goals.map((goal) => ({
       ...goal,
       trackingModes: sanitizeGoalTrackingModes(goal.trackingModes, goal, {
@@ -212,6 +216,7 @@ export function normalizeAppData(input: unknown): AppData {
       healthProfile,
       recentFoodIds,
       notificationPrefs,
+      nightShiftEnabled,
       goals: goalsWithTracking,
     };
   } catch {

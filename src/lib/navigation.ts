@@ -41,7 +41,7 @@ export const APP_SECTIONS: AppSection[] = [
   {
     href: "/settings",
     title: "Settings",
-    description: "Cloud sync, lists, accountability partners, and app preferences.",
+    description: "Cloud sync, appearance, lists, accountability, and app preferences.",
   },
 ];
 
