@@ -23,7 +23,7 @@ export function AppearanceSettingsCard() {
     <SectionCard title="Appearance" inset={false}>
       <div className="ios-card overflow-hidden">
         <GroupedRow hairline={false}>
-          <div className="flex items-start justify-between gap-3 py-1">
+          <label className="flex cursor-pointer items-start justify-between gap-3 py-1">
             <div className="min-w-0">
               <p className="text-sm font-medium text-ios-label">Night Shift</p>
               <p className="mt-0.5 text-xs text-ios-secondary">
@@ -34,11 +34,11 @@ export function AppearanceSettingsCard() {
               type="checkbox"
               checked={enabled}
               onChange={(e) => setNightShift(e.target.checked)}
-              className="mt-1 h-5 w-5"
+              className="mt-1 h-5 w-5 shrink-0"
               style={{ accentColor: "var(--ios-tint)" }}
               aria-label="Night Shift"
             />
-          </div>
+          </label>
         </GroupedRow>
       </div>
     </SectionCard>
