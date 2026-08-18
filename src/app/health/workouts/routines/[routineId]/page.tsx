@@ -122,7 +122,6 @@ export default function EditWorkoutRoutinePage() {
     updateRoutine((r) => {
       const has = r.cardioTypes.includes(type);
       const nextTypes = has ? r.cardioTypes.filter((t) => t !== type) : [...r.cardioTypes, type];
-      if (nextTypes.length === 0) return r;
       return { ...r, cardioTypes: nextTypes };
     });
   }

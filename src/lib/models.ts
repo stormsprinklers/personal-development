@@ -47,6 +47,11 @@ export type WorkoutSession = {
    * Logged sets and notes for those exercises are kept.
    */
   hiddenStrengthExerciseIds?: string[];
+  /**
+   * Routine cardio types hidden on this session only.
+   * Logged cardio entries for those types are kept.
+   */
+  hiddenCardioTypes?: CardioType[];
   cardioEntries: CardioEntry[];
 };
 

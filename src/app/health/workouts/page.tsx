@@ -10,8 +10,11 @@ import {
   findLastSessionForExercise,
   formatShortWorkoutDate,
   suggestRoutineIdForDate,
+  visibleRoutineCardioTypes,
   visibleRoutineStrengthExerciseIds,
+  withHiddenCardioType,
   withHiddenStrengthExercise,
+  withoutHiddenCardioType,
   withoutHiddenStrengthExercise,
 } from "@/lib/workout-session-helpers";
 import { normalizeMeasurementPreferences, runBikeDistanceUnitAbbr, weightUnitAbbr } from "@/lib/units";
@@ -20,6 +23,18 @@ import { useAppData, useTodayKey } from "@/lib/storage";
 
 const CARDIO_TYPES: CardioType[] = ["run", "bike", "swim"];
 const ADD_ROUTINE_OPTION = "__add_routine__";
+
+type RemoveWorkoutItem =
+  | { kind: "strength"; id: string; name: string }
+  | { kind: "cardio"; type: CardioType; name: string };
+
+function isCardioType(value: string): value is CardioType {
+  return value === "run" || value === "bike" || value === "swim";
+}
+
+function cardioLabel(type: CardioType): string {
+  return type === "swim" ? "Swim" : type === "run" ? "Run" : "Bike";
+}
 
 function mergeStrengthExerciseNotes(
   notes: StrengthExerciseNote[] | undefined,
@@ -109,7 +124,7 @@ export default function WorkoutsPage() {
   const today = useTodayKey();
   const workoutDate = today;
   const [addExerciseId, setAddExerciseId] = useState("");
-  const [removeExerciseId, setRemoveExerciseId] = useState<string | null>(null);
+  const [removeItem, setRemoveItem] = useState<RemoveWorkoutItem | null>(null);
 
   const [setDrafts, setSetDrafts] = useState<Record<string, { weight: string; reps: string }>>({});
   const [cardioDrafts, setCardioDrafts] = useState<
@@ -125,6 +140,10 @@ export default function WorkoutsPage() {
   const archivedRoutines = useMemo(() => routines.filter((routine) => routine.archived), [routines]);
   const strengthExercises = useMemo(
     () => data.exercises.filter((exercise) => exercise.category === "strength" && !exercise.archived),
+    [data.exercises],
+  );
+  const cardioExercises = useMemo(
+    () => data.exercises.filter((exercise) => isCardioType(exercise.category) && !exercise.archived),
     [data.exercises],
   );
 
@@ -202,12 +221,33 @@ export default function WorkoutsPage() {
     return visibleIds.map((id) => byId.get(id)).filter(Boolean) as Exercise[];
   }, [currentRoutine, strengthExercises, sessionForDate?.hiddenStrengthExerciseIds]);
 
-  const exercisesAvailableToAdd = useMemo(() => {
-    const shown = new Set(strengthBlocks.map((exercise) => exercise.id));
-    return strengthExercises.filter((exercise) => !shown.has(exercise.id));
-  }, [strengthBlocks, strengthExercises]);
+  const visibleCardioTypes = useMemo(
+    () =>
+      visibleRoutineCardioTypes(
+        currentRoutine?.cardioTypes ?? [],
+        sessionForDate?.hiddenCardioTypes,
+      ),
+    [currentRoutine?.cardioTypes, sessionForDate?.hiddenCardioTypes],
+  );
 
-  const routineCardioTypes = currentRoutine?.cardioTypes?.length ? currentRoutine.cardioTypes : CARDIO_TYPES;
+  const exercisesAvailableToAdd = useMemo(() => {
+    const shownStrength = new Set(strengthBlocks.map((exercise) => exercise.id));
+    const visibleCardio = new Set(visibleCardioTypes);
+    const strengthToAdd = strengthExercises.filter((exercise) => !shownStrength.has(exercise.id));
+    const cardioToAdd = CARDIO_TYPES.filter((type) => !visibleCardio.has(type)).map((type) => {
+      const fromLibrary = cardioExercises.find((exercise) => exercise.category === type);
+      return (
+        fromLibrary ?? {
+          id: `__cardio_${type}`,
+          name: cardioLabel(type),
+          category: type,
+          archived: false,
+          createdAt: "",
+        }
+      );
+    });
+    return [...strengthToAdd, ...cardioToAdd];
+  }, [strengthBlocks, strengthExercises, cardioExercises, visibleCardioTypes]);
 
   const lastSessionByExerciseId = useMemo(() => {
     const map = new Map<string, ReturnType<typeof findLastSessionForExercise>>();
@@ -342,8 +382,47 @@ export default function WorkoutsPage() {
     }));
   }
 
+  function addCardioTypeToWorkout(cardioType: CardioType) {
+    if (!currentRoutine) return;
+    setData((prev) => {
+      const nextRoutines = prev.workoutRoutines.map((routine) => {
+        if (routine.id !== currentRoutine.id) return routine;
+        if (routine.cardioTypes.includes(cardioType)) return routine;
+        return { ...routine, cardioTypes: [...routine.cardioTypes, cardioType] };
+      });
+      const existing = prev.workoutSessions.find((session) => session.date === workoutDate);
+      if (!existing?.hiddenCardioTypes?.includes(cardioType)) {
+        return { ...prev, workoutRoutines: nextRoutines };
+      }
+      const nextSession = tagRoutine({
+        ...existing,
+        hiddenCardioTypes: withoutHiddenCardioType(existing.hiddenCardioTypes, cardioType),
+      });
+      const rest = prev.workoutSessions.filter((session) => session.date !== workoutDate);
+      return {
+        ...prev,
+        workoutRoutines: nextRoutines,
+        workoutSessions: [nextSession, ...rest].sort((a, b) => (a.date < b.date ? 1 : -1)),
+      };
+    });
+    setAddExerciseId("");
+  }
+
   function addExerciseToWorkout(exerciseId: string) {
     if (!currentRoutine || !exerciseId) return;
+    const syntheticType = exerciseId.startsWith("__cardio_") ? exerciseId.slice("__cardio_".length) : "";
+    if (isCardioType(syntheticType)) {
+      addCardioTypeToWorkout(syntheticType);
+      return;
+    }
+    const exercise = data.exercises.find((item) => item.id === exerciseId);
+    if (!exercise) return;
+
+    if (isCardioType(exercise.category)) {
+      addCardioTypeToWorkout(exercise.category);
+      return;
+    }
+
     setData((prev) => {
       const nextRoutines = prev.workoutRoutines.map((routine) => {
         if (routine.id !== currentRoutine.id) return routine;
@@ -379,6 +458,16 @@ export default function WorkoutsPage() {
     });
   }
 
+  function hideCardioFromThisWorkout(type: CardioType) {
+    upsertWorkoutForDate(workoutDate, (existing) => {
+      const base = existing ?? emptySession();
+      return tagRoutine({
+        ...base,
+        hiddenCardioTypes: withHiddenCardioType(base.hiddenCardioTypes, type),
+      });
+    });
+  }
+
   function removeExerciseFromFutureWorkouts(exerciseId: string) {
     if (!currentRoutine) {
       hideExerciseFromThisWorkout(exerciseId);
@@ -394,7 +483,20 @@ export default function WorkoutsPage() {
     }));
   }
 
-  const removeExerciseTarget = strengthExercises.find((exercise) => exercise.id === removeExerciseId);
+  function removeCardioFromFutureWorkouts(type: CardioType) {
+    if (!currentRoutine) {
+      hideCardioFromThisWorkout(type);
+      return;
+    }
+    setData((prev) => ({
+      ...prev,
+      workoutRoutines: prev.workoutRoutines.map((routine) =>
+        routine.id === currentRoutine.id
+          ? { ...routine, cardioTypes: routine.cardioTypes.filter((cardioType) => cardioType !== type) }
+          : routine,
+      ),
+    }));
+  }
 
   function commitBodyWeight() {
     const trimmed = bodyWeightDraft.trim();
@@ -511,7 +613,7 @@ export default function WorkoutsPage() {
                   <div className="flex shrink-0 items-center gap-0.5">
                     <button
                       type="button"
-                      onClick={() => setRemoveExerciseId(exercise.id)}
+                      onClick={() => setRemoveItem({ kind: "strength", id: exercise.id, name: exercise.name })}
                       className="glass-button glass-button-compact inline-flex h-7 w-7 items-center justify-center rounded-md text-ios-secondary"
                       aria-label={`Remove ${exercise.name} from workout`}
                       title="Remove exercise"
@@ -665,44 +767,28 @@ export default function WorkoutsPage() {
             );
           })}
 
-          {currentRoutine && exercisesAvailableToAdd.length ? (
-            <div className="ios-card p-3">
-              <div className="flex min-w-0 flex-wrap items-center gap-2">
-                <select
-                  value={addExerciseId}
-                  onChange={(event) => setAddExerciseId(event.target.value)}
-                  aria-label="Add exercise from list"
-                  className="ios-field min-w-0 flex-1 px-3 py-2.5 text-sm text-ios-label"
-                >
-                  <option value="">Select exercise…</option>
-                  {exercisesAvailableToAdd.map((exercise) => (
-                    <option key={exercise.id} value={exercise.id}>
-                      {exercise.name}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => addExerciseToWorkout(addExerciseId)}
-                  disabled={!addExerciseId}
-                  className="rounded bg-steel px-3 py-2.5 text-sm font-medium text-white hover:bg-steel/90 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  + Add exercise
-                </button>
-              </div>
-            </div>
-          ) : null}
-
-          {routineCardioTypes.map((cardioType) => {
+          {visibleCardioTypes.map((cardioType) => {
             const entries = (sessionForDate?.cardioEntries ?? []).filter((entry) => entry.type === cardioType);
             const draft = cardioDrafts[cardioType];
             const nameHeader = cardioType === "swim" ? "Stroke" : "Type";
             const metricHeader = cardioType === "swim" ? "Laps" : `Distance (${distanceAbbr})`;
-            const title = cardioType === "swim" ? "Swim" : cardioType === "run" ? "Run" : "Bike";
+            const libraryName = cardioExercises.find((exercise) => exercise.category === cardioType)?.name;
+            const title = libraryName ?? cardioLabel(cardioType);
 
             return (
               <div key={cardioType} className="ios-card overflow-hidden">
-                <div className="ios-hairline bg-ios-fill/50 px-3 py-2.5 text-base font-bold text-ios-label">{title}</div>
+                <div className="flex items-center justify-between gap-2 ios-hairline bg-ios-fill/50 px-3 py-2.5">
+                  <span className="min-w-0 text-base font-bold text-ios-label">{title}</span>
+                  <button
+                    type="button"
+                    onClick={() => setRemoveItem({ kind: "cardio", type: cardioType, name: title })}
+                    className="glass-button glass-button-compact inline-flex h-7 w-7 items-center justify-center rounded-md text-ios-secondary"
+                    aria-label={`Remove ${title} from workout`}
+                    title="Remove exercise"
+                  >
+                    <MinusIcon />
+                  </button>
+                </div>
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[320px] table-fixed text-xs sm:text-sm">
                     <thead>
@@ -764,21 +850,51 @@ export default function WorkoutsPage() {
               </div>
             );
           })}
+
+          {currentRoutine && exercisesAvailableToAdd.length ? (
+            <div className="ios-card p-3">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <select
+                  value={addExerciseId}
+                  onChange={(event) => setAddExerciseId(event.target.value)}
+                  aria-label="Add exercise from list"
+                  className="ios-field min-w-0 flex-1 px-3 py-2.5 text-sm text-ios-label"
+                >
+                  <option value="">Select exercise…</option>
+                  {exercisesAvailableToAdd.map((exercise) => (
+                    <option key={exercise.id} value={exercise.id}>
+                      {exercise.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => addExerciseToWorkout(addExerciseId)}
+                  disabled={!addExerciseId}
+                  className="rounded bg-steel px-3 py-2.5 text-sm font-medium text-white hover:bg-steel/90 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  + Add exercise
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
       </SectionCard>
       <RemoveExerciseDialog
-        open={Boolean(removeExerciseTarget)}
-        exerciseName={removeExerciseTarget?.name ?? "this exercise"}
-        onClose={() => setRemoveExerciseId(null)}
+        open={Boolean(removeItem)}
+        exerciseName={removeItem?.name ?? "this exercise"}
+        onClose={() => setRemoveItem(null)}
         onThisWorkout={() => {
-          if (!removeExerciseId) return;
-          hideExerciseFromThisWorkout(removeExerciseId);
-          setRemoveExerciseId(null);
+          if (!removeItem) return;
+          if (removeItem.kind === "cardio") hideCardioFromThisWorkout(removeItem.type);
+          else hideExerciseFromThisWorkout(removeItem.id);
+          setRemoveItem(null);
         }}
         onThisAndFuture={() => {
-          if (!removeExerciseId) return;
-          removeExerciseFromFutureWorkouts(removeExerciseId);
-          setRemoveExerciseId(null);
+          if (!removeItem) return;
+          if (removeItem.kind === "cardio") removeCardioFromFutureWorkouts(removeItem.type);
+          else removeExerciseFromFutureWorkouts(removeItem.id);
+          setRemoveItem(null);
         }}
       />
     </HealthShell>

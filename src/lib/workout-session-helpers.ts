@@ -1,4 +1,4 @@
-import type { WorkoutRoutine, WorkoutSession } from "@/lib/models";
+import type { CardioType, WorkoutRoutine, WorkoutSession } from "@/lib/models";
 import { formatDateKey } from "@/lib/timezone";
 
 /**
@@ -107,5 +107,29 @@ export function withoutHiddenStrengthExercise(
   exerciseId: string,
 ): string[] | undefined {
   const next = (hiddenStrengthExerciseIds ?? []).filter((id) => id !== exerciseId);
+  return next.length ? next : undefined;
+}
+
+export function visibleRoutineCardioTypes(
+  routineCardioTypes: CardioType[],
+  hiddenCardioTypes: CardioType[] | undefined,
+): CardioType[] {
+  if (!hiddenCardioTypes?.length) return [...routineCardioTypes];
+  const hidden = new Set(hiddenCardioTypes);
+  return routineCardioTypes.filter((type) => !hidden.has(type));
+}
+
+export function withHiddenCardioType(
+  hiddenCardioTypes: CardioType[] | undefined,
+  type: CardioType,
+): CardioType[] {
+  return [...new Set([...(hiddenCardioTypes ?? []), type])];
+}
+
+export function withoutHiddenCardioType(
+  hiddenCardioTypes: CardioType[] | undefined,
+  type: CardioType,
+): CardioType[] | undefined {
+  const next = (hiddenCardioTypes ?? []).filter((hiddenType) => hiddenType !== type);
   return next.length ? next : undefined;
 }
