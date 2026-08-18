@@ -1,7 +1,7 @@
 import { GroupedSection } from "@/components/ui/grouped-section";
 
 type SectionCardProps = {
-  title: string;
+  title?: string;
   subtitle?: string;
   children: React.ReactNode;
   /** Top-right controls (e.g. section reorder arrows). */

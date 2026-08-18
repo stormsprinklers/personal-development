@@ -42,6 +42,11 @@ export type WorkoutSession = {
   strengthSets: StrengthSet[];
   /** Per-exercise notes for this session’s strength block. */
   strengthExerciseNotes?: StrengthExerciseNote[];
+  /**
+   * Routine strength exercises hidden on this session only.
+   * Logged sets and notes for those exercises are kept.
+   */
+  hiddenStrengthExerciseIds?: string[];
   cardioEntries: CardioEntry[];
 };
 

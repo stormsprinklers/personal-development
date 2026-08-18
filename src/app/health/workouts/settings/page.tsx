@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { MeasurementUnitsCard } from "@/components/measurement-units-card";
 import { AppShell } from "@/components/layout/app-shell";
 import { SectionCard } from "@/components/layout/section-card";
@@ -98,9 +99,32 @@ export default function WorkoutSettingsPage() {
     <AppShell title="Workout settings" description="Units and exercise library.">
       <SectionCard title="About" inset={false}>
         <p className="ios-card-muted p-4 text-sm text-ios-secondary">
-          Configure units and your exercise library here. To change which exercises and cardio blocks belong to a routine, open{" "}
-          <strong>Workouts</strong>, pick the routine, and use the edit (pencil) control next to the routine menu.
+          Configure units and your exercise library here. On the Workouts tab you can add an exercise from this list or remove one from today or from future workouts. To rename a routine or change cardio blocks, open a routine below.
         </p>
+      </SectionCard>
+
+      <SectionCard title="Routines" inset={false}>
+        <div className="ios-card overflow-hidden">
+          {data.workoutRoutines.length ? (
+            data.workoutRoutines
+              .slice()
+              .sort((a, b) => a.sortOrder - b.sortOrder)
+              .map((routine, index) => (
+                <Link
+                  key={routine.id}
+                  href={`/health/workouts/routines/${routine.id}`}
+                  className={`block px-4 py-3 text-sm font-medium text-ios-tint ${
+                    index < data.workoutRoutines.length - 1 ? "ios-hairline" : ""
+                  }`}
+                >
+                  {routine.name}
+                  {routine.archived ? <span className="ml-2 text-xs font-normal text-ios-secondary">(archived)</span> : null}
+                </Link>
+              ))
+          ) : (
+            <p className="px-4 py-3 text-sm text-ios-secondary">No routines yet.</p>
+          )}
+        </div>
       </SectionCard>
 
       <MeasurementUnitsCard />

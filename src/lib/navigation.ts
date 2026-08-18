@@ -19,11 +19,6 @@ export const APP_SECTIONS: AppSection[] = [
     description: "Log workouts and manage exercise settings.",
   },
   {
-    href: "/finance",
-    title: "Finance",
-    description: "Track spending, categorize transactions, and review cash flow.",
-  },
-  {
     href: "/goals",
     title: "Goals",
     description: "Organize annual goals into sections with notes and status.",
@@ -48,7 +43,6 @@ export const APP_SECTIONS: AppSection[] = [
 export function isAppSectionActive(section: AppSection, pathname: string): boolean {
   if (section.href === "/") return pathname === "/";
   if (section.href === "/health") return pathname.startsWith("/health");
-  if (section.href === "/finance") return pathname.startsWith("/finance");
   if (section.href === "/settings") return pathname.startsWith("/settings");
   return pathname === section.href || pathname.startsWith(`${section.href}/`);
 }

@@ -15,7 +15,6 @@ export function prefetchAppTabRoutes(router: TabRouter) {
 export function preloadAppTabChunks() {
   void import("@/app/page");
   void import("@/app/health/workouts/page");
-  void import("@/app/finance/page");
   void import("@/app/goals/page");
   void import("@/app/journal/page");
   void import("@/app/habits/page");

@@ -9,9 +9,11 @@ type Props = {
   title?: string;
   children: ReactNode;
   footer?: ReactNode;
+  /** Size the sheet to its content instead of nearly full viewport height. */
+  compact?: boolean;
 };
 
-export function Sheet({ open, onClose, title, children, footer }: Props) {
+export function Sheet({ open, onClose, title, children, footer, compact = false }: Props) {
   useEffect(() => {
     if (!open || typeof document === "undefined") return;
     const previousOverflow = document.body.style.overflow;
@@ -33,7 +35,11 @@ export function Sheet({ open, onClose, title, children, footer }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="glass-surface ios-card safe-bottom flex h-[92dvh] max-h-dvh w-full max-w-md flex-col overflow-hidden rounded-t-2xl sm:h-auto sm:max-h-[calc(100dvh-1.5rem)] sm:rounded-2xl"
+        className={`glass-surface ios-card safe-bottom flex w-full max-w-md flex-col overflow-hidden rounded-t-2xl sm:rounded-2xl ${
+          compact
+            ? "h-auto max-h-[calc(100dvh-1.5rem)]"
+            : "h-[92dvh] max-h-dvh sm:h-auto sm:max-h-[calc(100dvh-1.5rem)]"
+        }`}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex shrink-0 justify-center pt-2 sm:hidden">
@@ -44,7 +50,7 @@ export function Sheet({ open, onClose, title, children, footer }: Props) {
             <h3 className="ios-headline text-center">{title}</h3>
           </div>
         ) : null}
-        <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain p-4">
+        <div className={`min-h-0 min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain p-4 ${compact ? "" : "flex-1"}`}>
           {children}
         </div>
         {footer ? (

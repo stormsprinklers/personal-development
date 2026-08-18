@@ -84,3 +84,28 @@ export function formatShortWorkoutDate(dateKey: string) {
     year: "numeric",
   });
 }
+
+/** Routine strength exercises visible on this session (hidden ids stay in logs). */
+export function visibleRoutineStrengthExerciseIds(
+  routineStrengthExerciseIds: string[],
+  hiddenStrengthExerciseIds: string[] | undefined,
+): string[] {
+  if (!hiddenStrengthExerciseIds?.length) return [...routineStrengthExerciseIds];
+  const hidden = new Set(hiddenStrengthExerciseIds);
+  return routineStrengthExerciseIds.filter((id) => !hidden.has(id));
+}
+
+export function withHiddenStrengthExercise(
+  hiddenStrengthExerciseIds: string[] | undefined,
+  exerciseId: string,
+): string[] {
+  return [...new Set([...(hiddenStrengthExerciseIds ?? []), exerciseId])];
+}
+
+export function withoutHiddenStrengthExercise(
+  hiddenStrengthExerciseIds: string[] | undefined,
+  exerciseId: string,
+): string[] | undefined {
+  const next = (hiddenStrengthExerciseIds ?? []).filter((id) => id !== exerciseId);
+  return next.length ? next : undefined;
+}
