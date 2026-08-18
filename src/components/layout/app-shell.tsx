@@ -17,63 +17,21 @@ type AppShellProps = {
   actions?: ReactNode;
 };
 
-function SettingsIcon() {
-  return (
-    <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-    </svg>
-  );
-}
-
 export function AppShell({ title, description: _description, children, header, actions }: AppShellProps) {
   void _description;
   const pathname = usePathname();
-
   const onRoutineEditPage = pathname.startsWith("/health/workouts/routines/");
-  const onHealthWorkouts = pathname === "/health/workouts";
-  const onHealthSettings = pathname === "/health/settings";
-  const onWorkoutSettings = pathname === "/health/workouts/settings";
 
-  const healthTopActions =
-    onHealthWorkouts ? (
-      <Link
-        href="/health/settings"
-        className="glass-button inline-flex h-11 min-w-11 items-center justify-center rounded-full text-ios-label shadow-sm"
-        aria-label="Health settings"
-        title="Health settings"
-      >
-        <SettingsIcon />
-      </Link>
-    ) : onHealthSettings ? (
+  const topRight =
+    actions ??
+    (onRoutineEditPage ? (
       <Link
         href="/health/workouts"
         className="glass-button inline-flex h-11 items-center rounded-full px-4 text-sm font-semibold text-ios-label"
       >
-        Health
+        Workouts
       </Link>
-    ) : onWorkoutSettings || onRoutineEditPage ? (
-      <div className="flex shrink-0 items-center gap-2">
-        {onRoutineEditPage ? (
-          <Link
-            href="/health/workouts/settings"
-            className="glass-button inline-flex h-11 min-w-11 items-center justify-center rounded-full text-ios-label shadow-sm"
-            aria-label="Workout settings"
-            title="Workout settings"
-          >
-            <SettingsIcon />
-          </Link>
-        ) : null}
-        <Link
-          href="/health/workouts"
-          className="glass-button inline-flex h-11 items-center rounded-full px-4 text-sm font-semibold text-ios-label"
-        >
-          Workouts
-        </Link>
-      </div>
-    ) : null;
-
-  const topRight = actions ?? healthTopActions;
+    ) : null);
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-ios-bg text-ios-label">
