@@ -265,8 +265,8 @@ export default function EditWorkoutRoutinePage() {
 
         <p className="ios-footnote px-1">
           Manage the exercise library under{" "}
-          <Link href="/health/workouts/settings" className="font-medium text-steel underline hover:text-charcoal">
-            Workout settings
+          <Link href="/settings?tab=health" className="font-medium text-steel underline hover:text-charcoal">
+            Settings → Health
           </Link>
           .
         </p>

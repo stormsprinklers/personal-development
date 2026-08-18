@@ -5,6 +5,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { CloudStorageCard } from "@/components/cloud-storage-card";
 import { AccountabilitySettingsPanel } from "@/components/settings/accountability-settings-panel";
 import { AppearanceSettingsCard } from "@/components/settings/appearance-settings-card";
+import { HealthSettingsPanel } from "@/components/settings/health-settings-panel";
 import { ListsSettingsPanel } from "@/components/settings/lists-settings-panel";
 import { NotificationsSettingsPanel } from "@/components/settings/notifications-settings-panel";
 import { SettingsSubTabBar } from "@/components/ui/settings-sub-tab-bar";
@@ -32,7 +33,7 @@ function SettingsShell({
   return (
     <AppShell
       title="Settings"
-      description="Account, appearance, lists, accountability, and notifications."
+      description="Account, health, lists, accountability, and notifications."
       header={<SettingsSubTabBar tabs={SETTINGS_TABS} activeId={activeTab} onSelect={onSelectTab} />}
     >
       {children}
@@ -75,6 +76,7 @@ export default function SettingsPage() {
           <CloudStorageCard />
         </>
       ) : null}
+      {activeTab === "health" ? <HealthSettingsPanel /> : null}
       {activeTab === "lists" ? <ListsSettingsPanel /> : null}
       {activeTab === "accountability" ? <AccountabilitySettingsPanel /> : null}
       {activeTab === "notifications" ? <NotificationsSettingsPanel /> : null}

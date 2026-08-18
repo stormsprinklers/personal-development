@@ -16,7 +16,7 @@ export const APP_SECTIONS: AppSection[] = [
     href: "/health",
     title: "Health",
     shortTitle: "Health",
-    description: "Log workouts and manage exercise settings.",
+    description: "Log workouts.",
   },
   {
     href: "/goals",
@@ -36,7 +36,7 @@ export const APP_SECTIONS: AppSection[] = [
   {
     href: "/settings",
     title: "Settings",
-    description: "Cloud sync, appearance, lists, accountability, and app preferences.",
+    description: "Cloud sync, health, appearance, lists, accountability, and app preferences.",
   },
 ];
 
