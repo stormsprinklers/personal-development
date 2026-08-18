@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { HealthShell } from "@/components/health/health-shell";
 import { RemoveExerciseDialog } from "@/components/health/remove-exercise-dialog";
@@ -108,7 +108,6 @@ export default function WorkoutsPage() {
   const distanceAbbr = runBikeDistanceUnitAbbr(prefs.runBikeDistanceUnit);
   const today = useTodayKey();
   const workoutDate = today;
-  const [selectedRoutineId, setSelectedRoutineId] = useState("");
   const [addExerciseId, setAddExerciseId] = useState("");
   const [removeExerciseId, setRemoveExerciseId] = useState<string | null>(null);
 
@@ -131,16 +130,16 @@ export default function WorkoutsPage() {
 
   const sessionForDate = data.workoutSessions.find((s) => s.date === workoutDate);
 
-  useEffect(() => {
-    if (!routines.length) return;
+  const selectedRoutineId = useMemo(() => {
     const saved = sessionForDate?.routineId;
-    if (saved && routines.some((r) => r.id === saved)) {
-      setSelectedRoutineId(saved);
-      return;
-    }
-    const suggested = suggestRoutineIdForDate(data.workoutSessions, activeRoutines, workoutDate);
-    setSelectedRoutineId(suggested ?? activeRoutines[0]?.id ?? routines[0]?.id ?? "");
-  }, [workoutDate, sessionForDate?.routineId, data.workoutSessions, routines, activeRoutines]);
+    if (saved && routines.some((r) => r.id === saved)) return saved;
+    return (
+      suggestRoutineIdForDate(data.workoutSessions, activeRoutines, workoutDate) ??
+      activeRoutines[0]?.id ??
+      routines[0]?.id ??
+      ""
+    );
+  }, [sessionForDate?.routineId, routines, data.workoutSessions, activeRoutines, workoutDate]);
 
   function addRoutineAndOpenEditor() {
     const id = crypto.randomUUID();
@@ -159,7 +158,6 @@ export default function WorkoutsPage() {
       };
       return { ...prev, workoutRoutines: [...prev.workoutRoutines, next] };
     });
-    setSelectedRoutineId(id);
     persistRoutineForDate(id);
     router.push(`/health/workouts/routines/${id}`);
   }
@@ -182,17 +180,17 @@ export default function WorkoutsPage() {
       addRoutineAndOpenEditor();
       return;
     }
-    setSelectedRoutineId(value);
     persistRoutineForDate(value);
   }
 
   const currentRoutine = routines.find((r) => r.id === selectedRoutineId) ?? activeRoutines[0] ?? routines[0];
+  const sessionWeight = sessionForDate?.bodyWeight;
   const [bodyWeightDraft, setBodyWeightDraft] = useState("");
-
-  useEffect(() => {
-    const w = sessionForDate?.bodyWeight;
-    setBodyWeightDraft(w != null && !Number.isNaN(w) ? String(w) : "");
-  }, [workoutDate, sessionForDate?.bodyWeight]);
+  const [syncedBodyWeight, setSyncedBodyWeight] = useState<number | undefined>(undefined);
+  if (sessionWeight !== syncedBodyWeight) {
+    setSyncedBodyWeight(sessionWeight);
+    setBodyWeightDraft(sessionWeight != null && !Number.isNaN(sessionWeight) ? String(sessionWeight) : "");
+  }
 
   const strengthBlocks = useMemo(() => {
     if (!currentRoutine) return strengthExercises.slice(0, 2);
